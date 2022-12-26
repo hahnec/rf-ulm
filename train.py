@@ -3,6 +3,7 @@ import logging
 import os
 import random
 import sys
+import wandb
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
@@ -12,11 +13,11 @@ from pathlib import Path
 from torch import optim
 from torch.utils.data import DataLoader, random_split
 from tqdm import tqdm
+from omegaconf import OmegaConf
 
-import wandb
 from evaluate import evaluate
-from unet import UNet
-from utils.data_loading import BasicDataset, CarvanaDataset
+from unet import UNet, SlounUNet, SlounAdaptUNet
+from utils.dataset_pala import InSilicoDataset
 from utils.dice_score import dice_loss
 
 dir_img = Path('./data/imgs/')
@@ -37,12 +38,16 @@ def train_model(
         weight_decay: float = 1e-8,
         momentum: float = 0.999,
         gradient_clipping: float = 1.0,
+        cfg = None,
 ):
     # 1. Create dataset
-    try:
-        dataset = CarvanaDataset(dir_img, dir_mask, img_scale)
-    except (AssertionError, RuntimeError):
-        dataset = BasicDataset(dir_img, dir_mask, img_scale)
+    dataset = InSilicoDataset(
+        dataset_path=cfg.data_dir,
+        rf_opt = False,
+        sequences = [0, 1],
+        rescale_factor = cfg.rescale_factor,
+        ch_gap = cfg.ch_gap,
+        )
 
     # 2. Split into train / validation partitions
     n_val = int(len(dataset) * val_percent)
@@ -55,23 +60,24 @@ def train_model(
     val_loader = DataLoader(val_set, shuffle=False, drop_last=True, **loader_args)
 
     # (Initialize logging)
-    experiment = wandb.init(project='U-Net', resume='allow', anonymous='must')
-    experiment.config.update(
-        dict(epochs=epochs, batch_size=batch_size, learning_rate=learning_rate,
-             val_percent=val_percent, save_checkpoint=save_checkpoint, img_scale=img_scale, amp=amp)
-    )
+    if cfg.logging:
+        experiment = wandb.init(project='U-Net', resume='allow', anonymous='must', config=cfg)
+        experiment.config.update(
+            dict(epochs=epochs, batch_size=batch_size, learning_rate=learning_rate,
+                val_percent=val_percent, save_checkpoint=save_checkpoint, img_scale=img_scale, amp=amp)
+        )
 
-    logging.info(f'''Starting training:
-        Epochs:          {epochs}
-        Batch size:      {batch_size}
-        Learning rate:   {learning_rate}
-        Training size:   {n_train}
-        Validation size: {n_val}
-        Checkpoints:     {save_checkpoint}
-        Device:          {device.type}
-        Images scaling:  {img_scale}
-        Mixed Precision: {amp}
-    ''')
+        logging.info(f'''Starting training:
+            Epochs:          {epochs}
+            Batch size:      {batch_size}
+            Learning rate:   {learning_rate}
+            Training size:   {n_train}
+            Validation size: {n_val}
+            Checkpoints:     {save_checkpoint}
+            Device:          {device.type}
+            Images scaling:  {img_scale}
+            Mixed Precision: {amp}
+        ''')
 
     # 4. Set up the optimizer, the loss, the learning rate scheduler and the loss scaling for AMP
     optimizer = optim.RMSprop(model.parameters(),
@@ -79,6 +85,8 @@ def train_model(
     scheduler = optim.lr_scheduler.ReduceLROnPlateau(optimizer, 'max', patience=5)  # goal: maximize Dice score
     grad_scaler = torch.cuda.amp.GradScaler(enabled=amp)
     criterion = nn.CrossEntropyLoss() if model.n_classes > 1 else nn.BCEWithLogitsLoss()
+    criterion = nn.MSELoss(reduction='mean') if model._get_name().lower().__contains__('sloun') else criterion
+    l1loss = nn.L1Loss(reduction='mean')
     global_step = 0
 
     # 5. Begin training
@@ -87,7 +95,8 @@ def train_model(
         epoch_loss = 0
         with tqdm(total=n_train, desc=f'Epoch {epoch}/{epochs}', unit='img') as pbar:
             for batch in train_loader:
-                images, true_masks = batch['image'], batch['mask']
+                #images, true_masks = batch['image'], batch['mask']
+                images, true_masks = batch[:2]
 
                 assert images.shape[1] == model.n_channels, \
                     f'Network has been defined with {model.n_channels} input channels, ' \
@@ -99,9 +108,12 @@ def train_model(
 
                 with torch.autocast(device.type if device.type != 'mps' else 'cpu', enabled=amp):
                     masks_pred = model(images)
-                    if model.n_classes == 1:
-                        loss = criterion(masks_pred.squeeze(1), true_masks.float())
-                        loss += dice_loss(F.sigmoid(masks_pred.squeeze(1)), true_masks.float(), multiclass=False)
+                    if model._get_name().lower().__contains__('sloun'):
+                        loss = criterion(masks_pred.squeeze(1), true_masks.squeeze(1).float())
+                        loss += 0.01 * l1loss(masks_pred.squeeze(1), torch.zeros_like(masks_pred.squeeze(1)))
+                    elif model.n_classes == 1:
+                        loss = criterion(masks_pred.squeeze(1), true_masks.squeeze(1).float())
+                        loss += dice_loss(F.sigmoid(masks_pred.squeeze(1)), true_masks.squeeze(1).float(), multiclass=False)
                     else:
                         loss = criterion(masks_pred, true_masks)
                         loss += dice_loss(
@@ -119,11 +131,12 @@ def train_model(
                 pbar.update(images.shape[0])
                 global_step += 1
                 epoch_loss += loss.item()
-                experiment.log({
-                    'train loss': loss.item(),
-                    'step': global_step,
-                    'epoch': epoch
-                })
+                if cfg.logging:
+                    experiment.log({
+                        'train loss': loss.item(),
+                        'step': global_step,
+                        'epoch': epoch
+                    })
                 pbar.set_postfix(**{'loss (batch)': loss.item()})
 
                 # Evaluation round
@@ -161,7 +174,7 @@ def train_model(
         if save_checkpoint:
             Path(dir_checkpoint).mkdir(parents=True, exist_ok=True)
             state_dict = model.state_dict()
-            state_dict['mask_values'] = dataset.mask_values
+            #state_dict['mask_values'] = dataset.mask_values
             torch.save(state_dict, str(dir_checkpoint / 'checkpoint_epoch{}.pth'.format(epoch)))
             logging.info(f'Checkpoint {epoch} saved!')
 
@@ -186,6 +199,8 @@ def get_args():
 if __name__ == '__main__':
     args = get_args()
 
+    cfg = OmegaConf.load('spiel_net/config_pala.yml')
+
     logging.basicConfig(level=logging.INFO, format='%(levelname)s: %(message)s')
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     logging.info(f'Using device {device}')
@@ -193,7 +208,9 @@ if __name__ == '__main__':
     # Change here to adapt to your data
     # n_channels=3 for RGB images
     # n_classes is the number of probabilities you want to get per pixel
-    model = UNet(n_channels=3, n_classes=args.classes, bilinear=args.bilinear)
+    model = UNet(n_channels=1, n_classes=1, bilinear=args.bilinear)
+    model = SlounUNet(n_channels=1, n_classes=1, bilinear=False)
+    model = SlounAdaptUNet(n_channels=1, n_classes=1, bilinear=False)
     model = model.to(memory_format=torch.channels_last)
 
     logging.info(f'Network:\n'
@@ -217,7 +234,8 @@ if __name__ == '__main__':
             device=device,
             img_scale=args.scale,
             val_percent=args.val / 100,
-            amp=args.amp
+            amp=args.amp,
+            cfg = cfg
         )
     except torch.cuda.OutOfMemoryError:
         logging.error('Detected OutOfMemoryError! '
