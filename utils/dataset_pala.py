@@ -1,12 +1,14 @@
 import torch
 from torch.utils.data import Dataset
+import torchvision.transforms as transforms
 from pathlib import Path
 from natsort import natsorted
 import numpy as np
 import scipy.io
-from scipy.interpolate import interp1d
+from scipy.interpolate import interp1d, interp2d
 from typing import Union, List, Tuple
 from omegaconf import OmegaConf
+import cv2
 
 sample2dist = lambda x, c=345, fkHz=175.642, sample_rate=1: c/2 * x / sample_rate / fkHz
 dist2sample = lambda d, c=345, fkHz=175.642, sample_rate=1: 2/c * d * fkHz * sample_rate
@@ -25,6 +27,7 @@ class InSilicoDataset(Dataset):
             rescale_factor: float = None,
             ch_gap: int = None,
             angle_threshold: float = None,
+            transform: float = None,
             ):
 
         torch.manual_seed(3008)
@@ -37,6 +40,7 @@ class InSilicoDataset(Dataset):
         self.ch_gap = 1 if ch_gap is None else ch_gap
         self.rf_opt = rf_opt if rf_opt is not None else rf_opt
         self.gt_upsample = 1
+        #self.transform = transform
 
         # exclude echoes from points at steep angles
         self.angle_threshold = angle_threshold if angle_threshold is not None else 1e9
@@ -202,10 +206,18 @@ class InSilicoDataset(Dataset):
         ydim, xdim = self.all_frames[0].shape[-2:] * np.array([self.gt_upsample,  self.gt_upsample])
         mask = (sr_xz_coords[:, 1]>0) & (sr_xz_coords[:, 0]>0) & (sr_xz_coords[:, 1]<ydim) & (sr_xz_coords[:, 0]<xdim)
 
-        frame_label = torch.zeros([ydim, xdim])
+        frame_label = np.zeros([ydim, xdim])
         frame_label[sr_xz_coords[mask, 1], sr_xz_coords[mask, 0]] = 1
 
         return frame_label
+
+    def transform(self, img, gt):
+
+        i, j, h, w = transforms.RandomCrop.get_params(img, output_size=(128, 128))
+        img = transforms.functional.crop(img, i, j, h, w)
+        gt = transforms.functional.crop(gt, i, j, h, w)
+
+        return img, gt
 
     def __getitem__(self, idx):
 
@@ -216,9 +228,14 @@ class InSilicoDataset(Dataset):
         # convert label data to ground-truth representation(s)
         nan_idcs = np.isnan(label_raw[0]) & np.isnan(label_raw[2])
         gt_points = label_raw[:, ~nan_idcs] * metadata['wavelength']
-
+        
+        hw = (self.rescale_factor * frame.shape[0], self.rescale_factor * frame.shape[1])
         if not self.rf_opt:
             gt_frame = self.points2frame(gt_points)
+            gt_frame = cv2.resize(gt_frame, hw, fx=self.rescale_factor, fy=self.rescale_factor, interpolation = cv2.INTER_CUBIC)
+            frame = cv2.resize(abs(frame), hw, fx=self.rescale_factor, fy=self.rescale_factor, interpolation = cv2.INTER_CUBIC)
+
+            frame, gt_frame = self.transform(torch.tensor(frame), torch.tensor(gt_frame))
 
         # get angle rejection mask
         gt_mask = self.steep_angle_rejection(gt_points)

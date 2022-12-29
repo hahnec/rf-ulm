@@ -47,6 +47,7 @@ def train_model(
         sequences = [0, 1],
         rescale_factor = cfg.rescale_factor,
         ch_gap = cfg.ch_gap,
+        transform=transforms,
         )
 
     # 2. Split into train / validation partitions
@@ -60,6 +61,7 @@ def train_model(
     val_loader = DataLoader(val_set, shuffle=False, drop_last=True, **loader_args)
 
     # (Initialize logging)
+
     if cfg.logging:
         experiment = wandb.init(project='U-Net', resume='allow', anonymous='must', config=cfg)
         experiment.config.update(
@@ -199,7 +201,7 @@ def get_args():
 if __name__ == '__main__':
     args = get_args()
 
-    cfg = OmegaConf.load('spiel_net/config_pala.yml')
+    cfg = OmegaConf.load('./pala_unet.yml')
 
     logging.basicConfig(level=logging.INFO, format='%(levelname)s: %(message)s')
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
