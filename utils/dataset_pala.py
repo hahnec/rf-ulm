@@ -27,7 +27,7 @@ class InSilicoDataset(Dataset):
             rescale_factor: float = None,
             ch_gap: int = None,
             angle_threshold: float = None,
-            transform: float = None,
+            blur_opt: bool = False,
             ):
 
         torch.manual_seed(3008)
@@ -39,8 +39,7 @@ class InSilicoDataset(Dataset):
         self.rescale_factor = 1 if rescale_factor is None else rescale_factor
         self.ch_gap = 1 if ch_gap is None else ch_gap
         self.rf_opt = rf_opt if rf_opt is not None else rf_opt
-        self.gt_upsample = 1
-        #self.transform = transform
+        self.blur_opt = blur_opt if blur_opt is not None else blur_opt
 
         # exclude echoes from points at steep angles
         self.angle_threshold = angle_threshold if angle_threshold is not None else 1e9
@@ -71,6 +70,7 @@ class InSilicoDataset(Dataset):
             seq_mdatas['Size'] = p_data['Size']
             seq_mdatas['PDelta'] = p_data['PDelta']
 
+            seq_mdatas['param_x'] = (seq_mdatas['Origin'][0]+np.arange(seq_mdatas['Size'][1])*seq_mdatas['PDelta'][2])*seq_mdatas['wavelength']
             frames_list.append(seq_frames)
             labels_list.append(seq_labels)
             mdatas_list.append(seq_mdatas)
@@ -182,42 +182,32 @@ class InSilicoDataset(Dataset):
 
         return sample_positions
 
-    def steep_angle_rejection(self, gt_points):
-        
-        ch_num = self.all_metads[0]['xe'].shape[0]
-        gt_xz_coords = np.stack([gt_points[0, ...], gt_points[2, ...]]).T
-        tx_xz_coords = np.array([self.all_metads[0]['xe'], np.zeros(ch_num)]).T
-
-        incidence_vector = (gt_xz_coords[None, ...] - tx_xz_coords[:, None, ...])
-        reference_vector = np.array([0, 1])
-        angles = np.arccos((incidence_vector @ reference_vector) / (np.linalg.norm(incidence_vector, axis=-1) * np.linalg.norm(reference_vector)))
-        angles *= 180 / np.pi
-        
-        # where True is considered a valid point to transducer projection
-        mask = abs(angles) < self.angle_threshold
-
-        return mask
-
     def points2frame(self, points):
         
         gt_xz_coords = np.stack([points[0, ...], points[2, ...]]).T / self.all_metads[0]['wavelength'] - self.all_metads[0]['Origin'][::2]
-        sr_xz_coords = np.round(gt_xz_coords*self.gt_upsample).astype('int')
 
-        ydim, xdim = self.all_frames[0].shape[-2:] * np.array([self.gt_upsample,  self.gt_upsample])
+        # upscale points and convert to integer
+        sr_xz_coords = np.round(gt_xz_coords*self.rescale_factor).astype('int')
+
+        # create image dimensions and mask outlying points
+        ydim, xdim = self.all_frames[0].shape[-2:] * np.array([self.rescale_factor,  self.rescale_factor])
         mask = (sr_xz_coords[:, 1]>0) & (sr_xz_coords[:, 0]>0) & (sr_xz_coords[:, 1]<ydim) & (sr_xz_coords[:, 0]<xdim)
 
+        # place upscaled points in image array
         frame_label = np.zeros([ydim, xdim])
         frame_label[sr_xz_coords[mask, 1], sr_xz_coords[mask, 0]] = 1
 
         return frame_label
 
-    def transform(self, img, gt):
+    def transform(self, img, gt, pts):
 
         i, j, h, w = transforms.RandomCrop.get_params(img, output_size=(128, 128))
         img = transforms.functional.crop(img, i, j, h, w)
         gt = transforms.functional.crop(gt, i, j, h, w)
+        shift_pts = pts - torch.tensor([i, j])
+        pts = shift_pts[(shift_pts[:, 0] >= 0) & (shift_pts[:, 0] < h) & (shift_pts[:, 1] >= 0) & (shift_pts[:, 1] < w)]
 
-        return img, gt
+        return img, gt, pts
 
     def __getitem__(self, idx):
 
@@ -229,17 +219,30 @@ class InSilicoDataset(Dataset):
         nan_idcs = np.isnan(label_raw[0]) & np.isnan(label_raw[2])
         gt_points = label_raw[:, ~nan_idcs] * metadata['wavelength']
         
-        hw = (self.rescale_factor * frame.shape[0], self.rescale_factor * frame.shape[1])
         if not self.rf_opt:
+
+            # get rescaled ground-truth points
+            yx_pts = self.rescale_factor * (label_raw[::2, :].T - metadata['Origin'][::2])[:, ::-1]
+            
+            # rescale frame
+            hw = (self.rescale_factor * frame.shape[0], self.rescale_factor * frame.shape[1])
+            frame = cv2.resize(abs(frame), hw[::-1], interpolation = cv2.INTER_CUBIC)
+            
+            # create ground-truth frame
             gt_frame = self.points2frame(gt_points)
-            gt_frame = cv2.resize(gt_frame, hw, fx=self.rescale_factor, fy=self.rescale_factor, interpolation = cv2.INTER_CUBIC)
-            frame = cv2.resize(abs(frame), hw, fx=self.rescale_factor, fy=self.rescale_factor, interpolation = cv2.INTER_CUBIC)
+            gt_frame = cv2.GaussianBlur(gt_frame, (7, 7), 1)
+            max_val = gt_frame.max() if gt_frame.max() != 0 else 1
+            gt_frame = gt_frame / max_val
+            
+            # crop data to patch
+            frame, gt_frame, gt_pts = self.transform(torch.tensor(frame), torch.tensor(gt_frame), torch.tensor(yx_pts))
+            frame = frame.unsqueeze(0)
+            gt_frame = gt_frame.unsqueeze(0)
 
-            frame, gt_frame = self.transform(torch.tensor(frame), torch.tensor(gt_frame))
+            # adjust ground-truth points
+            pad_pts = torch.nn.functional.pad(gt_pts, (0, 2-gt_pts.shape[1], 0, 50-gt_pts.shape[0]), "constant", float('NaN'))
 
-        # get angle rejection mask
-        gt_mask = self.steep_angle_rejection(gt_points)
-        gt_mask = np.repeat(gt_mask[None, :], metadata['numTx'], axis=0)
+            return frame, gt_frame, pad_pts
 
         gt_samples = []
         # iterate over plane waves
@@ -265,7 +268,7 @@ class InSilicoDataset(Dataset):
             frame = torch.nn.functional.interpolate(torch.tensor(abs(frame[None, None, :])), scale_factor=self.gt_upsample, mode='bicubic')[0]
             gt_frame = gt_frame[None, :]
 
-        return frame, gt_frame, gt_samples, gt_mask
+        return frame, gt_frame, gt_samples
     
     def __len__(self):
         return len(self.all_frames)

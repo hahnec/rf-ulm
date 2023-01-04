@@ -32,6 +32,7 @@ class SlounUNet(nn.Module):
         x = self.up2(x, x2)
         x = self.up3(x, x1)
         logits = self.outc(x)
+        logits = F.sigmoid(logits)
         return logits
 
     def use_checkpointing(self):

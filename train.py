@@ -19,10 +19,14 @@ from evaluate import evaluate
 from unet import UNet, SlounUNet, SlounAdaptUNet
 from utils.dataset_pala import InSilicoDataset
 from utils.dice_score import dice_loss
+from utils.non_max_supp import NonMaxSuppression
 
 dir_img = Path('./data/imgs/')
 dir_mask = Path('./data/masks/')
 dir_checkpoint = Path('./checkpoints/')
+
+
+img_norm = lambda x: (x-x.min())/(x.max()-x.min()) if (x.max()-x.min()) != 0 else x
 
 
 def train_model(
@@ -47,7 +51,7 @@ def train_model(
         sequences = [0, 1],
         rescale_factor = cfg.rescale_factor,
         ch_gap = cfg.ch_gap,
-        transform=transforms,
+        #transform=transforms,
         )
 
     # 2. Split into train / validation partitions
@@ -82,17 +86,19 @@ def train_model(
         ''')
 
     # 4. Set up the optimizer, the loss, the learning rate scheduler and the loss scaling for AMP
-    optimizer = optim.RMSprop(model.parameters(),
-                              lr=learning_rate, weight_decay=weight_decay, momentum=momentum, foreach=True)
+    #optimizer = optim.RMSprop(model.parameters(), lr=learning_rate, weight_decay=weight_decay, momentum=momentum, foreach=True)
+    optimizer = optim.Adam(model.parameters(), lr=learning_rate, weight_decay=weight_decay, foreach=True)
     scheduler = optim.lr_scheduler.ReduceLROnPlateau(optimizer, 'max', patience=5)  # goal: maximize Dice score
+    #scheduler = optim.lr_scheduler.StepLR(optimizer, step_size=100, gamma=1.0)
     grad_scaler = torch.cuda.amp.GradScaler(enabled=amp)
     criterion = nn.CrossEntropyLoss() if model.n_classes > 1 else nn.BCEWithLogitsLoss()
     criterion = nn.MSELoss(reduction='mean') if model._get_name().lower().__contains__('sloun') else criterion
     l1loss = nn.L1Loss(reduction='mean')
     global_step = 0
+    #gaussian_blur = transforms.GaussianBlur(7, sigma=(1.0, 1.0))
 
     # 5. Begin training
-    for epoch in range(1, epochs + 1):
+    for epoch in range(1, epochs+1):
         model.train()
         epoch_loss = 0
         with tqdm(total=n_train, desc=f'Epoch {epoch}/{epochs}', unit='img') as pbar:
@@ -106,16 +112,18 @@ def train_model(
                     'the images are loaded correctly.'
 
                 images = images.to(device=device, dtype=torch.float32, memory_format=torch.channels_last)
-                true_masks = true_masks.to(device=device, dtype=torch.long)
+                true_masks = true_masks.to(device=device)#, dtype=torch.long)
 
                 with torch.autocast(device.type if device.type != 'mps' else 'cpu', enabled=amp):
                     masks_pred = model(images)
                     if model._get_name().lower().__contains__('sloun'):
                         loss = criterion(masks_pred.squeeze(1), true_masks.squeeze(1).float())
-                        loss += 0.01 * l1loss(masks_pred.squeeze(1), torch.zeros_like(masks_pred.squeeze(1)))
+                        loss += l1loss(masks_pred.squeeze(1), torch.zeros_like(masks_pred.squeeze(1))) * 0.01
                     elif model.n_classes == 1:
-                        loss = criterion(masks_pred.squeeze(1), true_masks.squeeze(1).float())
-                        loss += dice_loss(F.sigmoid(masks_pred.squeeze(1)), true_masks.squeeze(1).float(), multiclass=False)
+                        blur_masks = gaussian_blur(true_masks)
+                        loss = criterion(masks_pred.squeeze(1), blur_masks.squeeze(1).float())
+                        #loss += dice_loss(F.sigmoid(masks_pred.squeeze(1)), true_masks.squeeze(1).float(), multiclass=False)
+                        loss += l1loss(masks_pred.squeeze(1), torch.zeros_like(masks_pred.squeeze(1))) * 0.01
                     else:
                         loss = criterion(masks_pred, true_masks)
                         loss += dice_loss(
@@ -148,13 +156,15 @@ def train_model(
                         histograms = {}
                         for tag, value in model.named_parameters():
                             tag = tag.replace('/', '.')
-                            if not torch.isinf(value).any():
+                            if not torch.isinf(value).any() and not torch.isnan(value).any():
                                 histograms['Weights/' + tag] = wandb.Histogram(value.data.cpu())
-                            if not torch.isinf(value.grad).any():
+                            if not torch.isinf(value.grad).any() and not torch.isnan(value.grad).any():
                                 histograms['Gradients/' + tag] = wandb.Histogram(value.grad.data.cpu())
 
-                        val_score = evaluate(model, val_loader, device, amp)
+                        val_score, pala_err_batch, masks_nms = evaluate(model, val_loader, device, amp)
                         scheduler.step(val_score)
+
+                        rmse, precision, recall, jaccard, tp_num, fp_num, fn_num = pala_err_batch
 
                         logging.info('Validation Dice score: {}'.format(val_score))
                         try:
@@ -163,15 +173,23 @@ def train_model(
                                 'validation Dice': val_score,
                                 'images': wandb.Image(images[0].cpu()),
                                 'masks': {
-                                    'true': wandb.Image(true_masks[0].float().cpu()),
-                                    'pred': wandb.Image(masks_pred.argmax(dim=1)[0].float().cpu()),
+                                    'true': wandb.Image(img_norm(true_masks[0].float().cpu())*255),
+                                    'pred': wandb.Image(img_norm(masks_pred[0].float().cpu())*255),    #(masks_pred.argmax(dim=1)[0]).float().cpu()),#
+                                    'nms': wandb.Image(img_norm(masks_nms[0].float().cpu())*255),
                                 },
                                 'step': global_step,
                                 'epoch': epoch,
+                                'rmse': rmse,
+                                'precision': precision,
+                                'recall': recall,
+                                'jaccard': jaccard,
+                                'avg_detected': float(masks_nms[0].float().cpu().sum()),
+                                'pred_max': float(masks_pred[0].float().cpu().max()),
                                 **histograms
                             })
-                        except:
-                            pass
+                        except Exception as e:
+                            print('Validation upload failed')
+                            print(e)
 
         if save_checkpoint:
             Path(dir_checkpoint).mkdir(parents=True, exist_ok=True)
@@ -188,7 +206,7 @@ def get_args():
     parser.add_argument('--learning-rate', '-l', metavar='LR', type=float, default=1e-5,
                         help='Learning rate', dest='lr')
     parser.add_argument('--load', '-f', type=str, default=False, help='Load model from a .pth file')
-    parser.add_argument('--scale', '-s', type=float, default=0.5, help='Downscaling factor of the images')
+    parser.add_argument('--scale', '-s', type=float, default=1, help='Downscaling factor of the images')
     parser.add_argument('--validation', '-v', dest='val', type=float, default=10.0,
                         help='Percent of the data that is used as validation (0-100)')
     parser.add_argument('--amp', action='store_true', default=False, help='Use mixed precision')
@@ -211,7 +229,7 @@ if __name__ == '__main__':
     # n_channels=3 for RGB images
     # n_classes is the number of probabilities you want to get per pixel
     model = UNet(n_channels=1, n_classes=1, bilinear=args.bilinear)
-    model = SlounUNet(n_channels=1, n_classes=1, bilinear=False)
+    #model = SlounUNet(n_channels=1, n_classes=1, bilinear=False)
     model = SlounAdaptUNet(n_channels=1, n_classes=1, bilinear=False)
     model = model.to(memory_format=torch.channels_last)
 
@@ -230,9 +248,9 @@ if __name__ == '__main__':
     try:
         train_model(
             model=model,
-            epochs=args.epochs,
-            batch_size=args.batch_size,
-            learning_rate=args.lr,
+            epochs=cfg.epochs,
+            batch_size=cfg.batch_size,
+            learning_rate=cfg.lr,
             device=device,
             img_scale=args.scale,
             val_percent=args.val / 100,
@@ -247,9 +265,9 @@ if __name__ == '__main__':
         model.use_checkpointing()
         train_model(
             model=model,
-            epochs=args.epochs,
-            batch_size=args.batch_size,
-            learning_rate=args.lr,
+            epochs=cfg.epochs,
+            batch_size=cfg.batch_size,
+            learning_rate=cfg.lr,
             device=device,
             img_scale=args.scale,
             val_percent=args.val / 100,
