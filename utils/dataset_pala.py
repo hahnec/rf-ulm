@@ -230,10 +230,11 @@ class InSilicoDataset(Dataset):
             
             # create ground-truth frame
             gt_frame = self.points2frame(gt_points)
-            gt_frame = cv2.GaussianBlur(gt_frame, (7, 7), 1)
-            max_val = gt_frame.max() if gt_frame.max() != 0 else 1
-            gt_frame = gt_frame / max_val
-            
+            if self.blur_opt:
+                gt_frame = cv2.GaussianBlur(gt_frame, (7, 7), 1)
+                max_val = gt_frame.max() if gt_frame.max() != 0 else 1
+                gt_frame = gt_frame / max_val
+                
             # crop data to patch
             frame, gt_frame, gt_pts = self.transform(torch.tensor(frame), torch.tensor(gt_frame), torch.tensor(yx_pts))
             frame = frame.unsqueeze(0)

@@ -9,7 +9,7 @@ from utils.non_max_supp import NonMaxSuppression
 
 
 @torch.inference_mode()
-def evaluate(net, dataloader, device, amp):
+def evaluate(net, dataloader, device, amp, cfg):
     net.eval()
     num_val_batches = len(dataloader)
     dice_score = 0
@@ -27,13 +27,8 @@ def evaluate(net, dataloader, device, amp):
             # predict the mask
             masks_pred = net(image)
             
-            masks_nms = []
-            for mask_pred in masks_pred:
-                nms_obj = NonMaxSuppression(img=mask_pred.detach().squeeze(0).cpu().numpy())
-                nms_obj.main()
-                nms_img = nms_obj.map
-                masks_nms.append(nms_img > 0.25)
-            masks_nms = torch.tensor(np.array(masks_nms), device=mask_true.device).unsqueeze(1).float()
+            # non-maximum suppression
+            masks_nms = non_max_supp(masks_pred, threshold=cfg.nms_threshold)
 
             pala_err_batch = get_pala_error(masks_nms, gt_points)
 
@@ -78,3 +73,15 @@ def convert2points(mask):
     pts_batches = [torch.nonzero(m) for m in mask.squeeze()]
 
     return pts_batches
+
+def non_max_supp(masks_pred, threshold=0.5):
+
+    masks_nms = []
+    for mask_pred in masks_pred:
+        nms_obj = NonMaxSuppression(img=mask_pred.detach().squeeze(0).cpu().numpy())
+        nms_obj.main()
+        nms_img = nms_obj.map
+        masks_nms.append(nms_img > threshold)
+    masks_nms = torch.tensor(np.array(masks_nms), device=masks_pred.device).unsqueeze(1).float()
+
+    return masks_nms

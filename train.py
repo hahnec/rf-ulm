@@ -15,11 +15,10 @@ from torch.utils.data import DataLoader, random_split
 from tqdm import tqdm
 from omegaconf import OmegaConf
 
-from evaluate import evaluate
+from evaluate import evaluate, non_max_supp
 from unet import UNet, SlounUNet, SlounAdaptUNet
 from utils.dataset_pala import InSilicoDataset
 from utils.dice_score import dice_loss
-from utils.non_max_supp import NonMaxSuppression
 
 dir_img = Path('./data/imgs/')
 dir_mask = Path('./data/masks/')
@@ -51,7 +50,7 @@ def train_model(
         sequences = [0, 1],
         rescale_factor = cfg.rescale_factor,
         ch_gap = cfg.ch_gap,
-        #transform=transforms,
+        blur_opt=cfg.blur_opt,
         )
 
     # 2. Split into train / validation partitions
@@ -131,6 +130,8 @@ def train_model(
                             F.one_hot(true_masks, model.n_classes).permute(0, 3, 1, 2).float(),
                             multiclass=True
                         )
+                
+                masks_nms = non_max_supp(masks_pred)
 
                 optimizer.zero_grad(set_to_none=True)
                 grad_scaler.scale(loss).backward()
@@ -161,7 +162,7 @@ def train_model(
                             if not torch.isinf(value.grad).any() and not torch.isnan(value.grad).any():
                                 histograms['Gradients/' + tag] = wandb.Histogram(value.grad.data.cpu())
 
-                        val_score, pala_err_batch, masks_nms = evaluate(model, val_loader, device, amp)
+                        val_score, pala_err_batch, _ = evaluate(model, val_loader, device, amp, cfg)
                         scheduler.step(val_score)
 
                         rmse, precision, recall, jaccard, tp_num, fp_num, fn_num = pala_err_batch
