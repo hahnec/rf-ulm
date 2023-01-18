@@ -27,7 +27,8 @@ def evaluate(net, dataloader, device, amp, cfg):
             # predict the mask
             masks_pred = net(image)
             
-            # non-maximum suppression
+            # activation followed by non-maximum suppression
+            masks_pred = torch.sigmoid(masks_pred)
             masks_nms = non_max_supp(masks_pred, threshold=cfg.nms_threshold)
 
             pala_err_batch = get_pala_error(masks_nms, gt_points)

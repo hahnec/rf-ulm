@@ -130,6 +130,8 @@ def train_model(
                             multiclass=True
                         )
                 
+                # activation followed by non-maximum suppression
+                masks_pred = torch.sigmoid(masks_pred)
                 masks_nms = non_max_supp(masks_pred)
 
                 optimizer.zero_grad(set_to_none=True)
