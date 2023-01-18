@@ -49,7 +49,6 @@ def train_model(
         rf_opt = False,
         sequences = [0, 1],
         rescale_factor = cfg.rescale_factor,
-        ch_gap = cfg.ch_gap,
         blur_opt=cfg.blur_opt,
         )
 

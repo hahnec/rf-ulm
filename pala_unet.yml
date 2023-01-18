@@ -1,21 +1,14 @@
 epochs: 100
-batch_size: 2
-lr: 0.001
+batch_size: 16
+lr: 0.001 #1e-5  #
 device: 'cuda' #'cpu'  #
-mode: 'disabled'
-bce_weight: 10.0
-bg_subtract: True
 plot_opt: False
-pow_law_opt: False
-hilbert_opt: False
 rescale_factor: 8
-ch_gap: 16
-max_iter: 30
 blur_opt: True
 nms_threshold: 0.25
 
 data_path: PALA_data_InSilicoFlow/
 ubx_dir: /storage/homefs/ch21z139/PALA_dataset/${data_path}
 map_dir: /home/chris/LocalDatasets/03_PALA/${data_path}
-data_dir: ${map_dir}
-logging: False
+data_dir: ${ubx_dir}
+logging: True
