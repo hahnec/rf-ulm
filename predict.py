@@ -5,30 +5,34 @@ import os
 import numpy as np
 import torch
 import torch.nn.functional as F
+from torch.utils.data import DataLoader
 from PIL import Image
 from torchvision import transforms
+from tqdm import tqdm
+from omegaconf import OmegaConf
 
 from utils.data_loading import BasicDataset
-from unet import UNet
+from unet import UNet, SlounUNet, SlounAdaptUNet
+from utils.dataset_pala import InSilicoDataset
 from utils.utils import plot_img_and_mask
 
 def predict_img(net,
-                full_img,
+                img,
                 device,
                 scale_factor=1,
                 out_threshold=0.5):
     net.eval()
-    img = torch.from_numpy(BasicDataset.preprocess(None, full_img, scale_factor, is_mask=False))
-    img = img.unsqueeze(0)
+    #img = torch.from_numpy(BasicDataset.preprocess(None, img, scale_factor, is_mask=False))
+    #img = img.unsqueeze(0)
     img = img.to(device=device, dtype=torch.float32)
 
     with torch.no_grad():
         output = net(img).cpu()
-        output = F.interpolate(output, (full_img.size[1], full_img.size[0]), mode='bilinear')
+        #output = F.interpolate(output, (full_img.size[1], full_img.size[0]), mode='bilinear')
         if net.n_classes > 1:
             mask = output.argmax(dim=1)
         else:
-            mask = torch.sigmoid(output) > out_threshold
+            mask = torch.sigmoid(output) > out_threshold   # tbd: remove sigmoid from model
 
     return mask[0].long().squeeze().numpy()
 
@@ -37,7 +41,7 @@ def get_args():
     parser = argparse.ArgumentParser(description='Predict masks from input images')
     parser.add_argument('--model', '-m', default='MODEL.pth', metavar='FILE',
                         help='Specify the file in which the model is stored')
-    parser.add_argument('--input', '-i', metavar='INPUT', nargs='+', help='Filenames of input images', required=True)
+    parser.add_argument('--input', '-i', metavar='INPUT', nargs='+', help='Filenames of input images', required=False)
     parser.add_argument('--output', '-o', metavar='OUTPUT', nargs='+', help='Filenames of output images')
     parser.add_argument('--viz', '-v', action='store_true',
                         help='Visualize the images as they are processed')
@@ -77,40 +81,56 @@ def mask_to_image(mask: np.ndarray, mask_values):
 
 if __name__ == '__main__':
     args = get_args()
-    logging.basicConfig(level=logging.INFO, format='%(levelname)s: %(message)s')
+    #logging.basicConfig(level=logging.INFO, format='%(levelname)s: %(message)s')
+    #in_files = args.input
+    #out_files = get_output_filenames(args)
 
-    in_files = args.input
-    out_files = get_output_filenames(args)
+    cfg = OmegaConf.load('./pala_unet.yml')
 
-    net = UNet(n_channels=3, n_classes=2, bilinear=args.bilinear)
+    net = UNet(n_channels=1, n_classes=1, bilinear=args.bilinear)
+    #net = SlounUNet(n_channels=1, n_classes=1, bilinear=False)
+    net = SlounAdaptUNet(n_channels=1, n_classes=1, bilinear=False)
 
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-    logging.info(f'Loading model {args.model}')
+    logging.info(f'Loading model {cfg.model_path}')
     logging.info(f'Using device {device}')
 
     net.to(device=device)
-    state_dict = torch.load(args.model, map_location=device)
-    mask_values = state_dict.pop('mask_values')
+    state_dict = torch.load(cfg.model_path, map_location=device)
+    mask_values = state_dict.pop('mask_values') if 'mask_values' in state_dict.keys() else None
     net.load_state_dict(state_dict)
 
     logging.info('Model loaded!')
 
-    for i, filename in enumerate(in_files):
-        logging.info(f'Predicting image {filename} ...')
-        img = Image.open(filename)
+    dataset = InSilicoDataset(
+        dataset_path=cfg.data_dir,
+        rf_opt = False,
+        sequences = list(range(2, 20)),
+        rescale_factor = cfg.rescale_factor,
+        blur_opt=cfg.blur_opt,
+        )
 
-        mask = predict_img(net=net,
-                           full_img=img,
-                           scale_factor=args.scale,
-                           out_threshold=args.mask_threshold,
-                           device=device)
+    loader_args = dict(batch_size=1, num_workers=os.cpu_count(), pin_memory=True)
+    test_loader = DataLoader(dataset, shuffle=False, drop_last=True, **loader_args)
+    #for i, filename in enumerate(in_files):
+    for i, batch in enumerate(test_loader):
+        with tqdm(total=len(dataset), desc=f'Frame {i}/{len(dataset)}', unit='img') as pbar:
+            #logging.info(f'Predicting image {filename} ...')
+            #img = Image.open(filename)
+            img, true_mask = batch[:2]
 
-        if not args.no_save:
-            out_filename = out_files[i]
-            result = mask_to_image(mask, mask_values)
-            result.save(out_filename)
-            logging.info(f'Mask saved to {out_filename}')
+            mask = predict_img(net=net,
+                            img=img,
+                            scale_factor=args.scale,
+                            out_threshold=cfg.nms_threshold,
+                            device=device)
 
-        if args.viz:
-            logging.info(f'Visualizing results for image {filename}, close to continue...')
-            plot_img_and_mask(img, mask)
+            if cfg.save_opt:
+                out_filename = out_files[i]
+                result = mask_to_image(mask, mask_values)
+                result.save(out_filename)
+                logging.info(f'Mask saved to {out_filename}')
+
+            if cfg.plot_opt:
+                logging.info(f'Visualizing results for image, close to continue...')
+                plot_img_and_mask(img, mask)
