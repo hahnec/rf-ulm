@@ -132,7 +132,7 @@ def train_model(
                 
                 # activation followed by non-maximum suppression
                 masks_pred = torch.sigmoid(masks_pred)
-                masks_nms = non_max_supp(masks_pred)
+                masks_nms = non_max_supp(masks_pred, threshold=cfg.nms_threshold)
 
                 optimizer.zero_grad(set_to_none=True)
                 grad_scaler.scale(loss).backward()
