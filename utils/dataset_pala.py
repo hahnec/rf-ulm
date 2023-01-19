@@ -249,7 +249,7 @@ class InSilicoDataset(Dataset):
             # adjust ground-truth points
             pad_pts = torch.nn.functional.pad(gt_pts, (0, 2-gt_pts.shape[1], 0, 50-gt_pts.shape[0]), "constant", float('NaN'))
 
-            return frame, gt_frame, pad_pts, gt_points
+            return frame, gt_frame, pad_pts#, gt_points
 
         gt_samples = []
         # iterate over plane waves

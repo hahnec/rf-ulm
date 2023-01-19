@@ -11,12 +11,15 @@ from torchvision import transforms
 from tqdm import tqdm
 from omegaconf import OmegaConf
 
-from evaluate import non_max_supp
+from evaluate import non_max_supp, get_pala_error
 from utils.data_loading import BasicDataset
 from unet import UNet, SlounUNet, SlounAdaptUNet
 from utils.dataset_pala import InSilicoDataset
 from utils.utils import plot_img_and_mask
 from utils.pala_error import rmse_unique
+from sklearn.metrics import roc_curve
+from sklearn.metrics import precision_recall_curve
+
 
 def predict_img(net,
                 img,
@@ -36,9 +39,10 @@ def predict_img(net,
         else:
             # activation followed by non-maximum suppression
             output = torch.sigmoid(output)
-            mask = non_max_supp(output, threshold=out_threshold)
+            nms = non_max_supp(output)
+            mask = nms > cfg.nms_threshold
 
-    return mask[0].long().squeeze().numpy()
+    return mask[0].long().numpy(), output
 
 
 def get_args():
@@ -109,9 +113,9 @@ if __name__ == '__main__':
     dataset = InSilicoDataset(
         dataset_path=cfg.data_dir,
         rf_opt = False,
-        sequences = list(range(2, 20)),
+        sequences = [0, 1], #list(range(2, 20)),
         rescale_factor = cfg.rescale_factor,
-        blur_opt=cfg.blur_opt,
+        blur_opt = False, #cfg.blur_opt,
         tile_opt = False,
         )
     wavelength = 9.856e-05
@@ -124,17 +128,16 @@ if __name__ == '__main__':
         with tqdm(total=len(dataset), desc=f'Frame {i}/{len(dataset)}', unit='img') as pbar:
             #logging.info(f'Predicting image {filename} ...')
             #img = Image.open(filename)
-            img, true_mask, _, gt_points = batch#[:2]
+            img, true_mask, gt_pts = batch[:3]
 
-            mask = predict_img(net=net,
+            mask, output = predict_img(net=net,
                             img=img,
                             scale_factor=args.scale,
                             out_threshold=cfg.nms_threshold,
                             device=device)
 
-            pts = (np.array(np.nonzero(mask))[::-1] / cfg.rescale_factor + origin[:, None]) 
-            pts_gt = gt_points[0, 0::2, :].cpu().numpy() / wavelength
-            result = rmse_unique(pts.T, pts_gt.T, tol=1/4)
+            gt_pts = gt_pts[:, ~(torch.isnan(gt_pts.squeeze()).sum(-1) > 0)].numpy()[:, ::-1]
+            result = get_pala_error(mask, gt_pts, rescale_factor=cfg.rescale_factor)
             ac_rmse_err.append(result)
 
             print('RMSE: %s' % str(result[0]))
@@ -147,6 +150,14 @@ if __name__ == '__main__':
 
             if cfg.plot_opt:
                 logging.info(f'Visualizing results for image, close to continue...')
-                plot_img_and_mask(img.squeeze(), mask)
+                plot_img_and_mask(img.squeeze(), mask.squeeze())
+
+            fpr, tpr, thresholds = roc_curve(true_mask.float().numpy().flatten(), output.float().numpy().flatten())
+            #precision, recall, thresholds = precision_recall_curve(true_mask.float().numpy().flatten(), output.float().numpy().flatten())
+
+            # calculate the g-mean for each threshold
+            gmeans = (tpr * (1-fpr))**.5
+            th_idx = np.argmax(gmeans)
+            threshold = thresholds[th_idx]
 
 print('Acc. RMSE: %s' % str(torch.nanmean(torch.tensor(ac_rmse_err), axis=0)))

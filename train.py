@@ -133,7 +133,8 @@ def train_model(
                 
                 # activation followed by non-maximum suppression
                 masks_pred = torch.sigmoid(masks_pred)
-                masks_nms = non_max_supp(masks_pred, threshold=cfg.nms_threshold)
+                imgs_nms = non_max_supp(masks_pred)
+                masks_nms = imgs_nms > cfg.nms_threshold
 
                 optimizer.zero_grad(set_to_none=True)
                 grad_scaler.scale(loss).backward()
@@ -164,7 +165,7 @@ def train_model(
                             if not torch.isinf(value.grad).any() and not torch.isnan(value.grad).any():
                                 histograms['Gradients/' + tag] = wandb.Histogram(value.grad.data.cpu())
 
-                        val_score, pala_err_batch, _ = evaluate(model, val_loader, device, amp, cfg)
+                        val_score, pala_err_batch, _, threshold = evaluate(model, val_loader, device, amp, cfg)
                         scheduler.step(val_score)
 
                         rmse, precision, recall, jaccard, tp_num, fp_num, fn_num = pala_err_batch
@@ -186,6 +187,7 @@ def train_model(
                                 'precision': precision,
                                 'recall': recall,
                                 'jaccard': jaccard,
+                                'threshold': threshold,
                                 'avg_detected': float(masks_nms[0].float().cpu().sum()),
                                 'pred_max': float(masks_pred[0].float().cpu().max()),
                                 **histograms
