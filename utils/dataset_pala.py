@@ -28,6 +28,7 @@ class InSilicoDataset(Dataset):
             ch_gap: int = None,
             angle_threshold: float = None,
             blur_opt: bool = False,
+            tile_opt: bool = False,
             ):
 
         torch.manual_seed(3008)
@@ -40,6 +41,7 @@ class InSilicoDataset(Dataset):
         self.ch_gap = 1 if ch_gap is None else ch_gap
         self.rf_opt = rf_opt if rf_opt is not None else rf_opt
         self.blur_opt = blur_opt if blur_opt is not None else blur_opt
+        self.tile_opt = tile_opt if tile_opt is not None else tile_opt
 
         # exclude echoes from points at steep angles
         self.angle_threshold = angle_threshold if angle_threshold is not None else 1e9
@@ -222,7 +224,7 @@ class InSilicoDataset(Dataset):
         if not self.rf_opt:
 
             # get rescaled ground-truth points
-            yx_pts = self.rescale_factor * (label_raw[::2, :].T - metadata['Origin'][::2])[:, ::-1]
+            gt_pts = self.rescale_factor * (label_raw[::2, :].T - metadata['Origin'][::2])[:, ::-1]
             
             # rescale frame
             hw = (self.rescale_factor * frame.shape[0], self.rescale_factor * frame.shape[1])
@@ -234,16 +236,20 @@ class InSilicoDataset(Dataset):
                 gt_frame = cv2.GaussianBlur(gt_frame, (7, 7), 1)
                 max_val = gt_frame.max() if gt_frame.max() != 0 else 1
                 gt_frame = gt_frame / max_val
+            
+            # convert to torch tensor
+            frame, gt_frame, gt_pts = torch.tensor(frame), torch.tensor(gt_frame), torch.tensor(gt_pts)
                 
             # crop data to patch
-            frame, gt_frame, gt_pts = self.transform(torch.tensor(frame), torch.tensor(gt_frame), torch.tensor(yx_pts))
+            if self.tile_opt:
+                frame, gt_frame, gt_pts = self.transform(frame, gt_frame, gt_pts)
             frame = frame.unsqueeze(0)
             gt_frame = gt_frame.unsqueeze(0)
 
             # adjust ground-truth points
             pad_pts = torch.nn.functional.pad(gt_pts, (0, 2-gt_pts.shape[1], 0, 50-gt_pts.shape[0]), "constant", float('NaN'))
 
-            return frame, gt_frame, pad_pts
+            return frame, gt_frame, pad_pts, gt_points
 
         gt_samples = []
         # iterate over plane waves
@@ -269,7 +275,7 @@ class InSilicoDataset(Dataset):
             frame = torch.nn.functional.interpolate(torch.tensor(abs(frame[None, None, :])), scale_factor=self.gt_upsample, mode='bicubic')[0]
             gt_frame = gt_frame[None, :]
 
-        return frame, gt_frame, gt_samples
+        return frame, gt_frame, gt_samples, gt_points
     
     def __len__(self):
         return len(self.all_frames)

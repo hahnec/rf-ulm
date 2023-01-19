@@ -50,6 +50,7 @@ def train_model(
         sequences = [0, 1],
         rescale_factor = cfg.rescale_factor,
         blur_opt=cfg.blur_opt,
+        tile_opt=True,
         )
 
     # 2. Split into train / validation partitions

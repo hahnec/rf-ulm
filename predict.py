@@ -11,10 +11,12 @@ from torchvision import transforms
 from tqdm import tqdm
 from omegaconf import OmegaConf
 
+from evaluate import non_max_supp
 from utils.data_loading import BasicDataset
 from unet import UNet, SlounUNet, SlounAdaptUNet
 from utils.dataset_pala import InSilicoDataset
 from utils.utils import plot_img_and_mask
+from utils.pala_error import rmse_unique
 
 def predict_img(net,
                 img,
@@ -32,7 +34,9 @@ def predict_img(net,
         if net.n_classes > 1:
             mask = output.argmax(dim=1)
         else:
-            mask = torch.sigmoid(output) > out_threshold   # tbd: remove sigmoid from model
+            # activation followed by non-maximum suppression
+            output = torch.sigmoid(output)
+            mask = non_max_supp(output, threshold=out_threshold)
 
     return mask[0].long().squeeze().numpy()
 
@@ -91,7 +95,7 @@ if __name__ == '__main__':
     #net = SlounUNet(n_channels=1, n_classes=1, bilinear=False)
     net = SlounAdaptUNet(n_channels=1, n_classes=1, bilinear=False)
 
-    device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+    device = torch.device(cfg.device)
     logging.info(f'Loading model {cfg.model_path}')
     logging.info(f'Using device {device}')
 
@@ -108,22 +112,32 @@ if __name__ == '__main__':
         sequences = list(range(2, 20)),
         rescale_factor = cfg.rescale_factor,
         blur_opt=cfg.blur_opt,
+        tile_opt = False,
         )
+    wavelength = 9.856e-05
+    origin = np.array([-72,  16])
 
     loader_args = dict(batch_size=1, num_workers=os.cpu_count(), pin_memory=True)
     test_loader = DataLoader(dataset, shuffle=False, drop_last=True, **loader_args)
-    #for i, filename in enumerate(in_files):
+    ac_rmse_err = []
     for i, batch in enumerate(test_loader):
         with tqdm(total=len(dataset), desc=f'Frame {i}/{len(dataset)}', unit='img') as pbar:
             #logging.info(f'Predicting image {filename} ...')
             #img = Image.open(filename)
-            img, true_mask = batch[:2]
+            img, true_mask, _, gt_points = batch#[:2]
 
             mask = predict_img(net=net,
                             img=img,
                             scale_factor=args.scale,
                             out_threshold=cfg.nms_threshold,
                             device=device)
+
+            pts = (np.array(np.nonzero(mask))[::-1] / cfg.rescale_factor + origin[:, None]) 
+            pts_gt = gt_points[0, 0::2, :].cpu().numpy() / wavelength
+            result = rmse_unique(pts.T, pts_gt.T, tol=1/4)
+            ac_rmse_err.append(result)
+
+            print('RMSE: %s' % str(result[0]))
 
             if cfg.save_opt:
                 out_filename = out_files[i]
@@ -133,4 +147,6 @@ if __name__ == '__main__':
 
             if cfg.plot_opt:
                 logging.info(f'Visualizing results for image, close to continue...')
-                plot_img_and_mask(img, mask)
+                plot_img_and_mask(img.squeeze(), mask)
+
+print('Acc. RMSE: %s' % str(torch.nanmean(torch.tensor(ac_rmse_err), axis=0)))

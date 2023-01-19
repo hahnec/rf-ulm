@@ -52,8 +52,8 @@ def evaluate(net, dataloader, device, amp, cfg):
 
 def get_pala_error(mask_pred, gt_points):
 
-    pred_pts = convert2points(mask_pred)
-    #true_pts = convert2points(mask_true)
+    pred_pts = [torch.nonzero(m) for m in mask_pred.squeeze()]
+    #true_pts = [torch.nonzero(m) for m in mask_true.squeeze()]
 
     wavelength = 9.856e-05
     #origin = torch.tensor([-72, 16], device=mask_pred.device)
@@ -69,17 +69,13 @@ def get_pala_error(mask_pred, gt_points):
 
     return rmse, precision, recall, jaccard, tp_num, fp_num, fn_num
 
-def convert2points(mask):
-
-    pts_batches = [torch.nonzero(m) for m in mask.squeeze()]
-
-    return pts_batches
-
-def non_max_supp(masks_pred, threshold=0.5):
+def non_max_supp(masks_pred, threshold=0.5, norm_opt=False):
 
     masks_nms = []
     for mask_pred in masks_pred:
-        nms_obj = NonMaxSuppression(img=mask_pred.detach().squeeze(0).cpu().numpy())
+        img = mask_pred.detach().squeeze(0).cpu().numpy()
+        img = (img-img.min())/(img.max()-img.min()) if norm_opt else img
+        nms_obj = NonMaxSuppression(img=img)
         nms_obj.main()
         nms_img = nms_obj.map
         masks_nms.append(nms_img > threshold)
