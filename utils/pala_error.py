@@ -14,7 +14,7 @@ def rmse_unique(pt_array, gt_array, tol=1/4):
     for gt in gt_array:
         ssd = ((pt_array-gt)**2).sum(-1)**.5
         err, idx = np.min(ssd), np.argmin(ssd)
-        if err < tol and mask[idx]:
+        if err < tol: #and mask[idx]:
             errs.append(err)
             mask[idx] = False
         else:
