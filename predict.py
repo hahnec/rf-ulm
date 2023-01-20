@@ -11,6 +11,7 @@ from torchvision import transforms
 from tqdm import tqdm
 from omegaconf import OmegaConf
 import wandb
+import time
 
 from evaluate import non_max_supp, get_pala_error
 from utils.data_loading import BasicDataset
@@ -33,8 +34,11 @@ def predict_img(net,
     img = img.to(device=device, dtype=torch.float32)
 
     with torch.no_grad():
-        output = net(img).cpu()
+        start = time.time()
+        output = net(img)
+        comp_time = time.time() - start
         #output = F.interpolate(output, (full_img.size[1], full_img.size[0]), mode='bilinear')
+        output = output.cpu()
         if net.n_classes > 1:
             mask = output.argmax(dim=1)
         else:
@@ -42,7 +46,7 @@ def predict_img(net,
             nms = non_max_supp(output)
             mask = nms > cfg.nms_threshold
 
-    return mask[0].long().numpy(), output
+    return mask[0].long().numpy(), output, comp_time
 
 
 def get_args():
@@ -134,7 +138,7 @@ if __name__ == '__main__':
             #img = Image.open(filename)
             img, true_mask, gt_pts = batch[:3]
 
-            mask, output = predict_img(net=net,
+            mask, output, comp_time = predict_img(net=net,
                             img=img,
                             scale_factor=args.scale,
                             out_threshold=cfg.nms_threshold,
@@ -153,6 +157,7 @@ if __name__ == '__main__':
                     'U-Net/TruePositive': result[4],
                     'U-Net/FalsePositive': result[5],
                     'U-Net/FalseNegative': result[6],
+                    'U-Net/FrameTime': comp_time,
                     'frame': int(i),
                 })
 
@@ -174,4 +179,9 @@ if __name__ == '__main__':
             th_idx = np.argmax(gmeans)
             threshold = thresholds[th_idx]
 
-print('Acc. RMSE: %s' % str(torch.nanmean(torch.tensor(ac_rmse_err), axis=0)))
+acc_errs = torch.nanmean(torch.tensor(ac_rmse_err), axis=0)
+print('Acc. Errors: %s' % str(acc_errs))
+if cfg.logging:
+    wandb.summary['U-Net/TotalRMSE'] = acc_errs[0]
+    wandb.summary['U-Net/TotalJaccard'] = acc_errs[3]
+    wandb.save(str(output_path / 'logged_errors.csv'))
