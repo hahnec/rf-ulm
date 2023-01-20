@@ -37,8 +37,7 @@ def predict_img(net,
         if net.n_classes > 1:
             mask = output.argmax(dim=1)
         else:
-            # activation followed by non-maximum suppression
-            output = torch.sigmoid(output)
+            # non-maximum suppression
             nms = non_max_supp(output)
             mask = nms > cfg.nms_threshold
 

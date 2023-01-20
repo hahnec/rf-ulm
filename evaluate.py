@@ -28,9 +28,6 @@ def evaluate(net, dataloader, device, amp, cfg):
 
             # predict the mask
             masks_pred = net(image)
-            
-            # activation
-            masks_pred = torch.sigmoid(masks_pred)
 
             if mask_true.sum() > 0: # no positive samples in y_true are meaningless
                 fpr, tpr, thresholds = roc_curve(mask_true.float().cpu().numpy().flatten(), masks_pred.float().cpu().numpy().flatten())
