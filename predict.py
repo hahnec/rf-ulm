@@ -112,7 +112,7 @@ if __name__ == '__main__':
     dataset = InSilicoDataset(
         dataset_path=cfg.data_dir,
         rf_opt = False,
-        sequences = [0, 1], #list(range(2, 20)),
+        sequences = list(range(0, 15)),
         rescale_factor = cfg.rescale_factor,
         blur_opt = False, #cfg.blur_opt,
         tile_opt = False,

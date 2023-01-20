@@ -47,7 +47,7 @@ def train_model(
     dataset = InSilicoDataset(
         dataset_path=cfg.data_dir,
         rf_opt = False,
-        sequences = [0, 1],
+        sequences = [15, 16, 17, 18, 19],
         rescale_factor = cfg.rescale_factor,
         blur_opt=cfg.blur_opt,
         tile_opt=True,
