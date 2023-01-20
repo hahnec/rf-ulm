@@ -179,9 +179,12 @@ if __name__ == '__main__':
             th_idx = np.argmax(gmeans)
             threshold = thresholds[th_idx]
 
-acc_errs = torch.nanmean(torch.tensor(ac_rmse_err), axis=0)
-print('Acc. Errors: %s' % str(acc_errs))
+errs = torch.tensor(ac_rmse_err)
+unet_rmse_mean = torch.nanmean(errs[..., 0], axis=0)
+unet_rmse_std = torch.std(errs[..., 0][~torch.isnan(errs[..., 0])], axis=0)
+print('Acc. Errors: %s' % str(errs))
 if cfg.logging:
-    wandb.summary['U-Net/TotalRMSE'] = acc_errs[0]
-    wandb.summary['U-Net/TotalJaccard'] = acc_errs[3]
+    wandb.summary['ULM/TotalRMSE'] = unet_rmse_mean
+    wandb.summary['ULM/TotalRMSEstd'] = unet_rmse_std
+    wandb.summary['ULM/TotalJaccard'] = torch.nanmean(errs[..., 3], axis=0)
     wandb.save(str(output_path / 'logged_errors.csv'))
