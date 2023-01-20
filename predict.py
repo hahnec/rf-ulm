@@ -123,7 +123,7 @@ if __name__ == '__main__':
         rf_opt = False,
         sequences = list(range(0, 15)),
         rescale_factor = cfg.rescale_factor,
-        blur_opt = False, #cfg.blur_opt,
+        blur_opt = False,
         tile_opt = False,
         )
     wavelength = 9.856e-05
