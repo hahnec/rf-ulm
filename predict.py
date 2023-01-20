@@ -182,7 +182,7 @@ if __name__ == '__main__':
 errs = torch.tensor(ac_rmse_err)
 unet_rmse_mean = torch.nanmean(errs[..., 0], axis=0)
 unet_rmse_std = torch.std(errs[..., 0][~torch.isnan(errs[..., 0])], axis=0)
-print('Acc. Errors: %s' % str(errs))
+print('Acc. Errors: %s' % str(torch.nanmean(errs, axis=0)))
 if cfg.logging:
     wandb.summary['ULM/TotalRMSE'] = unet_rmse_mean
     wandb.summary['ULM/TotalRMSEstd'] = unet_rmse_std
