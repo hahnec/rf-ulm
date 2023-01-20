@@ -10,6 +10,7 @@ from PIL import Image
 from torchvision import transforms
 from tqdm import tqdm
 from omegaconf import OmegaConf
+import wandb
 
 from evaluate import non_max_supp, get_pala_error
 from utils.data_loading import BasicDataset
@@ -94,6 +95,10 @@ if __name__ == '__main__':
 
     cfg = OmegaConf.load('./pala_unet.yml')
 
+    if cfg.logging:
+        experiment = wandb.init(project='pulm', resume='allow', anonymous='must', config=cfg)
+        experiment.config.update(cfg)
+
     net = UNet(n_channels=1, n_classes=1, bilinear=args.bilinear)
     #net = SlounUNet(n_channels=1, n_classes=1, bilinear=False)
     net = SlounAdaptUNet(n_channels=1, n_classes=1, bilinear=False)
@@ -139,7 +144,17 @@ if __name__ == '__main__':
             result = get_pala_error(mask, gt_pts, rescale_factor=cfg.rescale_factor)
             ac_rmse_err.append(result)
 
-            print('RMSE: %s' % str(result[0]))
+            if cfg.logging:
+                wandb.log({
+                    'U-Net/RMSE': result[0],
+                    'U-Net/Precision': result[1],
+                    'U-Net/Recall': result[2],
+                    'U-Net/Jaccard': result[3],
+                    'U-Net/TruePositive': result[4],
+                    'U-Net/FalsePositive': result[5],
+                    'U-Net/FalseNegative': result[6],
+                    'frame': int(i),
+                })
 
             if cfg.save_opt:
                 out_filename = out_files[i]
