@@ -1,14 +1,18 @@
 epochs: 100
-batch_size: 16
+batch_size: 64
 lr: 0.001 #1e-5  #
 device: 'cuda' #'cpu'  #
 plot_opt: False
-rescale_factor: 8
+rescale_factor: 8 #10 #
 blur_opt: True
-nms_threshold: 0.5
+nms_threshold: 0.1  #0.075 #
 
 data_path: PALA_data_InSilicoFlow/
 ubx_dir: /storage/homefs/ch21z139/PALA_dataset/${data_path}
 map_dir: /home/chris/LocalDatasets/03_PALA/${data_path}
 data_dir: ${ubx_dir}
 logging: True
+
+# inference config
+model_path: ./checkpoints/checkpoint_epoch100_5jan23.pth
+save_opt: False

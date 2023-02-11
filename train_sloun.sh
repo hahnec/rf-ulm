@@ -17,11 +17,9 @@ module load Python/3.8.6-GCCcore-10.2.0
 #module load cuDNN/8.2.0.53-CUDA-11.3.0
 #module load Workspace
 
-cd ./Pytorch-Unet
-
 python -m venv venv
 
-source ~/02_pace/pulm/venv/bin/activate
+source ~/20_ulm_unet/venv/bin/activate
 
 python -m pip install -r requirements.txt
 
