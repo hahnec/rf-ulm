@@ -13,6 +13,7 @@ from omegaconf import OmegaConf
 import wandb
 import time
 from pathlib import Path
+import matplotlib.pyplot as plt
 
 from evaluate import non_max_supp, get_pala_error
 from utils.data_loading import BasicDataset
@@ -20,6 +21,7 @@ from unet import UNet, SlounUNet, SlounAdaptUNet
 from utils.dataset_pala import InSilicoDataset
 from utils.utils import plot_img_and_mask
 from utils.pala_error import rmse_unique
+from utils.srgb_conv import srgb_conv
 from simple_tracker.tracks2img import tracks2img
 from sklearn.metrics import roc_curve
 from sklearn.metrics import precision_recall_curve
@@ -92,6 +94,17 @@ def mask_to_image(mask: np.ndarray, mask_values):
         out[mask == i] = v
 
     return Image.fromarray(out)
+
+
+def img_color_map(img=None, cmap='inferno'):
+
+    # get color map
+    colormap = plt.get_cmap(cmap)
+
+    # apply color map omitting alpha channel
+    img = colormap(img)[..., :3]
+
+    return img
 
 
 if __name__ == '__main__':
@@ -208,12 +221,22 @@ print('Acc. Errors: %s' % str(torch.nanmean(errs, axis=0)))
 
 unet_ulm_img, _ = tracks2img(np.vstack(all_pts), img_size=np.array([84, 134]), scale=10, mode='all_in')
 gtru_ulm_img, _ = tracks2img(np.vstack(all_pts_gt), img_size=np.array([84, 134]), scale=10, mode='all_in')
-unet_ulm_img /= unet_ulm_img.max()
-gtru_ulm_img /= gtru_ulm_img.max()
+
+normalize = lambda x: (x-x.min())/(x.max()-x.min()) if x.max()-x.min() > 0 else x-x.min()
+
+# sRGB gamma correction
+unet_ulm_img = srgb_conv(normalize(unet_ulm_img))
+gtru_ulm_img = srgb_conv(normalize(gtru_ulm_img))
+
+# color mapping
+unet_ulm_img = img_color_map(img=normalize(unet_ulm_img), cmap='inferno')
+gtru_ulm_img = img_color_map(img=normalize(gtru_ulm_img), cmap='inferno')
 
 if cfg.logging:
     wandb.summary['ULM/TotalRMSE'] = unet_rmse_mean
     wandb.summary['ULM/TotalRMSEstd'] = unet_rmse_std
     wandb.summary['ULM/TotalJaccard'] = torch.nanmean(errs[..., 3], axis=0)
-    wandb.summary['ULM/SSIM'] = structural_similarity(gtru_ulm_img[..., None], unet_ulm_img[..., None], channel_axis=2)
+    wandb.summary['ULM/SSIM'] = structural_similarity(gtru_ulm_img, unet_ulm_img, channel_axis=2)
     wandb.save(str(output_path / 'logged_errors.csv'))
+    wandb.log({"unet_ulm_img": wandb.Image(unet_ulm_img)})
+    wandb.log({"gtru_ulm_img": wandb.Image(gtru_ulm_img)})
