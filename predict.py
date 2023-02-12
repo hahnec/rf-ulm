@@ -151,7 +151,7 @@ if __name__ == '__main__':
     all_pts = []
     all_pts_gt = []
     for i, batch in enumerate(test_loader):
-        with tqdm(total=len(dataset), desc=f'Frame {i}/{len(dataset)}', unit='img') as pbar:
+        with tqdm(total=len(test_loader), desc=f'Frame {i}/{len(test_loader)}', unit='img') as pbar:
             #logging.info(f'Predicting image {filename} ...')
             #img = Image.open(filename)
             img, true_mask, gt_pts = batch[:3]
@@ -204,16 +204,6 @@ if __name__ == '__main__':
             all_pts.append(pts)
             all_pts_gt.append(pts_gt)
 
-            if i == 10:
-                print(np.vstack(all_pts).shape)
-                print(np.vstack(all_pts_gt).shape)
-                unet_ulm_img, _ = tracks2img(np.vstack(all_pts), img_size=np.array([84, 134]), scale=10, mode='all_in')
-                gtru_ulm_img, _ = tracks2img(np.vstack(all_pts_gt), img_size=np.array([84, 134]), scale=10, mode='all_in')
-                print(unet_ulm_img.shape)
-                print(gtru_ulm_img.shape)
-                res = structural_similarity(gtru_ulm_img[..., None], unet_ulm_img[..., None], channel_axis=2)
-                print(res)
-
 errs = torch.tensor(ac_rmse_err)
 unet_rmse_mean = torch.nanmean(errs[..., 0], axis=0)
 unet_rmse_std = torch.std(errs[..., 0][~torch.isnan(errs[..., 0])], axis=0)
@@ -237,6 +227,6 @@ if cfg.logging:
     wandb.summary['ULM/TotalRMSEstd'] = unet_rmse_std
     wandb.summary['ULM/TotalJaccard'] = torch.nanmean(errs[..., 3], axis=0)
     wandb.summary['ULM/SSIM'] = structural_similarity(gtru_ulm_img, unet_ulm_img, channel_axis=2)
-    wandb.save(str(output_path / 'logged_errors.csv'))
     wandb.log({"unet_ulm_img": wandb.Image(unet_ulm_img)})
     wandb.log({"gtru_ulm_img": wandb.Image(gtru_ulm_img)})
+    wandb.save(str(Path('.') / 'logged_errors.csv'))
