@@ -23,6 +23,10 @@ source ~/20_ulm_unet/venv/bin/activate
 
 python -m pip install -r requirements.txt
 
+git clone --recurse-submodules git@github.com:hahnec/simple_tracker simple_tracker_repo
+python3 -m pip install -r simple_tracker_repo/requirements.txt
+ln -sf ./simple_tracker_repo/simple_tracker simple_tracker
+
 python -c "import torch; print(torch.cuda.is_available())"
 
 python ./predict.py
