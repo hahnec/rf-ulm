@@ -63,7 +63,7 @@ def evaluate(net, dataloader, device, amp, cfg):
     return dice_score / max(num_val_batches, 1), pala_err_batch, masks_nms, threshold
 
 
-def get_pala_error(mask_pred: np.ndarray, gt_points: np.ndarray, rescale_factor: float = 1):
+def get_pala_error(mask_pred: np.ndarray, gt_points: np.ndarray, rescale_factor: float = 1, sr_img=None):
 
     wavelength = 9.856e-05
     origin = np.array([-72, 16])
@@ -74,6 +74,18 @@ def get_pala_error(mask_pred: np.ndarray, gt_points: np.ndarray, rescale_factor:
             continue
         pts = (np.array(np.nonzero(mask))[::-1] / rescale_factor + origin[:, None]).T
         pts_gt = true_frame_pts[:, ::-1] / rescale_factor + origin[:, None].T
+
+        # do weighting based on super-resolved image
+        if not sr_img is None:
+            w = 4
+            coords = np.stack(np.meshgrid(np.arange(-w, w+1), np.arange(-w, w+1)))
+            for i, pt in enumerate(pts):
+                pt = ((pt-origin) * rescale_factor).astype(int)[::-1]
+                shift_coords = pt[:, None, None]+coords
+                patch = sr_img[pt[0]-w:pt[0]+w+1, pt[1]-w:pt[1]+w+1][None, ...]
+                pt = np.sum(shift_coords*patch/patch.sum(), axis=(-2, -1))
+                pts[i] = pt[::-1] / rescale_factor + origin
+
         result = rmse_unique(pts, pts_gt, tol=1/4)
         results.append(result)
 
