@@ -82,8 +82,11 @@ def get_pala_error(mask_pred: np.ndarray, gt_points: np.ndarray, rescale_factor:
             for i, pt in enumerate(pts):
                 pt = ((pt-origin) * rescale_factor).astype(int)[::-1]
                 shift_coords = pt[:, None, None]+coords
-                patch = sr_img[pt[0]-w:pt[0]+w+1, pt[1]-w:pt[1]+w+1][None, ...]
-                pt = np.sum(shift_coords*patch/patch.sum(), axis=(-2, -1))
+                try:
+                    patch = sr_img[pt[0]-w:pt[0]+w+1, pt[1]-w:pt[1]+w+1][None, ...]
+                    pt = np.sum(shift_coords*patch/patch.sum(), axis=(-2, -1))
+                except ValueError:
+                    pass
                 pts[i] = pt[::-1] / rescale_factor + origin
 
         result = rmse_unique(pts, pts_gt, tol=1/4)
