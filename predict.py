@@ -214,6 +214,10 @@ gtru_ulm_img, _ = tracks2img((np.vstack(all_pts_gt)-origin)[:, ::-1], img_size=n
 
 normalize = lambda x: (x-x.min())/(x.max()-x.min()) if x.max()-x.min() > 0 else x-x.min()
 
+# gamma
+unet_ulm_img **= cfg.gamma
+gtru_ulm_img **= cfg.gamma
+
 # sRGB gamma correction
 unet_ulm_img = srgb_conv(normalize(unet_ulm_img))
 gtru_ulm_img = srgb_conv(normalize(gtru_ulm_img))
