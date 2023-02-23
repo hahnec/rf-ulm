@@ -22,6 +22,7 @@ class InSilicoDataset(Dataset):
     def __init__(
             self, 
             dataset_path = '', 
+            transforms = None,
             rf_opt: bool = True,
             sequences: Union[List, Tuple] = None,
             rescale_factor: float = None,
@@ -36,6 +37,7 @@ class InSilicoDataset(Dataset):
         self.dataset_path = Path(dataset_path) / 'RF' if rf_opt else Path(dataset_path) / 'IQ'
         print(self.dataset_path.resolve())
 
+        self.transforms = transforms
         self.sequences = [0] if sequences is None else sequences
         self.rescale_factor = 1 if rescale_factor is None else rescale_factor
         self.ch_gap = 1 if ch_gap is None else ch_gap
@@ -201,7 +203,7 @@ class InSilicoDataset(Dataset):
 
         return frame_label
 
-    def transform(self, img, gt, pts):
+    def crop_sloun(self, img, gt, pts):
 
         i, j, h, w = transforms.RandomCrop.get_params(img, output_size=(128, 128))
         img = transforms.functional.crop(img, i, j, h, w)
@@ -242,7 +244,7 @@ class InSilicoDataset(Dataset):
                 
             # crop data to patch
             if self.tile_opt:
-                frame, gt_frame, gt_pts = self.transform(frame, gt_frame, gt_pts)
+                frame, gt_frame, gt_pts = self.crop_sloun(frame, gt_frame, gt_pts)
             frame = frame.unsqueeze(0)
             gt_frame = gt_frame.unsqueeze(0)
 
@@ -274,6 +276,9 @@ class InSilicoDataset(Dataset):
         else:
             frame = torch.nn.functional.interpolate(torch.tensor(abs(frame[None, None, :])), scale_factor=self.gt_upsample, mode='bicubic')[0]
             gt_frame = gt_frame[None, :]
+
+        if self.transforms is not None:
+            frame, gt_frame = self.transforms(frame, gt_frame)
 
         return frame, gt_frame, gt_samples, gt_points
     

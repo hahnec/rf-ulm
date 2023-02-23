@@ -19,6 +19,7 @@ from evaluate import evaluate, non_max_supp
 from unet import UNet, SlounUNet, SlounAdaptUNet
 from utils.dataset_pala import InSilicoDataset
 from utils.dice_score import dice_loss
+from utils.transform import RandomHorizontalFlip, RandomVerticalFlip, RandomRotation, GaussianNoise
 
 dir_img = Path('./data/imgs/')
 dir_mask = Path('./data/masks/')
@@ -26,6 +27,8 @@ dir_checkpoint = Path('./checkpoints/')
 
 
 img_norm = lambda x: (x-x.min())/(x.max()-x.min()) if (x.max()-x.min()) != 0 else x
+
+transforms = [RandomHorizontalFlip(), RandomVerticalFlip(), RandomRotation(degree=5), GaussianNoise()]
 
 
 def train_model(
@@ -46,6 +49,7 @@ def train_model(
     # 1. Create dataset
     dataset = InSilicoDataset(
         dataset_path=cfg.data_dir,
+        transforms = transforms,
         rf_opt = False,
         sequences = [15, 16, 17, 18, 19],
         rescale_factor = cfg.rescale_factor,
@@ -172,26 +176,27 @@ def train_model(
 
                         logging.info('Validation Dice score: {}'.format(val_score))
                         try:
-                            experiment.log({
-                                'learning rate': optimizer.param_groups[0]['lr'],
-                                'validation Dice': val_score,
-                                'images': wandb.Image(images[0].cpu()),
-                                'masks': {
-                                    'true': wandb.Image(img_norm(true_masks[0].float().cpu())*255),
-                                    'pred': wandb.Image(img_norm(masks_pred[0].float().cpu())*255),    #(masks_pred.argmax(dim=1)[0]).float().cpu()),#
-                                    'nms': wandb.Image(img_norm(masks_nms[0].float().cpu())*255),
-                                },
-                                'step': global_step,
-                                'epoch': epoch,
-                                'rmse': rmse,
-                                'precision': precision,
-                                'recall': recall,
-                                'jaccard': jaccard,
-                                'threshold': threshold,
-                                'avg_detected': float(masks_nms[0].float().cpu().sum()),
-                                'pred_max': float(masks_pred[0].float().cpu().max()),
-                                **histograms
-                            })
+                            if cfg.logging:
+                                experiment.log({
+                                    'learning rate': optimizer.param_groups[0]['lr'],
+                                    'validation Dice': val_score,
+                                    'images': wandb.Image(images[0].cpu()),
+                                    'masks': {
+                                        'true': wandb.Image(img_norm(true_masks[0].float().cpu())*255),
+                                        'pred': wandb.Image(img_norm(masks_pred[0].float().cpu())*255),    #(masks_pred.argmax(dim=1)[0]).float().cpu()),#
+                                        'nms': wandb.Image(img_norm(masks_nms[0].float().cpu())*255),
+                                    },
+                                    'step': global_step,
+                                    'epoch': epoch,
+                                    'rmse': rmse,
+                                    'precision': precision,
+                                    'recall': recall,
+                                    'jaccard': jaccard,
+                                    'threshold': threshold,
+                                    'avg_detected': float(masks_nms[0].float().cpu().sum()),
+                                    'pred_max': float(masks_pred[0].float().cpu().max()),
+                                    **histograms
+                                })
                         except Exception as e:
                             print('Validation upload failed')
                             print(e)
