@@ -27,4 +27,6 @@ def rmse_unique(pt_array, gt_array, tol=1/4):
     precision = tp_num/(fp_num+tp_num) * 100 if fp_num+tp_num != 0 else 0
     recall = tp_num/(fn_num+tp_num) * 100 if fn_num+tp_num != 0 else 0
 
-    return np.mean(errs), precision, recall, jaccard, tp_num, fp_num, fn_num
+    rmse = np.nanmean(err) if len(err) > 0 else float('NaN')
+
+    return rmse, precision, recall, jaccard, tp_num, fp_num, fn_num
