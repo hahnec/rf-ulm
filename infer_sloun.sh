@@ -1,7 +1,7 @@
 #!/bin/bash
 
 #SBATCH --job-name="sloun"
-#SBATCH --time=23:00:00
+#SBATCH --time=06:00:00
 
 #SBATCH --mail-user=christopher.hahne@unibe.ch
 #SBATCH --mail-type=none
