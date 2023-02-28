@@ -210,6 +210,10 @@ unet_rmse_mean = torch.nanmean(errs[..., 0], axis=0)
 unet_rmse_std = torch.std(errs[..., 0][~torch.isnan(errs[..., 0])], axis=0)
 print('Acc. Errors: %s' % str(torch.nanmean(errs, axis=0)))
 
+# remove empty arrays
+all_pts = [p for p in all_pts if p.size > 0]
+all_pts_gt = [p for p in all_pts_gt if p.size > 0]
+
 unet_ulm_img, _ = tracks2img((np.vstack(all_pts)-origin), img_size=np.array([84, 134]), scale=10, mode='all_in')
 gtru_ulm_img, _ = tracks2img((np.vstack(all_pts_gt)-origin)[:, ::-1], img_size=np.array([84, 134]), scale=10, mode='all_in')
 
