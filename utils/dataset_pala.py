@@ -10,6 +10,9 @@ from typing import Union, List, Tuple
 from omegaconf import OmegaConf
 import cv2
 
+
+from utils.speckle_noise import add_pala_noise
+
 sample2dist = lambda x, c=345, fkHz=175.642, sample_rate=1: c/2 * x / sample_rate / fkHz
 dist2sample = lambda d, c=345, fkHz=175.642, sample_rate=1: 2/c * d * fkHz * sample_rate
 
@@ -30,6 +33,7 @@ class InSilicoDataset(Dataset):
             angle_threshold: float = None,
             blur_opt: bool = False,
             tile_opt: bool = False,
+            clutter_db: float = None,
             ):
 
         torch.manual_seed(3008)
@@ -44,6 +48,7 @@ class InSilicoDataset(Dataset):
         self.rf_opt = rf_opt if rf_opt is not None else rf_opt
         self.blur_opt = blur_opt if blur_opt is not None else blur_opt
         self.tile_opt = tile_opt if tile_opt is not None else tile_opt
+        self.clutter_db = clutter_db if clutter_db is not None else 0
 
         # exclude echoes from points at steep angles
         self.angle_threshold = angle_threshold if angle_threshold is not None else 1e9
@@ -279,6 +284,9 @@ class InSilicoDataset(Dataset):
 
         if self.transforms is not None:
             frame, gt_frame = self.transforms(frame, gt_frame)
+
+        if torch.isreal(self.clutter_db) and self.clutter_db < 0:
+            frame = add_pala_noise(frame, clutter_db=self.clutter_db)
 
         return frame, gt_frame, gt_samples, gt_points
     

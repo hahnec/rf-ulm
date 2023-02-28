@@ -141,6 +141,7 @@ if __name__ == '__main__':
         rescale_factor = cfg.rescale_factor,
         blur_opt = False,
         tile_opt = False,
+        clutter_db = cfg.clutter_db,
         )
     wavelength = 9.856e-05
     origin = np.array([-72,  16])

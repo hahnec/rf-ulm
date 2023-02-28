@@ -5,8 +5,8 @@ device: 'cpu'  #'cuda' #
 plot_opt: false
 rescale_factor: 8 #10 #
 blur_opt: True
-nms_threshold: 0.075  #0.2
-gamma: 0.75
+nms_threshold: 0.05 #0.075  #0.2	#0.13
+clutter_db: -40
 
 data_path: PALA_data_InSilicoFlow/
 ubx_dir: /storage/homefs/ch21z139/PALA_dataset/${data_path}
