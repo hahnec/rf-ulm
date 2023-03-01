@@ -256,7 +256,7 @@ class InSilicoDataset(Dataset):
             # adjust ground-truth points
             pad_pts = torch.nn.functional.pad(gt_pts, (0, 2-gt_pts.shape[1], 0, 50-gt_pts.shape[0]), "constant", float('NaN'))
 
-            if torch.isreal(self.clutter_db) and self.clutter_db < 0:
+            if np.isreal(self.clutter_db) and self.clutter_db < 0:
                 frame = add_pala_noise(frame, clutter_db=self.clutter_db)
 
             return frame, gt_frame, pad_pts#, gt_points
@@ -288,7 +288,7 @@ class InSilicoDataset(Dataset):
         if self.transforms is not None:
             frame, gt_frame = self.transforms(frame, gt_frame)
 
-        if torch.isreal(self.clutter_db) and self.clutter_db < 0:
+        if np.isreal(self.clutter_db) and self.clutter_db < 0:
             frame = add_pala_noise(frame, clutter_db=self.clutter_db)
 
         return frame, gt_frame, gt_samples, gt_points
