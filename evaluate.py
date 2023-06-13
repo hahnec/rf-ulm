@@ -46,7 +46,7 @@ def evaluate(net, dataloader, device, amp, cfg):
             gt_pts = [gt_pt[~(torch.isnan(gt_pt.squeeze()).sum(-1) > 0), :].numpy()[:, ::-1] for gt_pt in gt_pts]#gt_pts[:, ~(torch.isnan(gt_pts.squeeze()).sum(-1) > 0)].numpy()[:, ::-1]
             pala_err_batch = get_pala_error(masks_nms.cpu().numpy().squeeze(1), gt_pts, rescale_factor=cfg.rescale_factor)
 
-            if net.n_classes == 1:
+            if cfg.model in ('unet', 'mspcn'):
                 assert mask_true.min() >= 0 and mask_true.max() <= 1, 'True mask indices should be in [0, 1]'
                 #mask_pred = (F.sigmoid(mask_pred) > 0.5).float()
                 # compute the Dice score
