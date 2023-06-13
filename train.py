@@ -99,6 +99,7 @@ def train_model(
     criterion = nn.MSELoss(reduction='mean')
     l1loss = nn.L1Loss(reduction='mean')
     global_step = 0
+    lambda_value = 0.01 if cfg.model.__contains__('unet') else 1
     
     # mSPCN Gaussian
     psf_heatmap = torch.from_numpy(matlab_style_gauss2D(shape=(7,7),sigma=1))
@@ -124,7 +125,7 @@ def train_model(
                         masks_true = F.conv2d(masks_true, gfilter)
                         
                     loss = criterion(masks_pred.squeeze(1), masks_true.squeeze(1).float())
-                    loss += l1loss(masks_pred.squeeze(1), torch.zeros_like(masks_pred.squeeze(1))) * 0.01
+                    loss += l1loss(masks_pred.squeeze(1), torch.zeros_like(masks_pred.squeeze(1))) * lambda_value
 
 
                 # activation followed by non-maximum suppression
