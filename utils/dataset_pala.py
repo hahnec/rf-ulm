@@ -241,7 +241,7 @@ class InSilicoDataset(Dataset):
             
             # rescale frame
             hw = (self.rescale_factor * frame.shape[0], self.rescale_factor * frame.shape[1])
-            frame = cv2.resize(abs(frame), hw[::-1], interpolation = cv2.INTER_CUBIC) if self.rescale_frame else frame
+            frame = cv2.resize(abs(frame), hw[::-1], interpolation = cv2.INTER_CUBIC) if self.rescale_frame else abs(frame)
             
             # create ground-truth frame
             gt_frame = self.points2frame(gt_points)
