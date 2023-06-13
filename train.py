@@ -53,7 +53,7 @@ def train_model(
         transforms = transforms,
         rf_opt = False,
         sequences = [15, 16, 17, 18, 19],
-        rescale_factor = cfg.rescale_factor,
+        rescale_factor = 8 if cfg.model.__contains__('unet') else 4,
         rescale_frame = True if cfg.model.__contains__('unet') else False,
         blur_opt=cfg.blur_opt,
         tile_opt=True if cfg.model.__contains__('unet') else False,
