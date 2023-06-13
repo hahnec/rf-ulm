@@ -94,8 +94,7 @@ def train_model(
     scheduler = optim.lr_scheduler.ReduceLROnPlateau(optimizer, 'max', patience=5)  # goal: maximize Dice score
     #scheduler = optim.lr_scheduler.StepLR(optimizer, step_size=100, gamma=1.0)
     grad_scaler = torch.cuda.amp.GradScaler(enabled=amp)
-    criterion = nn.CrossEntropyLoss() if model.n_classes > 1 else nn.BCEWithLogitsLoss()
-    criterion = nn.MSELoss(reduction='mean') if model._get_name().lower().__contains__('sloun') else criterion
+    criterion = nn.MSELoss(reduction='mean')
     l1loss = nn.L1Loss(reduction='mean')
     global_step = 0
     #gaussian_blur = transforms.GaussianBlur(7, sigma=(1.0, 1.0))
@@ -109,32 +108,14 @@ def train_model(
                 #images, true_masks = batch['image'], batch['mask']
                 images, true_masks = batch[:2]
 
-                assert images.shape[1] == model.n_channels, \
-                    f'Network has been defined with {model.n_channels} input channels, ' \
-                    f'but loaded images have {images.shape[1]} channels. Please check that ' \
-                    'the images are loaded correctly.'
-
                 images = images.to(device=device, dtype=torch.float32, memory_format=torch.channels_last)
                 true_masks = true_masks.to(device=device)#, dtype=torch.long)
 
                 with torch.autocast(device.type if device.type != 'mps' else 'cpu', enabled=amp):
                     masks_pred = model(images)
-                    if model._get_name().lower().__contains__('sloun'):
-                        loss = criterion(masks_pred.squeeze(1), true_masks.squeeze(1).float())
-                        loss += l1loss(masks_pred.squeeze(1), torch.zeros_like(masks_pred.squeeze(1))) * 0.01
-                    elif model.n_classes == 1:
-                        blur_masks = gaussian_blur(true_masks)
-                        loss = criterion(masks_pred.squeeze(1), blur_masks.squeeze(1).float())
-                        #loss += dice_loss(F.sigmoid(masks_pred.squeeze(1)), true_masks.squeeze(1).float(), multiclass=False)
-                        loss += l1loss(masks_pred.squeeze(1), torch.zeros_like(masks_pred.squeeze(1))) * 0.01
-                    else:
-                        loss = criterion(masks_pred, true_masks)
-                        loss += dice_loss(
-                            F.softmax(masks_pred, dim=1).float(),
-                            F.one_hot(true_masks, model.n_classes).permute(0, 3, 1, 2).float(),
-                            multiclass=True
-                        )
-                
+                    loss = criterion(masks_pred.squeeze(1), true_masks.squeeze(1).float())
+                    loss += l1loss(masks_pred.squeeze(1), torch.zeros_like(masks_pred.squeeze(1))) * 0.01
+
                 # activation followed by non-maximum suppression
                 masks_pred = torch.sigmoid(masks_pred)
                 imgs_nms = non_max_supp(masks_pred)
