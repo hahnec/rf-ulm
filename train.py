@@ -18,6 +18,7 @@ from omegaconf import OmegaConf
 from evaluate import evaluate, non_max_supp
 from unet import UNet, SlounUNet, SlounAdaptUNet
 from mspcn.model import Net
+from mspcn.main import matlab_style_gauss2D
 from utils.dataset_pala import InSilicoDataset
 from utils.dice_score import dice_loss
 from utils.transform import RandomHorizontalFlip, RandomVerticalFlip, RandomRotation, GaussianNoise
@@ -55,7 +56,7 @@ def train_model(
         sequences = [15, 16, 17, 18, 19],
         rescale_factor = 8 if cfg.model.__contains__('unet') else 4,
         rescale_frame = True if cfg.model.__contains__('unet') else False,
-        blur_opt=cfg.blur_opt,
+        blur_opt=cfg.blur_opt if cfg.model.__contains__('unet') else False,
         tile_opt=True if cfg.model.__contains__('unet') else False,
         )
 
@@ -98,6 +99,10 @@ def train_model(
     criterion = nn.MSELoss(reduction='mean')
     l1loss = nn.L1Loss(reduction='mean')
     global_step = 0
+    
+    # mSPCN Gaussian
+    psf_heatmap = torch.from_numpy(matlab_style_gauss2D(shape=(7,7),sigma=1))
+    gfilter = torch.reshape(psf_heatmap, [1, 1, 7, 7])
 
     # 5. Begin training
     for epoch in range(1, epochs+1):
@@ -105,20 +110,26 @@ def train_model(
         epoch_loss = 0
         with tqdm(total=n_train, desc=f'Epoch {epoch}/{epochs}', unit='img') as pbar:
             for batch in train_loader:
-                images, true_masks = batch[:2]
+                images, masks_true = batch[:2]
 
                 images = images.to(device=device, dtype=torch.float32, memory_format=torch.channels_last)
-                true_masks = true_masks.to(device=device)#, dtype=torch.long)
+                masks_true = masks_true.to(device=device)#, dtype=torch.long)
 
                 with torch.autocast(device.type if device.type != 'mps' else 'cpu', enabled=amp):
                     masks_pred = model(images)
-                    loss = criterion(masks_pred.squeeze(1), true_masks.squeeze(1).float())
+
+                    if cfg.model == 'mspcn':
+                        masks_pred = F.conv2d(masks_pred, gfilter)
+                        masks_true = F.conv2d(masks_true, gfilter)
+                        
+                    loss = criterion(masks_pred.squeeze(1), masks_true.squeeze(1).float())
                     loss += l1loss(masks_pred.squeeze(1), torch.zeros_like(masks_pred.squeeze(1))) * 0.01
 
+
                 # activation followed by non-maximum suppression
-                masks_pred = torch.sigmoid(masks_pred)
-                imgs_nms = non_max_supp(masks_pred)
-                masks_nms = imgs_nms > cfg.nms_threshold
+                #masks_pred = torch.sigmoid(masks_pred)
+                #imgs_nms = non_max_supp(masks_pred)
+                #masks_nms = imgs_nms > cfg.nms_threshold
 
                 optimizer.zero_grad(set_to_none=True)
                 grad_scaler.scale(loss).backward()
@@ -148,8 +159,8 @@ def train_model(
                                 histograms['Weights/' + tag] = wandb.Histogram(value.data.cpu())
                             if not torch.isinf(value.grad).any() and not torch.isnan(value.grad).any():
                                 histograms['Gradients/' + tag] = wandb.Histogram(value.grad.data.cpu())
-
-                        val_score, pala_err_batch, _, threshold = evaluate(model, val_loader, device, amp, cfg)
+                        
+                        val_score, pala_err_batch, masks_nms, threshold = evaluate(model, val_loader, device, amp, cfg)
                         scheduler.step(val_score)
 
                         rmse, precision, recall, jaccard, tp_num, fp_num, fn_num = pala_err_batch
@@ -162,7 +173,7 @@ def train_model(
                                     'validation Dice': val_score,
                                     'images': wandb.Image(images[0].cpu()),
                                     'masks': {
-                                        'true': wandb.Image(img_norm(true_masks[0].float().cpu())*255),
+                                        'true': wandb.Image(img_norm(masks_true[0].float().cpu())*255),
                                         'pred': wandb.Image(img_norm(masks_pred[0].float().cpu())*255),    #(masks_pred.argmax(dim=1)[0]).float().cpu()),#
                                         'nms': wandb.Image(img_norm(masks_nms[0].float().cpu())*255),
                                     },
