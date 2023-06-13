@@ -29,6 +29,7 @@ class InSilicoDataset(Dataset):
             rf_opt: bool = True,
             sequences: Union[List, Tuple] = None,
             rescale_factor: float = None,
+            rescale_frame: float = False,
             ch_gap: int = None,
             angle_threshold: float = None,
             blur_opt: bool = False,
@@ -44,6 +45,7 @@ class InSilicoDataset(Dataset):
         self.transforms = transforms
         self.sequences = [0] if sequences is None else sequences
         self.rescale_factor = 1 if rescale_factor is None else rescale_factor
+        self.rescale_frame = 1 if rescale_frame is None else rescale_frame
         self.ch_gap = 1 if ch_gap is None else ch_gap
         self.rf_opt = rf_opt if rf_opt is not None else rf_opt
         self.blur_opt = blur_opt if blur_opt is not None else blur_opt
@@ -239,7 +241,7 @@ class InSilicoDataset(Dataset):
             
             # rescale frame
             hw = (self.rescale_factor * frame.shape[0], self.rescale_factor * frame.shape[1])
-            frame = cv2.resize(abs(frame), hw[::-1], interpolation = cv2.INTER_CUBIC)
+            frame = cv2.resize(abs(frame), hw[::-1], interpolation = cv2.INTER_CUBIC) if self.rescale_frame else frame
             
             # create ground-truth frame
             gt_frame = self.points2frame(gt_points)

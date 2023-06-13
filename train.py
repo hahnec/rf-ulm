@@ -54,8 +54,9 @@ def train_model(
         rf_opt = False,
         sequences = [15, 16, 17, 18, 19],
         rescale_factor = cfg.rescale_factor,
+        rescale_frame = True if cfg.model.__contains__('unet') else False,
         blur_opt=cfg.blur_opt,
-        tile_opt=True,
+        tile_opt=cfg.tile_opt,
         )
 
     # 2. Split into train / validation partitions
