@@ -105,6 +105,7 @@ def train_model(
     psf_heatmap = torch.from_numpy(matlab_style_gauss2D(shape=(7,7),sigma=1))
     gfilter = torch.reshape(psf_heatmap, [1, 1, 7, 7])
     gfilter = gfilter.to(device)
+    amplitude = 50 if cfg.model.__contains__('mspcn') else 1
 
     # 5. Begin training
     for epoch in range(1, epochs+1):
@@ -116,6 +117,7 @@ def train_model(
 
                 images = images.to(device=device, dtype=torch.float32, memory_format=torch.channels_last)
                 masks_true = masks_true.to(device=device).float()#, dtype=torch.long)
+                masks_true *= amplitude
 
                 with torch.autocast(device.type if device.type != 'mps' else 'cpu', enabled=amp):
                     masks_pred = model(images)
