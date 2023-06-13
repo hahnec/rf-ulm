@@ -226,6 +226,10 @@ class InSilicoDataset(Dataset):
         frame_raw, label_raw, metadata = (self.all_frames[idx], self.all_labels[idx], self.all_metads[0])
         frame = self.compose_frame(frame_raw, metadata) if self.rf_opt else frame_raw
 
+        # absolute and normalize
+        frame = abs(frame)
+        frame = (frame-frame.min())/(frame.max()-frame.min())
+
         # convert label data to ground-truth representation(s)
         nan_idcs = np.isnan(label_raw[0]) & np.isnan(label_raw[2])
         gt_points = label_raw[:, ~nan_idcs] * metadata['wavelength']
@@ -241,7 +245,7 @@ class InSilicoDataset(Dataset):
             
             # rescale frame
             hw = (self.rescale_factor * frame.shape[0], self.rescale_factor * frame.shape[1])
-            frame = cv2.resize(abs(frame), hw[::-1], interpolation = cv2.INTER_CUBIC) if self.rescale_frame else abs(frame)
+            frame = cv2.resize(frame, hw[::-1], interpolation = cv2.INTER_CUBIC) if self.rescale_frame else frame
             
             # create ground-truth frame
             gt_frame = self.points2frame(gt_points)
