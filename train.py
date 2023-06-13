@@ -114,7 +114,7 @@ def train_model(
                 images, masks_true = batch[:2]
 
                 images = images.to(device=device, dtype=torch.float32, memory_format=torch.channels_last)
-                masks_true = masks_true.to(device=device)#, dtype=torch.long)
+                masks_true = masks_true.to(device=device).float()#, dtype=torch.long)
 
                 with torch.autocast(device.type if device.type != 'mps' else 'cpu', enabled=amp):
                     masks_pred = model(images)
