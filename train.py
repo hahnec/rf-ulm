@@ -56,7 +56,7 @@ def train_model(
         rescale_factor = cfg.rescale_factor,
         rescale_frame = True if cfg.model.__contains__('unet') else False,
         blur_opt=cfg.blur_opt,
-        tile_opt=cfg.tile_opt,
+        tile_opt=True if cfg.model.__contains__('unet') else False,
         )
 
     # 2. Split into train / validation partitions
