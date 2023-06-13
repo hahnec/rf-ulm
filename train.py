@@ -103,7 +103,7 @@ def train_model(
     # mSPCN Gaussian
     psf_heatmap = torch.from_numpy(matlab_style_gauss2D(shape=(7,7),sigma=1))
     gfilter = torch.reshape(psf_heatmap, [1, 1, 7, 7])
-    gfilter.to(device)
+    gfilter = gfilter.to(device)
 
     # 5. Begin training
     for epoch in range(1, epochs+1):
