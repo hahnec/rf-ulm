@@ -97,7 +97,6 @@ def train_model(
     criterion = nn.MSELoss(reduction='mean')
     l1loss = nn.L1Loss(reduction='mean')
     global_step = 0
-    #gaussian_blur = transforms.GaussianBlur(7, sigma=(1.0, 1.0))
 
     # 5. Begin training
     for epoch in range(1, epochs+1):
@@ -105,7 +104,6 @@ def train_model(
         epoch_loss = 0
         with tqdm(total=n_train, desc=f'Epoch {epoch}/{epochs}', unit='img') as pbar:
             for batch in train_loader:
-                #images, true_masks = batch['image'], batch['mask']
                 images, true_masks = batch[:2]
 
                 images = images.to(device=device, dtype=torch.float32, memory_format=torch.channels_last)
