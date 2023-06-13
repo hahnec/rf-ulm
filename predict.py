@@ -18,6 +18,7 @@ import matplotlib.pyplot as plt
 from evaluate import non_max_supp, get_pala_error
 from utils.data_loading import BasicDataset
 from unet import UNet, SlounUNet, SlounAdaptUNet
+from mspcn.model import Net
 from utils.dataset_pala import InSilicoDataset
 from utils.utils import plot_img_and_mask
 from utils.pala_error import rmse_unique
@@ -119,9 +120,19 @@ if __name__ == '__main__':
         experiment = wandb.init(project='pulm', resume='allow', anonymous='must', config=cfg)
         experiment.config.update(cfg)
 
-    net = UNet(n_channels=1, n_classes=1, bilinear=args.bilinear)
-    #net = SlounUNet(n_channels=1, n_classes=1, bilinear=False)
-    net = SlounAdaptUNet(n_channels=1, n_classes=1, bilinear=False)
+    # Model selection
+    if cfg.model == 'unet':
+        # UNet model
+        # n_channels=3 for RGB images
+        # n_classes is the number of probabilities you want to get per pixel
+        net = UNet(n_channels=1, n_classes=1, bilinear=args.bilinear)
+        #model = SlounUNet(n_channels=1, n_classes=1, bilinear=False)
+        net = SlounAdaptUNet(n_channels=1, n_classes=1, bilinear=False)
+    elif cfg.model == 'mspcn':
+        # mSPCN model
+        net = Net(upscale_factor=4)
+    else:
+        raise Exception('Model name not recognized')
 
     device = torch.device(cfg.device)
     logging.info(f'Loading model {cfg.model_path}')

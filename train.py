@@ -17,6 +17,7 @@ from omegaconf import OmegaConf
 
 from evaluate import evaluate, non_max_supp
 from unet import UNet, SlounUNet, SlounAdaptUNet
+from mspcn.model import Net
 from utils.dataset_pala import InSilicoDataset
 from utils.dice_score import dice_loss
 from utils.transform import RandomHorizontalFlip, RandomVerticalFlip, RandomRotation, GaussianNoise
@@ -68,7 +69,6 @@ def train_model(
     val_loader = DataLoader(val_set, shuffle=False, drop_last=True, **loader_args)
 
     # (Initialize logging)
-
     if cfg.logging:
         experiment = wandb.init(project='U-Net', resume='allow', anonymous='must', config=cfg)
         experiment.config.update(
@@ -235,18 +235,21 @@ if __name__ == '__main__':
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     logging.info(f'Using device {device}')
 
-    # Change here to adapt to your data
-    # n_channels=3 for RGB images
-    # n_classes is the number of probabilities you want to get per pixel
-    model = UNet(n_channels=1, n_classes=1, bilinear=args.bilinear)
-    #model = SlounUNet(n_channels=1, n_classes=1, bilinear=False)
-    model = SlounAdaptUNet(n_channels=1, n_classes=1, bilinear=False)
-    model = model.to(memory_format=torch.channels_last)
+    # Model selection
+    if cfg.model == 'unet':
+        # UNet model
+        # n_channels=3 for RGB images
+        # n_classes is the number of probabilities you want to get per pixel
+        model = UNet(n_channels=1, n_classes=1, bilinear=args.bilinear)
+        #model = SlounUNet(n_channels=1, n_classes=1, bilinear=False)
+        model = SlounAdaptUNet(n_channels=1, n_classes=1, bilinear=False)
+    elif cfg.model == 'mspcn':
+        # mSPCN model
+        model = Net(upscale_factor=4)
+    else:
+        raise Exception('Model name not recognized')
 
-    logging.info(f'Network:\n'
-                 f'\t{model.n_channels} input channels\n'
-                 f'\t{model.n_classes} output channels (classes)\n'
-                 f'\t{"Bilinear" if model.bilinear else "Transposed conv"} upscaling')
+    model = model.to(memory_format=torch.channels_last)
 
     if args.load:
         state_dict = torch.load(args.load, map_location=device)
