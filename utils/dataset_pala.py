@@ -228,7 +228,7 @@ class InSilicoDataset(Dataset):
 
         # absolute and normalize
         frame = abs(frame)
-        frame = (frame-frame.min())/(frame.max()-frame.min())
+        #frame = (frame-frame.min())/(frame.max()-frame.min())
 
         # convert label data to ground-truth representation(s)
         nan_idcs = np.isnan(label_raw[0]) & np.isnan(label_raw[2])
