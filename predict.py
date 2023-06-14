@@ -45,12 +45,9 @@ def predict_img(net,
         comp_time = time.time() - start
         #output = F.interpolate(output, (full_img.size[1], full_img.size[0]), mode='bilinear')
         output = output.cpu()
-        if net.n_classes > 1:
-            mask = output.argmax(dim=1)
-        else:
-            # non-maximum suppression
-            nms = non_max_supp(output)
-            mask = nms > cfg.nms_threshold
+        # non-maximum suppression
+        nms = non_max_supp(output)
+        mask = nms > cfg.nms_threshold
 
     return mask[0].long().numpy(), output, comp_time
 
