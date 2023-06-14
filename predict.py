@@ -114,9 +114,6 @@ if __name__ == '__main__':
 
     cfg = OmegaConf.load('./pala_unet.yml')
 
-    # upscaling according to approach
-    cfg.rescale_factor = 8 if cfg.model.__contains__('unet') else 4
-
     if cfg.logging:
         experiment = wandb.init(project='pulm', resume='allow', anonymous='must', config=cfg)
         experiment.config.update(cfg)
@@ -131,7 +128,7 @@ if __name__ == '__main__':
         net = SlounAdaptUNet(n_channels=1, n_classes=1, bilinear=False)
     elif cfg.model == 'mspcn':
         # mSPCN model
-        net = Net(upscale_factor=4)
+        net = Net(upscale_factor=cfg.rescale_factor)
     else:
         raise Exception('Model name not recognized')
 

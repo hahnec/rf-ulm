@@ -54,7 +54,7 @@ def train_model(
         transforms = transforms,
         rf_opt = False,
         sequences = [15, 16, 17, 18, 19],
-        rescale_factor = 8 if cfg.model.__contains__('unet') else 4,
+        rescale_factor = cfg.rescale_factor,
         rescale_frame = True if cfg.model.__contains__('unet') else False,
         blur_opt=cfg.blur_opt if cfg.model.__contains__('unet') else False,
         tile_opt=True if cfg.model.__contains__('unet') else False,
@@ -240,7 +240,7 @@ if __name__ == '__main__':
         model = SlounAdaptUNet(n_channels=1, n_classes=1, bilinear=False)
     elif cfg.model == 'mspcn':
         # mSPCN model
-        model = Net(upscale_factor=4)
+        model = Net(upscale_factor=cfg.rescale_factor)
     else:
         raise Exception('Model name not recognized')
 
