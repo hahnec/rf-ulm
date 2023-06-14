@@ -8,7 +8,7 @@ from sklearn.metrics import precision_recall_curve
 from utils.dice_score import multiclass_dice_coeff, dice_coeff
 from utils.pala_error import rmse_unique
 from utils.non_max_supp import NonMaxSuppression
-
+from utils.radial_pala import radial_pala
 
 @torch.inference_mode()
 def evaluate(net, dataloader, device, amp, cfg):
@@ -63,7 +63,7 @@ def evaluate(net, dataloader, device, amp, cfg):
     return dice_score / max(num_val_batches, 1), pala_err_batch, masks_nms, threshold
 
 
-def get_pala_error(mask_pred: np.ndarray, gt_points: np.ndarray, rescale_factor: float = 1, sr_img=None):
+def get_pala_error(mask_pred: np.ndarray, gt_points: np.ndarray, rescale_factor: float = 1, sr_img=None, avg_weight_opt=False, radial_sym_opt=False):
 
     wavelength = 9.856e-05
     origin = np.array([-72, 16])
@@ -76,7 +76,7 @@ def get_pala_error(mask_pred: np.ndarray, gt_points: np.ndarray, rescale_factor:
         pts_gt = true_frame_pts[:, ::-1] / rescale_factor + origin[:, None].T
 
         # do weighting based on super-resolved image
-        if not sr_img is None:
+        if not sr_img is None and avg_weight_opt:
             w = 4
             coords = np.stack(np.meshgrid(np.arange(-w, w+1), np.arange(-w, w+1)))
             for i, pt in enumerate(pts):
@@ -88,6 +88,9 @@ def get_pala_error(mask_pred: np.ndarray, gt_points: np.ndarray, rescale_factor:
                 except ValueError:
                     pass
                 pts[i] = pt[::-1] / rescale_factor + origin
+        
+        # apply radial symmetry
+        if radial_sym_opt: pts[:, :2] = radial_pala(sr_img, pts[:, :2], w=2)
 
         result = rmse_unique(pts, pts_gt, tol=1/4)
         results.append(result)

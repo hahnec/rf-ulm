@@ -176,7 +176,7 @@ if __name__ == '__main__':
                             device=device)
 
             gt_pts = gt_pts[:, ~(torch.isnan(gt_pts.squeeze()).sum(-1) > 0)].numpy()[:, ::-1]
-            result = get_pala_error(mask, gt_pts, rescale_factor=cfg.rescale_factor, sr_img=output.squeeze().cpu().numpy())
+            result = get_pala_error(mask, gt_pts, rescale_factor=cfg.rescale_factor, sr_img=output.squeeze().cpu().numpy(), avg_weight_opt=cfg.avg_weight_opt, radial_sym_opt=cfg.radial_sym_opt)
             ac_rmse_err.append(result)
 
             if cfg.logging:
