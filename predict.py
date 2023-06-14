@@ -23,6 +23,7 @@ from utils.dataset_pala import InSilicoDataset
 from utils.utils import plot_img_and_mask
 from utils.pala_error import rmse_unique
 from utils.srgb_conv import srgb_conv
+from utils.radial_pala import radial_pala
 from simple_tracker.tracks2img import tracks2img
 from sklearn.metrics import roc_curve
 from sklearn.metrics import precision_recall_curve
@@ -175,8 +176,10 @@ if __name__ == '__main__':
                             out_threshold=cfg.nms_threshold,
                             device=device)
 
+            output = output.float().squeeze().cpu().numpy()
+
             gt_pts = gt_pts[:, ~(torch.isnan(gt_pts.squeeze()).sum(-1) > 0)].numpy()[:, ::-1]
-            result = get_pala_error(mask, gt_pts, rescale_factor=cfg.rescale_factor, sr_img=output.squeeze().cpu().numpy(), avg_weight_opt=cfg.avg_weight_opt, radial_sym_opt=cfg.radial_sym_opt)
+            result = get_pala_error(mask, gt_pts, rescale_factor=cfg.rescale_factor, sr_img=output, avg_weight_opt=cfg.avg_weight_opt, radial_sym_opt=cfg.radial_sym_opt)
             ac_rmse_err.append(result)
 
             if cfg.logging:
@@ -202,7 +205,7 @@ if __name__ == '__main__':
                 logging.info(f'Visualizing results for image, close to continue...')
                 plot_img_and_mask(img.squeeze(), mask.squeeze())
 
-            fpr, tpr, thresholds = roc_curve(true_mask.float().numpy().flatten(), output.float().numpy().flatten())
+            fpr, tpr, thresholds = roc_curve(true_mask.float().numpy().flatten(), output.flatten())
             #precision, recall, thresholds = precision_recall_curve(true_mask.float().numpy().flatten(), output.float().numpy().flatten())
 
             # calculate the g-mean for each threshold
@@ -212,7 +215,11 @@ if __name__ == '__main__':
 
             if gt_pts.size == 0:
                 continue
-            pts = (np.array(np.nonzero(mask[0, ...]))[::-1] / cfg.rescale_factor + origin[:, None]).T
+            
+            ms_pts = np.array(np.nonzero(mask[0, ...]))
+            if cfg.radial_sym_opt: ms_pts[:, :2] = radial_pala(output, ms_pts[:, :2], w=2)
+
+            pts = (ms_pts[::-1] / cfg.rescale_factor + origin[:, None]).T
             pts_gt = gt_pts[0, ::-1] / cfg.rescale_factor + origin[:, None].T
             all_pts.append(pts)
             all_pts_gt.append(pts_gt)
