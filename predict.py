@@ -209,6 +209,7 @@ if __name__ == '__main__':
             gmeans = (tpr * (1-fpr))**.5
             th_idx = np.argmax(gmeans)
             threshold = thresholds[th_idx]
+            print(threshold)
 
             if gt_pts.size == 0:
                 continue
@@ -240,8 +241,8 @@ unet_ulm_img = srgb_conv(normalize(unet_ulm_img))
 gtru_ulm_img = srgb_conv(normalize(gtru_ulm_img))
 
 # color mapping
-unet_ulm_img = img_color_map(img=normalize(unet_ulm_img), cmap='inferno')
-gtru_ulm_img = img_color_map(img=normalize(gtru_ulm_img), cmap='inferno')
+unet_ulm_img = img_color_map(img=normalize(unet_ulm_img), cmap='hot')
+gtru_ulm_img = img_color_map(img=normalize(gtru_ulm_img), cmap='hot')
 
 if cfg.logging:
     wandb.summary['ULM/TotalRMSE'] = unet_rmse_mean
