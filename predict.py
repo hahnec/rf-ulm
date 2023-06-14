@@ -113,6 +113,9 @@ if __name__ == '__main__':
 
     cfg = OmegaConf.load('./pala_unet.yml')
 
+    # upscaling according to approach
+    cfg.rescale_factor = 8 if cfg.model.__contains__('unet') else 4
+
     if cfg.logging:
         experiment = wandb.init(project='pulm', resume='allow', anonymous='must', config=cfg)
         experiment.config.update(cfg)
@@ -146,7 +149,7 @@ if __name__ == '__main__':
         dataset_path=cfg.data_dir,
         rf_opt = False,
         sequences = list(range(0, 15)),
-        rescale_factor = 8 if cfg.model.__contains__('unet') else 4,
+        rescale_factor = cfg.rescale_factor,
         rescale_frame = True if cfg.model.__contains__('unet') else False,
         blur_opt = False,
         tile_opt = False,
