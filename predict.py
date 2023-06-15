@@ -24,6 +24,7 @@ from utils.utils import plot_img_and_mask
 from utils.pala_error import rmse_unique
 from utils.srgb_conv import srgb_conv
 from utils.radial_pala import radial_pala
+from utils.centroids import regional_mask
 from simple_tracker.tracks2img import tracks2img
 from sklearn.metrics import roc_curve
 from sklearn.metrics import precision_recall_curve
@@ -34,7 +35,8 @@ def predict_img(net,
                 img,
                 device,
                 scale_factor=1,
-                out_threshold=0.5):
+                out_threshold=0.5
+                ):
     net.eval()
     #img = torch.from_numpy(BasicDataset.preprocess(None, img, scale_factor, is_mask=False))
     #img = img.unsqueeze(0)
@@ -45,12 +47,16 @@ def predict_img(net,
         output = net(img)
         comp_time = time.time() - start
         #output = F.interpolate(output, (full_img.size[1], full_img.size[0]), mode='bilinear')
-        output = output.cpu()
+        output = output.squeeze().cpu()
         # non-maximum suppression
-        nms = non_max_supp(output)
-        mask = nms > cfg.nms_threshold
+        if False:
+            nms = non_max_supp(output)
+            mask = nms > out_threshold
+            mask = mask.long().numpy()
+        else:
+            mask = regional_mask(output.numpy(), th=out_threshold)
 
-    return mask[0].long().numpy(), output, comp_time
+    return mask[None, ...], output, comp_time
 
 
 def get_args():
