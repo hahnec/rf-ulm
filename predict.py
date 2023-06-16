@@ -241,7 +241,7 @@ unet_ulm_img, _ = tracks2img((np.vstack(all_pts)-origin), img_size=np.array([84,
 gtru_ulm_img, _ = tracks2img((np.vstack(all_pts_gt)-origin)[:, ::-1], img_size=np.array([84, 134]), scale=10, mode='all_in')
 
 scale_factor = 10 / cfg.rescale_factor
-unet_ulm_img = upscaled_image = rescale(unet_ulm_img, scale_factor, mode='reflect', anti_aliasing=True)
+unet_ulm_img = rescale(unet_ulm_img, scale_factor, mode='reflect', anti_aliasing=True)
 
 normalize = lambda x: (x-x.min())/(x.max()-x.min()) if x.max()-x.min() > 0 else x-x.min()
 
