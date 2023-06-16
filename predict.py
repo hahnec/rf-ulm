@@ -152,7 +152,7 @@ if __name__ == '__main__':
     dataset = InSilicoDataset(
         dataset_path=cfg.data_dir,
         rf_opt = False,
-        sequences = list(range(0, 15)),
+        sequences = list(range(1, 16)),
         rescale_factor = cfg.rescale_factor,
         rescale_frame = True if cfg.model.__contains__('unet') else False,
         blur_opt = False,
