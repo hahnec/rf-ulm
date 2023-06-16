@@ -28,6 +28,7 @@ from utils.centroids import regional_mask
 from simple_tracker.tracks2img import tracks2img
 from sklearn.metrics import roc_curve
 from sklearn.metrics import precision_recall_curve
+from skimage.transform import rescale
 from skimage.metrics import structural_similarity
 
 
@@ -236,8 +237,11 @@ print('Acc. Errors: %s' % str(torch.nanmean(errs, axis=0)))
 all_pts = [p for p in all_pts if p.size > 0]
 all_pts_gt = [p for p in all_pts_gt if p.size > 0]
 
-unet_ulm_img, _ = tracks2img((np.vstack(all_pts)-origin), img_size=np.array([84, 134]), scale=10, mode='all_in')
+unet_ulm_img, _ = tracks2img((np.vstack(all_pts)-origin), img_size=np.array([84, 134]), scale=cfg.rescale_factor, mode='all_in')
 gtru_ulm_img, _ = tracks2img((np.vstack(all_pts_gt)-origin)[:, ::-1], img_size=np.array([84, 134]), scale=10, mode='all_in')
+
+scale_factor = 10 / cfg.rescale_factor
+unet_ulm_img = upscaled_image = rescale(unet_ulm_img, scale_factor, mode='reflect', anti_aliasing=True)
 
 normalize = lambda x: (x-x.min())/(x.max()-x.min()) if x.max()-x.min() > 0 else x-x.min()
 

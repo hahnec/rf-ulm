@@ -42,10 +42,10 @@ def regional_mask(img_conv, th=None, point_num=None):
     point_num = -1 if point_num is None else point_num
 
     maxima = local_maxima(img_conv) * img_conv
-    maxima[:+2, :] = 0
-    maxima[-2:, :] = 0
-    maxima[:, :+2] = 0
-    maxima[:, -2:] = 0
+    #maxima[:+2, :] = 0
+    #maxima[-2:, :] = 0
+    #maxima[:, :+2] = 0
+    #maxima[:, -2:] = 0
     if th is None:
         th = np.sort(np.unique(maxima))[::-1][point_num-1] if point_num < len(np.unique(maxima)) else np.inf
     maxima[maxima<th] = 0
