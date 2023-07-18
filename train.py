@@ -19,9 +19,10 @@ from evaluate import evaluate, non_max_supp
 from unet import UNet, SlounUNet, SlounAdaptUNet
 from mspcn.model import Net
 from mspcn.main import matlab_style_gauss2D
-from utils.dataset_pala import InSilicoDataset
+from datasets.pala_dataset.pala_iq import PalaDatasetIq
+from datasets.pala_dataset.pala_rf import PalaDatasetRf
 from utils.dice_score import dice_loss
-from utils.transform import RandomHorizontalFlip, RandomVerticalFlip, RandomRotation, GaussianNoise
+from utils.transform import RandomHorizontalFlip, RandomVerticalFlip, RandomRotation, GaussianNoise, NormalizeVol
 
 dir_img = Path('./data/imgs/')
 dir_mask = Path('./data/masks/')
@@ -29,8 +30,6 @@ dir_checkpoint = Path('./checkpoints/')
 
 
 img_norm = lambda x: (x-x.min())/(x.max()-x.min()) if (x.max()-x.min()) != 0 else x
-
-transforms = [RandomHorizontalFlip(), RandomVerticalFlip(), RandomRotation(degree=5), GaussianNoise()]
 
 
 def train_model(
@@ -49,15 +48,23 @@ def train_model(
         cfg = None,
 ):
     # 1. Create dataset
-    dataset = InSilicoDataset(
+    if cfg.input_type == 'iq':
+        DatasetClass = PalaDatasetIq
+        transforms = [RandomHorizontalFlip(), RandomVerticalFlip(), RandomRotation(degree=5), GaussianNoise()]
+        collate_fn = None
+    elif cfg.input_type == 'rf':
+        DatasetClass = PalaDatasetRf
+        transforms = [NormalizeVol()]
+        from datasets.pala_dataset.utils.collate_fn import collate_fn
+    dataset = DatasetClass(
         dataset_path=cfg.data_dir,
         transforms = transforms,
-        rf_opt = False,
-        sequences = [16, 17, 18, 19, 20],
+        clutter_db = cfg.clutter_db,
+        sequences = [16, 17, 18, 19],
         rescale_factor = cfg.rescale_factor,
-        rescale_frame = True if cfg.model.__contains__('unet') else False,
-        blur_opt=cfg.blur_opt if cfg.model.__contains__('unet') else False,
-        tile_opt=True if cfg.model.__contains__('unet') else False,
+        temporal_filter_opt = False,
+        upscale_factor = cfg.upscale_factor,
+        tile_opt = True if cfg.model.__contains__('unet') else False,
         )
 
     # 2. Split into train / validation partitions
@@ -67,8 +74,8 @@ def train_model(
 
     # 3. Create data loaders
     loader_args = dict(batch_size=batch_size, num_workers=os.cpu_count(), pin_memory=True)
-    train_loader = DataLoader(train_set, shuffle=True, **loader_args)
-    val_loader = DataLoader(val_set, shuffle=False, drop_last=True, **loader_args)
+    train_loader = DataLoader(train_set, collate_fn=collate_fn, shuffle=True, **loader_args)
+    val_loader = DataLoader(val_set, collate_fn=collate_fn, shuffle=False, drop_last=True, **loader_args)
 
     # (Initialize logging)
     if cfg.logging:
@@ -113,22 +120,30 @@ def train_model(
         epoch_loss = 0
         with tqdm(total=n_train, desc=f'Epoch {epoch}/{epochs}', unit='img') as pbar:
             for batch in train_loader:
-                images, masks_true = batch[:2]
+                images, masks_true = batch[:2] if cfg.input_type == 'iq' else (batch[2][:, 1].unsqueeze(1), batch[-2][:, 1].unsqueeze(1))
 
                 images = images.to(device=device, dtype=torch.float32, memory_format=torch.channels_last)
                 masks_true = masks_true.to(device=device).float()#, dtype=torch.long)
-                masks_true *= amplitude
+
+                #import matplotlib.pyplot as plt
+                #fig, axs = plt.subplots(nrows=2,ncols=1)
+                #axs[0].imshow(images[0, 0].cpu().numpy())
+                ##axs[1].imshow(masks_true[0].cpu().numpy())
+                #axs[1].imshow(torch.dstack([masks_true[0, 0], images[0, 0], masks_true[0, 0]]).cpu().numpy())
+                #plt.show()
 
                 with torch.autocast(device.type if device.type != 'mps' else 'cpu', enabled=amp):
                     masks_pred = model(images)
 
+                    # mask blurring
+                    masks_true = F.conv2d(masks_true, gfilter, padding=gfilter.shape[-1]//2)
+                    masks_true /= masks_true.max()
+                    masks_true *= amplitude
                     if cfg.model == 'mspcn':
-                        masks_pred = F.conv2d(masks_pred, gfilter)
-                        masks_true = F.conv2d(masks_true, gfilter)
+                        masks_pred = F.conv2d(masks_pred, gfilter, padding=gfilter.shape[-1]//2)
                         
                     loss = criterion(masks_pred.squeeze(1), masks_true.squeeze(1).float())
                     loss += l1loss(masks_pred.squeeze(1), torch.zeros_like(masks_pred.squeeze(1))) * lambda_value
-
 
                 # activation followed by non-maximum suppression
                 #masks_pred = torch.sigmoid(masks_pred)
@@ -227,20 +242,22 @@ if __name__ == '__main__':
     cfg = OmegaConf.load('./pala_unet.yml')
 
     logging.basicConfig(level=logging.INFO, format='%(levelname)s: %(message)s')
-    device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+    device = torch.device(cfg.device)
     logging.info(f'Using device {device}')
+
+    in_channels = 1
 
     # Model selection
     if cfg.model == 'unet':
         # UNet model
         # n_channels=3 for RGB images
         # n_classes is the number of probabilities you want to get per pixel
-        model = UNet(n_channels=1, n_classes=1, bilinear=args.bilinear)
+        model = UNet(n_channels=in_channels, n_classes=1, bilinear=args.bilinear)
         #model = SlounUNet(n_channels=1, n_classes=1, bilinear=False)
-        model = SlounAdaptUNet(n_channels=1, n_classes=1, bilinear=False)
+        model = SlounAdaptUNet(n_channels=in_channels, n_classes=1, bilinear=False)
     elif cfg.model == 'mspcn':
         # mSPCN model
-        model = Net(upscale_factor=cfg.rescale_factor)
+        model = Net(upscale_factor=cfg.upscale_factor, in_channels=in_channels)
     else:
         raise Exception('Model name not recognized')
 

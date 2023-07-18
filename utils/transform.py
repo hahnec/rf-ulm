@@ -162,7 +162,7 @@ class RandomRotation(object):
 
     def __call__(self, img, mask):
         rotate_degree = random.random() * 2 * self.degree - self.degree
-        return F.rotate(img, rotate_degree), F.rotate(mask.unsqueeze(0), rotate_degree).squeeze()
+        return F.rotate(img, rotate_degree), F.rotate(mask, rotate_degree)
 
 
 class GaussianBlur(object):
@@ -252,6 +252,15 @@ class CLAHE(object):
             img = np.moveaxis(img, -1, 0)
 
         return exposure.equalize_adapthist(img), target
+
+
+class NormalizeVol(torch.nn.Module):
+    def __init__(self):
+        super(NormalizeVol, self).__init__()
+
+    def forward(self, waveform):
+
+        return waveform/abs(waveform).max()
 
 
 if __name__ == '__main__':

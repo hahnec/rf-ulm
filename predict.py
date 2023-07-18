@@ -14,22 +14,23 @@ import wandb
 import time
 from pathlib import Path
 import matplotlib.pyplot as plt
-
-from evaluate import non_max_supp, get_pala_error
-from utils.data_loading import BasicDataset
-from unet import UNet, SlounUNet, SlounAdaptUNet
-from mspcn.model import Net
-from utils.dataset_pala import InSilicoDataset
-from utils.utils import plot_img_and_mask
-from utils.pala_error import rmse_unique
-from utils.srgb_conv import srgb_conv
-from utils.radial_pala import radial_pala
-from utils.centroids import regional_mask
-from simple_tracker.tracks2img import tracks2img
 from sklearn.metrics import roc_curve
 from sklearn.metrics import precision_recall_curve
 from skimage.transform import rescale
 from skimage.metrics import structural_similarity
+from simple_tracker.tracks2img import tracks2img
+
+from datasets.pala_dataset.pala_iq import PalaDatasetIq
+from datasets.pala_dataset.pala_rf import PalaDatasetRf
+from datasets.pala_dataset.utils.pala_error import rmse_unique
+from datasets.pala_dataset.utils.radial_pala import radial_pala
+from datasets.pala_dataset.utils.centroids import regional_mask
+from unet import UNet, SlounUNet, SlounAdaptUNet
+from mspcn.model import Net
+from evaluate import non_max_supp, get_pala_error
+from utils.srgb_conv import srgb_conv
+from utils.utils import plot_img_and_mask
+from utils.transform import NormalizeVol
 
 
 def predict_img(net,
@@ -150,16 +151,25 @@ if __name__ == '__main__':
 
     logging.info('Model loaded!')
 
-    dataset = InSilicoDataset(
+    if cfg.input_type == 'iq':
+        DatasetClass = PalaDatasetIq
+        transforms = []
+        collate_fn = None
+    elif cfg.input_type == 'rf':
+        DatasetClass = PalaDatasetRf
+        transforms = [NormalizeVol()]
+        from datasets.pala_dataset.utils.collate_fn import collate_fn
+    dataset = DatasetClass(
         dataset_path=cfg.data_dir,
         rf_opt = False,
         sequences = list(range(1, 16)),
         rescale_factor = cfg.rescale_factor,
-        rescale_frame = True if cfg.model.__contains__('unet') else False,
-        blur_opt = False,
+        upscale_factor = cfg.upscale_factor,
         tile_opt = False,
         clutter_db = cfg.clutter_db,
+        temporal_filter_opt = False,
         )
+
     wavelength = 9.856e-05
     origin = np.array([-72,  16])
 
@@ -172,7 +182,7 @@ if __name__ == '__main__':
         with tqdm(total=len(test_loader), desc=f'Frame {i}/{len(test_loader)}', unit='img') as pbar:
             #logging.info(f'Predicting image {filename} ...')
             #img = Image.open(filename)
-            img, true_mask, gt_pts = batch[:3]
+            img, true_mask, gt_pts = batch[:3] if cfg.input_type == 'iq' else (batch[2][:, 1].unsqueeze(1), batch[-2][:, 1].unsqueeze(1), batch[1])
 
             mask, output, comp_time = predict_img(net=net,
                             img=img,

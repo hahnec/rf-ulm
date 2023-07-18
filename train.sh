@@ -23,6 +23,9 @@ source ~/20_ulm_unet/venv/bin/activate
 
 python -m pip install -r requirements.txt
 
+# checkout dependency repo at commit
+git clone --recurse-submodules git@github.com:hahnec/pala_dataset ./datasets/pala_dataset
+
 python -c "import torch; print(torch.cuda.is_available())"
 
 python ./train.py

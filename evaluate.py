@@ -6,9 +6,10 @@ from sklearn.metrics import roc_curve
 from sklearn.metrics import precision_recall_curve
 
 from utils.dice_score import multiclass_dice_coeff, dice_coeff
-from utils.pala_error import rmse_unique
 from utils.non_max_supp import NonMaxSuppression
-from utils.radial_pala import radial_pala
+from datasets.pala_dataset.utils.pala_error import rmse_unique
+from datasets.pala_dataset.utils.radial_pala import radial_pala
+
 
 @torch.inference_mode()
 def evaluate(net, dataloader, device, amp, cfg):
@@ -20,7 +21,7 @@ def evaluate(net, dataloader, device, amp, cfg):
     with torch.autocast(device.type if device.type != 'mps' else 'cpu', enabled=amp):
         for batch in tqdm(dataloader, total=num_val_batches, desc='Validation round', unit='batch', leave=False):
             #image, mask_true = batch['image'], batch['mask']
-            image, mask_true, gt_pts = batch[:3]
+            image, mask_true, gt_pts = batch[:3] if cfg.input_type == 'iq' else (batch[2][:, 1].unsqueeze(1), batch[-2][:, 1].unsqueeze(1), batch[1])
 
             # move images and labels to correct device and type
             image = image.to(device=device, dtype=torch.float32, memory_format=torch.channels_last)

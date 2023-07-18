@@ -2,11 +2,18 @@ epochs: 100
 batch_size: 2
 lr: 0.001
 device: 'cpu'  #'cuda' #
-plot_opt: false
-rescale_factor: 8 #10 #
+plot_opt: False
+upscale_factor: 4 #8 #2 #10 #
+rescale_factor: 10 #20
 blur_opt: True
-nms_threshold: 0.05 #0.075  #0.2	#0.13
-clutter_db: -40
+nms_threshold: 13 #20 #0.075  #0.2
+gamma: 0.9
+clutter_db: Null #-40
+model: 'mspcn'  #'unet' #
+avg_weight_opt: False
+radial_sym_opt: False
+rf_frame_opt: True
+input_type: 'rf' #'iq' #
 
 data_path: PALA_data_InSilicoFlow/
 ubx_dir: /storage/homefs/ch21z139/PALA_dataset/${data_path}
@@ -15,5 +22,5 @@ data_dir: ${map_dir}
 logging: False
 
 # inference config
-model_path: ./checkpoints/checkpoint_epoch100_5jan23.pth
+model_path: Null
 save_opt: False

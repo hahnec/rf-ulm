@@ -6,10 +6,10 @@ import torch.nn.functional as F
 
 class Net(nn.Module):
 
-    def __init__(self, upscale_factor):
+    def __init__(self, upscale_factor, in_channels=1):
         super(Net, self).__init__()
 
-        self.conv1 = nn.Conv2d(1, 64, (9, 9), (1, 1), (4, 4))
+        self.conv1 = nn.Conv2d(in_channels, 64, (9, 9), (1, 1), (4, 4))
         
         self.conv2 = nn.Conv2d(64, 64, (3, 3), (1, 1), (1, 1))
         self.conv3 = nn.Conv2d(64, 64, (3, 3), (1, 1), (1, 1))
