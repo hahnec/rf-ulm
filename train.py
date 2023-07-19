@@ -60,7 +60,7 @@ def train_model(
         dataset_path=cfg.data_dir,
         transforms = transforms,
         clutter_db = cfg.clutter_db,
-        sequences = [16, 17, 18, 19],
+        sequences = [16], #, 17, 18, 19],
         rescale_factor = cfg.rescale_factor,
         temporal_filter_opt = False,
         upscale_factor = cfg.upscale_factor,
@@ -250,8 +250,6 @@ if __name__ == '__main__':
     # Model selection
     if cfg.model == 'unet':
         # UNet model
-        # n_channels=3 for RGB images
-        # n_classes is the number of probabilities you want to get per pixel
         model = UNet(n_channels=in_channels, n_classes=1, bilinear=args.bilinear)
         #model = SlounUNet(n_channels=1, n_classes=1, bilinear=False)
         model = SlounAdaptUNet(n_channels=in_channels, n_classes=1, bilinear=False)
@@ -270,31 +268,14 @@ if __name__ == '__main__':
         logging.info(f'Model loaded from {args.load}')
 
     model.to(device=device)
-    try:
-        train_model(
-            model=model,
-            epochs=cfg.epochs,
-            batch_size=cfg.batch_size,
-            learning_rate=cfg.lr,
-            device=device,
-            img_scale=args.scale,
-            val_percent=args.val / 100,
-            amp=args.amp,
-            cfg = cfg
-        )
-    except torch.cuda.OutOfMemoryError:
-        logging.error('Detected OutOfMemoryError! '
-                      'Enabling checkpointing to reduce memory usage, but this slows down training. '
-                      'Consider enabling AMP (--amp) for fast and memory efficient training')
-        torch.cuda.empty_cache()
-        model.use_checkpointing()
-        train_model(
-            model=model,
-            epochs=cfg.epochs,
-            batch_size=cfg.batch_size,
-            learning_rate=cfg.lr,
-            device=device,
-            img_scale=args.scale,
-            val_percent=args.val / 100,
-            amp=args.amp
-        )
+    train_model(
+        model=model,
+        epochs=cfg.epochs,
+        batch_size=cfg.batch_size,
+        learning_rate=cfg.lr,
+        device=device,
+        img_scale=args.scale,
+        val_percent=args.val / 100,
+        amp=args.amp,
+        cfg = cfg
+    )
