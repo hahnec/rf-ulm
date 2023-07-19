@@ -44,7 +44,10 @@ def evaluate(net, dataloader, device, amp, cfg):
             imgs_nms = non_max_supp(masks_pred)
             masks_nms = imgs_nms > cfg.nms_threshold
 
-            gt_pts = [gt_pt[~(torch.isnan(gt_pt.squeeze()).sum(-1) > 0), :].numpy()[:, ::-1] for gt_pt in gt_pts]#gt_pts[:, ~(torch.isnan(gt_pts.squeeze()).sum(-1) > 0)].numpy()[:, ::-1]
+            if cfg.input_type == 'iq':
+                gt_pts = [gt_pt[~(torch.isnan(gt_pt.squeeze()).sum(-1) > 0), :].numpy()[:, ::-1] for gt_pt in gt_pts]#gt_pts[:, ~(torch.isnan(gt_pts.squeeze()).sum(-1) > 0)].numpy()[:, ::-1]
+            elif cfg.input_type == 'rf':
+                gt_pts = [torch.vstack([gt_pts[i, 1].min(-2)[0], gt_pts[i, 1].argmin(-2)]).T for i in range(gt_pts.shape[0])]
             pala_err_batch = get_pala_error(masks_nms.cpu().numpy().squeeze(1), gt_pts, rescale_factor=cfg.rescale_factor)
 
             if cfg.model in ('unet', 'mspcn'):
@@ -74,7 +77,7 @@ def get_pala_error(mask_pred: np.ndarray, gt_points: np.ndarray, rescale_factor:
         if true_frame_pts.size == 0:
             continue
         pts = (np.array(np.nonzero(mask))[::-1] / rescale_factor + origin[:, None]).T
-        pts_gt = true_frame_pts[:, ::-1] / rescale_factor + origin[:, None].T
+        pts_gt = np.fliplr(true_frame_pts) / rescale_factor + origin[:, None].T
 
         # do weighting based on super-resolved image
         if not sr_img is None and avg_weight_opt:
