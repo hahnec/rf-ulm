@@ -60,7 +60,7 @@ def train_model(
         dataset_path=cfg.data_dir,
         transforms = transforms,
         clutter_db = cfg.clutter_db,
-        sequences = [16], #, 17, 18, 19],
+        sequences = [16, 17, 18, 19],
         rescale_factor = cfg.rescale_factor,
         temporal_filter_opt = False,
         upscale_factor = cfg.upscale_factor,
