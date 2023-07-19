@@ -60,7 +60,7 @@ def train_model(
         dataset_path=cfg.data_dir,
         transforms = transforms,
         clutter_db = cfg.clutter_db,
-        sequences = [16, 17, 18, 19],
+        sequences = [16], #, 17, 18, 19],
         rescale_factor = cfg.rescale_factor,
         temporal_filter_opt = False,
         upscale_factor = cfg.upscale_factor,
@@ -73,7 +73,8 @@ def train_model(
     train_set, val_set = random_split(dataset, [n_train, n_val], generator=torch.Generator().manual_seed(0))
 
     # 3. Create data loaders
-    loader_args = dict(batch_size=batch_size, num_workers=os.cpu_count(), pin_memory=True)
+    num_workers = min(4, os.cpu_count())
+    loader_args = dict(batch_size=batch_size, num_workers=num_workers, pin_memory=True)
     train_loader = DataLoader(train_set, collate_fn=collate_fn, shuffle=True, **loader_args)
     val_loader = DataLoader(val_set, collate_fn=collate_fn, shuffle=False, drop_last=True, **loader_args)
 
