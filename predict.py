@@ -208,6 +208,14 @@ if __name__ == '__main__':
                 es_points[:2, :] = es_points[:2, :][::-1, :]
             es_points = es_points[:2, ...][None, ...]
 
+            es_points /= wavelength
+            gt_points /= wavelength
+
+            pts_es = (es_points[0] + origin[:, None]).T
+            pts_gt = (gt_points[0] + origin[:, None]).T
+            all_pts.append(pts_es)
+            all_pts_gt.append(pts_gt)
+
             iter_time = time.process_time() - tic
             
             if False:
@@ -256,11 +264,6 @@ if __name__ == '__main__':
 
             if gt_pts.size == 0:
                 continue
-            
-            pts_es = (es_points + origin[:, None]).T
-            pts_gt = (gt_points + origin[:, None]).T
-            all_pts.append(pts_es)
-            all_pts_gt.append(pts_gt)
 
             tic = time.process_time()
 
