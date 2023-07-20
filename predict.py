@@ -173,7 +173,8 @@ if __name__ == '__main__':
     wavelength = 9.856e-05
     origin = np.array([-72,  16])
 
-    loader_args = dict(batch_size=1, num_workers=os.cpu_count(), pin_memory=True)
+    num_workers = min(4, os.cpu_count())
+    loader_args = dict(batch_size=1, num_workers=num_workers, pin_memory=True)
     test_loader = DataLoader(dataset, shuffle=False, drop_last=True, **loader_args)
     ac_rmse_err = []
     all_pts = []
