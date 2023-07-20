@@ -260,9 +260,6 @@ if __name__ == '__main__':
                 th_idx = np.argmax(gmeans)
                 threshold = thresholds[th_idx]
 
-            if gt_pts.size == 0:
-                continue
-
             tic = time.process_time()
 
 errs = torch.tensor(ac_rmse_err)
@@ -274,8 +271,8 @@ print('Acc. Errors: %s' % str(torch.nanmean(errs, axis=0)))
 all_pts = [p for p in all_pts if p.size > 0]
 all_pts_gt = [p for p in all_pts_gt if p.size > 0]
 
-unet_ulm_img, _ = tracks2img((np.vstack(all_pts)-origin), img_size=np.array([84, 134]), scale=cfg.upscale_factor, mode='all_in')
-gtru_ulm_img, _ = tracks2img((np.vstack(all_pts_gt)-origin)[:, ::-1], img_size=np.array([84, 134]), scale=10, mode='all_in')
+unet_ulm_img, _ = tracks2img((np.vstack(all_pts)-origin)[:, ::-1]-origin, img_size=np.array([84, 134]), scale=cfg.upscale_factor, mode='all_in')
+gtru_ulm_img, _ = tracks2img((np.vstack(all_pts_gt)-origin)[:, ::-1]-origin, img_size=np.array([84, 134]), scale=10, mode='all_in')
 
 scale_factor = 10 / cfg.upscale_factor
 unet_ulm_img = rescale(unet_ulm_img, scale_factor, mode='reflect', anti_aliasing=True) if scale_factor != 1 else unet_ulm_img
