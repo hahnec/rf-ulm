@@ -6,7 +6,7 @@
 #SBATCH --mail-user=christopher.hahne@unibe.ch
 #SBATCH --mail-type=none
 #SBATCH --cpus-per-task=4
-#SBATCH --mem-per-cpu=32G
+#SBATCH --mem-per-cpu=16G
 #SBATCH --qos=job_gpu
 #SBATCH --account=ws_00000
 #SBATCH --partition=gpu
