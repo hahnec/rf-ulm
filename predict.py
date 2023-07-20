@@ -136,7 +136,7 @@ if __name__ == '__main__':
         net = SlounAdaptUNet(n_channels=1, n_classes=1, bilinear=False)
     elif cfg.model == 'mspcn':
         # mSPCN model
-        net = Net(upscale_factor=cfg.rescale_factor)
+        net = Net(upscale_factor=cfg.upscale_factor)
     else:
         raise Exception('Model name not recognized')
 
