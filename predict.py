@@ -116,10 +116,8 @@ def img_color_map(img=None, cmap='inferno'):
 
 
 if __name__ == '__main__':
+
     args = get_args()
-    #logging.basicConfig(level=logging.INFO, format='%(levelname)s: %(message)s')
-    #in_files = args.input
-    #out_files = get_output_filenames(args)
 
     cfg = OmegaConf.load('./pala_unet.yml')
 
@@ -200,7 +198,7 @@ if __name__ == '__main__':
             gt_points = gt_pts[:, ~(torch.isnan(gt_pts.squeeze()).sum(-1) > 0)].numpy()[:, ::-1]
             gt_points = gt_points.swapaxes(-2, -1)
             gt_points = gt_points[:, ::-1, :]
-            es_points = np.array(np.nonzero(mask))[::-1, :] #- .5
+            es_points = np.array(np.nonzero(mask))[::-1, :]
             if cfg.input_type == 'rf':
                 es_points[2] = 1
                 es_points[:2, :] = es_points[:2, :][::-1, :] / cfg.upscale_factor
