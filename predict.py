@@ -1,6 +1,7 @@
 import argparse
 import logging
 import os
+import time
 
 import numpy as np
 import torch
@@ -182,6 +183,7 @@ if __name__ == '__main__':
     ac_rmse_err = []
     all_pts = []
     all_pts_gt = []
+    tic = time.process_time()
     for i, batch in enumerate(test_loader):
         with tqdm(total=len(test_loader), desc=f'Frame {i}/{len(test_loader)}', unit='img') as pbar:
             #logging.info(f'Predicting image {filename} ...')
@@ -242,13 +244,13 @@ if __name__ == '__main__':
                 logging.info(f'Visualizing results for image, close to continue...')
                 plot_img_and_mask(img.squeeze(), mask.squeeze())
 
-            fpr, tpr, thresholds = roc_curve(true_mask.float().numpy().flatten(), output.flatten())
-            #precision, recall, thresholds = precision_recall_curve(true_mask.float().numpy().flatten(), output.float().numpy().flatten())
-
-            # calculate the g-mean for each threshold
-            gmeans = (tpr * (1-fpr))**.5
-            th_idx = np.argmax(gmeans)
-            threshold = thresholds[th_idx]
+            if False:
+                # calculate the g-mean for each threshold
+                fpr, tpr, thresholds = roc_curve(true_mask.float().numpy().flatten(), output.flatten())
+                #precision, recall, thresholds = precision_recall_curve(true_mask.float().numpy().flatten(), output.float().numpy().flatten())
+                gmeans = (tpr * (1-fpr))**.5
+                th_idx = np.argmax(gmeans)
+                threshold = thresholds[th_idx]
 
             if gt_pts.size == 0:
                 continue
@@ -257,6 +259,10 @@ if __name__ == '__main__':
             pts_gt = (gt_points + origin[:, None]).T
             all_pts.append(pts_es)
             all_pts_gt.append(pts_gt)
+
+            iter_time = time.process_time() - tic
+            print(iter_time)
+            tic = time.process_time()
 
 errs = torch.tensor(ac_rmse_err)
 unet_rmse_mean = torch.nanmean(errs[..., 0], axis=0)
