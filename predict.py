@@ -162,16 +162,19 @@ if __name__ == '__main__':
     dataset = DatasetClass(
         dataset_path=cfg.data_dir,
         rf_opt = False,
-        sequences = list(range(1, 16)),
+        sequences = [1], #list(range(1, 16)),
         rescale_factor = cfg.rescale_factor,
         upscale_factor = cfg.upscale_factor,
-        tile_opt = False,
+        tile_opt = True if cfg.model.__contains__('unet') else False,
         clutter_db = cfg.clutter_db,
         temporal_filter_opt = False,
+        transforms=transforms,
         )
 
     wavelength = 9.856e-05
     origin = np.array([-72,  16])
+
+    t_mat = np.loadtxt('./t_mat.txt')
 
     num_workers = min(4, os.cpu_count())
     loader_args = dict(batch_size=1, num_workers=num_workers, pin_memory=True)
@@ -193,8 +196,27 @@ if __name__ == '__main__':
 
             output = output.float().squeeze().cpu().numpy()
 
-            gt_pts = gt_pts[:, ~(torch.isnan(gt_pts.squeeze()).sum(-1) > 0)].numpy()[:, ::-1]
-            result = get_pala_error(mask, gt_pts, rescale_factor=cfg.rescale_factor, sr_img=output, avg_weight_opt=cfg.avg_weight_opt, radial_sym_opt=cfg.radial_sym_opt)
+            # points alignment
+            gt_points = gt_pts[:, ~(torch.isnan(gt_pts.squeeze()).sum(-1) > 0)].numpy()[:, ::-1]
+            gt_points = gt_points.swapaxes(-2, -1)
+            gt_points = gt_points[:, ::-1, :]
+            es_points = np.array(np.nonzero(mask))[::-1, :] #- .5
+            if cfg.input_type == 'rf':
+                es_points[2] = 1
+                es_points[:2, :] = es_points[:2, :][::-1, :] / cfg.upscale_factor
+                es_points = t_mat @ es_points
+                es_points[:2, :] = es_points[:2, :][::-1, :]
+            es_points = es_points[:2, ...][None, ...]
+            
+            if True:
+                import matplotlib.pyplot as plt
+                plt.figure()
+                plt.plot(*gt_points[0], 'rx')
+                plt.plot(*es_points[0], 'b+')
+                plt.show()
+
+            # localization assessment
+            result = get_pala_error(es_points, gt_points, upscale_factor=cfg.upscale_factor, sr_img=output, avg_weight_opt=cfg.avg_weight_opt, radial_sym_opt=cfg.radial_sym_opt)
             ac_rmse_err.append(result)
 
             if cfg.logging:
@@ -231,12 +253,9 @@ if __name__ == '__main__':
             if gt_pts.size == 0:
                 continue
             
-            ms_pts = np.array(np.nonzero(mask[0, ...]))
-            if cfg.radial_sym_opt: ms_pts[:, :2] = radial_pala(output, ms_pts[:, :2], w=2)
-
-            pts = (ms_pts[::-1] / cfg.rescale_factor + origin[:, None]).T
-            pts_gt = gt_pts[0, ::-1] / cfg.rescale_factor + origin[:, None].T
-            all_pts.append(pts)
+            pts_es = (es_points + origin[:, None]).T
+            pts_gt = (gt_points + origin[:, None]).T
+            all_pts.append(pts_es)
             all_pts_gt.append(pts_gt)
 
 errs = torch.tensor(ac_rmse_err)

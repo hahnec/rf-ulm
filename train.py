@@ -62,8 +62,8 @@ def train_model(
         clutter_db = cfg.clutter_db,
         sequences = [16], #, 17, 18, 19],
         rescale_factor = cfg.rescale_factor,
-        temporal_filter_opt = False,
         upscale_factor = cfg.upscale_factor,
+        temporal_filter_opt = False,
         tile_opt = True if cfg.model.__contains__('unet') else False,
         )
 
@@ -126,13 +126,6 @@ def train_model(
                 images = images.to(device=device, dtype=torch.float32, memory_format=torch.channels_last)
                 masks_true = masks_true.to(device=device).float()#, dtype=torch.long)
 
-                #import matplotlib.pyplot as plt
-                #fig, axs = plt.subplots(nrows=2,ncols=1)
-                #axs[0].imshow(images[0, 0].cpu().numpy())
-                ##axs[1].imshow(masks_true[0].cpu().numpy())
-                #axs[1].imshow(torch.dstack([masks_true[0, 0], images[0, 0], masks_true[0, 0]]).cpu().numpy())
-                #plt.show()
-
                 with torch.autocast(device.type if device.type != 'mps' else 'cpu', enabled=amp):
                     masks_pred = model(images)
 
@@ -145,6 +138,21 @@ def train_model(
                         
                     loss = criterion(masks_pred.squeeze(1), masks_true.squeeze(1).float())
                     loss += l1loss(masks_pred.squeeze(1), torch.zeros_like(masks_pred.squeeze(1))) * lambda_value
+
+                    #mask = masks_true[0, 0, ::cfg.upscale_factor, ::cfg.upscale_factor] * amplitude
+                    #img = images[0, 0].clone()
+                    #img[img<0] = 0
+                    #img = img/img.max()
+                    #mask = mask/mask.max()
+                    #mask_review_img = torch.dstack([mask, img, mask]).cpu().numpy()
+                    #import matplotlib.pyplot as plt
+                    #fig, axs = plt.subplots(nrows=1,ncols=1, figsize=(15,9))
+                    ##axs[0].imshow(images[0, 0].cpu().numpy())
+                    ##axs[1].imshow(masks_true[0].cpu().numpy())
+                    #axs.imshow(mask_review_img[:, 500:800])
+                    #import imageio
+                    #imageio.imsave('rf_label_frame.png', mask_review_img[:, 500:800])
+                    #plt.show()
 
                 # activation followed by non-maximum suppression
                 #masks_pred = torch.sigmoid(masks_pred)

@@ -48,7 +48,7 @@ def evaluate(net, dataloader, device, amp, cfg):
                 gt_pts = [gt_pt[~(torch.isnan(gt_pt.squeeze()).sum(-1) > 0), :].numpy()[:, ::-1] for gt_pt in gt_pts]#gt_pts[:, ~(torch.isnan(gt_pts.squeeze()).sum(-1) > 0)].numpy()[:, ::-1]
             elif cfg.input_type == 'rf':
                 gt_pts = [torch.vstack([gt_pts[i, 1].min(-2)[0], gt_pts[i, 1].argmin(-2)]).T for i in range(gt_pts.shape[0])]
-            pala_err_batch = get_pala_error(masks_nms.cpu().numpy().squeeze(1), gt_pts, rescale_factor=cfg.rescale_factor)
+            pala_err_batch = get_pala_error(masks_nms.cpu().numpy().squeeze(1), gt_pts, upscale_factor=cfg.rescale_factor)
 
             if cfg.model in ('unet', 'mspcn'):
                 assert mask_true.min() >= 0 and mask_true.max() <= 1, 'True mask indices should be in [0, 1]'
@@ -67,36 +67,36 @@ def evaluate(net, dataloader, device, amp, cfg):
     return dice_score / max(num_val_batches, 1), pala_err_batch, masks_nms, threshold
 
 
-def get_pala_error(mask_pred: np.ndarray, gt_points: np.ndarray, rescale_factor: float = 1, sr_img=None, avg_weight_opt=False, radial_sym_opt=False):
+def get_pala_error(es_points: np.ndarray, gt_points: np.ndarray, upscale_factor: float = 1, sr_img=None, avg_weight_opt=False, radial_sym_opt=False):
 
     wavelength = 9.856e-05
     origin = np.array([-72, 16])
 
     results = []
-    for mask, true_frame_pts in zip(mask_pred, gt_points):
-        if true_frame_pts.size == 0:
+    for es_pts, gt_pts in zip(es_points, gt_points):
+        if gt_pts.size == 0:
             continue
-        pts = (np.array(np.nonzero(mask))[::-1] / rescale_factor + origin[:, None]).T
-        pts_gt = np.fliplr(true_frame_pts) / rescale_factor + origin[:, None].T
+        pts_es = (es_pts / upscale_factor + origin[:, None]).T
+        pts_gt = (gt_pts / upscale_factor + origin[:, None]).T
 
         # do weighting based on super-resolved image
         if not sr_img is None and avg_weight_opt:
             w = 4
             coords = np.stack(np.meshgrid(np.arange(-w, w+1), np.arange(-w, w+1)))
-            for i, pt in enumerate(pts):
-                pt = ((pt-origin) * rescale_factor).astype(int)[::-1]
+            for i, pt in enumerate(es_pts):
+                pt = ((pt-origin) * upscale_factor).astype(int)[::-1]
                 shift_coords = pt[:, None, None]+coords
                 try:
                     patch = sr_img[pt[0]-w:pt[0]+w+1, pt[1]-w:pt[1]+w+1][None, ...]
                     pt = np.sum(shift_coords*patch/patch.sum(), axis=(-2, -1))
                 except ValueError:
                     pass
-                pts[i] = pt[::-1] / rescale_factor + origin
+                es_pts[i] = pt[::-1] / upscale_factor + origin
         
         # apply radial symmetry
-        if radial_sym_opt: pts[:, :2] = radial_pala(sr_img, pts[:, :2], w=2)
+        if radial_sym_opt: es_pts[:, :2] = radial_pala(sr_img, es_pts[:, :2], w=2)
 
-        result = rmse_unique(pts, pts_gt, tol=1/4)
+        result = rmse_unique(pts_es, pts_gt, tol=1/4)
         results.append(result)
 
     rmse, precision, recall, jaccard, tp_num, fp_num, fn_num = torch.nanmean(torch.tensor(results), axis=0) if len(results) > 0 else (float('NaN'), float('NaN'), float('NaN'), float('NaN'), float('NaN'), float('NaN'), float('NaN'))
