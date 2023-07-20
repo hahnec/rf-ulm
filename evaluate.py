@@ -69,7 +69,6 @@ def evaluate(net, dataloader, device, amp, cfg):
 
 def get_pala_error(es_points: np.ndarray, gt_points: np.ndarray, upscale_factor: float = 1, sr_img=None, avg_weight_opt=False, radial_sym_opt=False):
 
-    wavelength = 9.856e-05
     origin = np.array([-72, 16])
 
     results = []
@@ -103,6 +102,7 @@ def get_pala_error(es_points: np.ndarray, gt_points: np.ndarray, upscale_factor:
 
     return rmse, precision, recall, jaccard, tp_num, fp_num, fn_num
 
+
 def non_max_supp(masks_pred, norm_opt=False):
 
     nms_imgs = []
@@ -116,4 +116,3 @@ def non_max_supp(masks_pred, norm_opt=False):
     nms_imgs = torch.tensor(np.array(nms_imgs), device=masks_pred.device).unsqueeze(1).float()
 
     return nms_imgs
-
