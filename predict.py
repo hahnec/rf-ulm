@@ -196,8 +196,6 @@ if __name__ == '__main__':
                             out_threshold=cfg.nms_threshold,
                             device=device)
 
-            output = output.float().squeeze().cpu().numpy()
-
             # points alignment
             gt_points = gt_pts[:, ~(torch.isnan(gt_pts.squeeze()).sum(-1) > 0)].numpy()[:, ::-1]
             gt_points = gt_points.swapaxes(-2, -1)
@@ -209,6 +207,8 @@ if __name__ == '__main__':
                 es_points = t_mat @ es_points
                 es_points[:2, :] = es_points[:2, :][::-1, :]
             es_points = es_points[:2, ...][None, ...]
+
+            iter_time = time.process_time() - tic
             
             if False:
                 import matplotlib.pyplot as plt
@@ -218,6 +218,7 @@ if __name__ == '__main__':
                 plt.show()
 
             # localization assessment
+            output = output.float().squeeze().cpu().numpy()
             result = get_pala_error(es_points, gt_points, upscale_factor=cfg.upscale_factor, sr_img=output, avg_weight_opt=cfg.avg_weight_opt, radial_sym_opt=cfg.radial_sym_opt)
             ac_rmse_err.append(result)
 
@@ -230,7 +231,8 @@ if __name__ == '__main__':
                     'U-Net/TruePositive': result[4],
                     'U-Net/FalsePositive': result[5],
                     'U-Net/FalseNegative': result[6],
-                    'U-Net/FrameTime': comp_time,
+                    'U-Net/InferTime': comp_time,
+                    'U-Net/FrameTime': iter_time,
                     'frame': int(i),
                 })
 
@@ -260,8 +262,6 @@ if __name__ == '__main__':
             all_pts.append(pts_es)
             all_pts_gt.append(pts_gt)
 
-            iter_time = time.process_time() - tic
-            print(iter_time)
             tic = time.process_time()
 
 errs = torch.tensor(ac_rmse_err)
