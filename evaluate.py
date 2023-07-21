@@ -17,7 +17,7 @@ def evaluate(net, dataloader, device, amp, cfg):
     num_val_batches = len(dataloader)
     dice_score = 0
 
-    t_mat = torch.tensor(np.loadtxt('./t_mat.txt'))
+    t_mat = torch.tensor(np.loadtxt('./t_mat.txt')).to(cfg.device)
 
     # iterate over the validation set
     with torch.autocast(device.type if device.type != 'mps' else 'cpu', enabled=amp):
@@ -67,7 +67,7 @@ def evaluate(net, dataloader, device, amp, cfg):
                     es_pts[:2, :] = torch.flipud(es_pts[:2, :]) / cfg.upscale_factor
                     es_pts = t_mat @ es_pts
                     es_pts[:2, :] = torch.flipud(es_pts[:2, :])
-                es_pts = es_pts[:2, ...][None, ...]
+                es_pts = es_pts[:2, ...]
                 es_points.append(es_pts / wavelength)
 
             pala_err_batch = get_pala_error(es_points, gt_points, upscale_factor=cfg.rescale_factor)
