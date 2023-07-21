@@ -17,7 +17,7 @@ def evaluate(net, dataloader, device, amp, cfg):
     num_val_batches = len(dataloader)
     dice_score = 0
 
-    t_mat = np.loadtxt('./t_mat.txt')
+    t_mat = torch.tensor(np.loadtxt('./t_mat.txt'))
 
     # iterate over the validation set
     with torch.autocast(device.type if device.type != 'mps' else 'cpu', enabled=amp):
