@@ -54,7 +54,7 @@ def evaluate(net, dataloader, device, amp, cfg):
             # gt points alignment
             wavelength = 9.856e-05
             gt_points = torch.stack(gt_pts).swapaxes(-2, -1)
-            gt_points = torch.fliplr(gt_points)
+            gt_points = torch.fliplr(gt_points).cpu().numpy()
             gt_points /= wavelength
 
             # estimated points alignment
@@ -64,13 +64,13 @@ def evaluate(net, dataloader, device, amp, cfg):
                 es_pts = torch.fliplr(es_indices[es_indices[:, 0]==i, :]).T
                 if cfg.input_type == 'rf':
                     es_pts[2] = 1
-                    es_pts[:2, :] = torch.flipud(es_pts[:2, :]) / cfg.upscale_factor
+                    es_pts[:2, :] = torch.flipud(es_pts[:2, :]) / cfg.upscale_factor    # why divide by upscale?
                     es_pts = t_mat @ es_pts
                     es_pts[:2, :] = torch.flipud(es_pts[:2, :])
-                es_pts = es_pts[:2, ...]
-                es_points.append(es_pts / wavelength)
+                es_pts = es_pts[:2, ...].cpu().numpy() / wavelength
+                es_points.append(es_pts)
 
-            pala_err_batch = get_pala_error(es_points.cpu().numpy(), gt_points.cpu().numpy(), upscale_factor=cfg.rescale_factor)
+            pala_err_batch = get_pala_error(es_points, gt_points, upscale_factor=cfg.rescale_factor)
 
             if cfg.model in ('unet', 'mspcn'):
                 assert mask_true.min() >= 0 and mask_true.max() <= 1, 'True mask indices should be in [0, 1]'
