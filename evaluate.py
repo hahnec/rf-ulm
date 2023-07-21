@@ -50,6 +50,7 @@ def evaluate(net, dataloader, device, amp, cfg):
                 gt_pts = [torch.vstack([gt_pts[i, 1].min(-2)[0], gt_pts[i, 1].argmin(-2)]).T for i in range(gt_pts.shape[0])]
 
             # gt points alignment
+            wavelength = 9.856e-05
             gt_points = torch.stack(gt_pts).swapaxes(-2, -1)
             gt_points = torch.fliplr(gt_points)
             gt_points /= wavelength
