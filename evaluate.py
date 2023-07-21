@@ -70,7 +70,7 @@ def evaluate(net, dataloader, device, amp, cfg):
                 es_pts = es_pts[:2, ...]
                 es_points.append(es_pts / wavelength)
 
-            pala_err_batch = get_pala_error(es_points, gt_points, upscale_factor=cfg.rescale_factor)
+            pala_err_batch = get_pala_error(es_points.cpu().numpy(), gt_points.cpu().numpy(), upscale_factor=cfg.rescale_factor)
 
             if cfg.model in ('unet', 'mspcn'):
                 assert mask_true.min() >= 0 and mask_true.max() <= 1, 'True mask indices should be in [0, 1]'
