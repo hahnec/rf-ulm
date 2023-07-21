@@ -42,19 +42,34 @@ def evaluate(net, dataloader, device, amp, cfg):
                 threshold = float('NaN')
 
             imgs_nms = non_max_supp(masks_pred)
-            masks_nms = imgs_nms > cfg.nms_threshold
+            masks = imgs_nms > cfg.nms_threshold
 
             if cfg.input_type == 'iq':
                 gt_pts = [gt_pt[~(torch.isnan(gt_pt.squeeze()).sum(-1) > 0), :].numpy()[:, ::-1] for gt_pt in gt_pts]#gt_pts[:, ~(torch.isnan(gt_pts.squeeze()).sum(-1) > 0)].numpy()[:, ::-1]
             elif cfg.input_type == 'rf':
                 gt_pts = [torch.vstack([gt_pts[i, 1].min(-2)[0], gt_pts[i, 1].argmin(-2)]).T for i in range(gt_pts.shape[0])]
-            pala_err_batch = get_pala_error(masks_nms.cpu().numpy().squeeze(1), gt_pts, upscale_factor=cfg.rescale_factor)
+
+            # tbd: validate
+            gt_points = torch.stack(gt_pts).swapaxes(-2, -1)
+            gt_points = torch.fliplr(gt_points)
+            es_points = np.array([np.nonzero(mask) for mask in masks.squeeze(1).cpu().numpy()])[:, ::-1, :]
+            if cfg.input_type == 'rf':
+                es_points[2] = 1
+                es_points[:2, :] = es_points[:2, :][::-1, :] / cfg.upscale_factor
+                es_points = t_mat @ es_points
+                es_points[:2, :] = es_points[:2, :][::-1, :]
+            es_points = es_points[:2, ...][None, ...]
+
+            es_points /= wavelength
+            gt_points /= wavelength
+
+            pala_err_batch = get_pala_error(es_points, gt_points, upscale_factor=cfg.rescale_factor)
 
             if cfg.model in ('unet', 'mspcn'):
                 assert mask_true.min() >= 0 and mask_true.max() <= 1, 'True mask indices should be in [0, 1]'
                 #mask_pred = (F.sigmoid(mask_pred) > 0.5).float()
                 # compute the Dice score
-                dice_score += dice_coeff(masks_nms, mask_true, reduce_batch_first=False)
+                dice_score += dice_coeff(masks, mask_true, reduce_batch_first=False)
             else:
                 assert mask_true.min() >= 0 and mask_true.max() < net.n_classes, 'True mask indices should be in [0, n_classes['
                 # convert to one-hot format
@@ -64,7 +79,7 @@ def evaluate(net, dataloader, device, amp, cfg):
                 dice_score += multiclass_dice_coeff(mask_pred[:, 1:], mask_true[:, 1:], reduce_batch_first=False)
 
     net.train()
-    return dice_score / max(num_val_batches, 1), pala_err_batch, masks_nms, threshold
+    return dice_score / max(num_val_batches, 1), pala_err_batch, masks, threshold
 
 
 def get_pala_error(es_points: np.ndarray, gt_points: np.ndarray, upscale_factor: float = 1, sr_img=None, avg_weight_opt=False, radial_sym_opt=False):
