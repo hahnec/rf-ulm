@@ -62,9 +62,9 @@ def evaluate(net, dataloader, device, amp, cfg):
                 es_pts = torch.fliplr(es_indices[es_indices[:, 0]==i, :]).T
                 if cfg.input_type == 'rf':
                     es_pts[2] = 1
-                    es_pts[:2, :] = es_pts[:2, :][::-1, :] / cfg.upscale_factor
+                    es_pts[:2, :] = torch.flipud(es_pts[:2, :]) / cfg.upscale_factor
                     es_pts = t_mat @ es_pts
-                    es_pts[:2, :] = es_pts[:2, :][::-1, :]
+                    es_pts[:2, :] = torch.flipud(es_pts[:2, :])
                 es_pts = es_pts[:2, ...][None, ...]
                 es_points.append(es_pts / wavelength)
 
