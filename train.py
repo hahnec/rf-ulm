@@ -60,7 +60,7 @@ def train_model(
         dataset_path=cfg.data_dir,
         transforms = transforms,
         clutter_db = cfg.clutter_db,
-        sequences = [16], #, 17, 18, 19],
+        sequences = [16, 17, 18, 19],
         rescale_factor = cfg.rescale_factor,
         upscale_factor = cfg.upscale_factor,
         temporal_filter_opt = False,
@@ -101,8 +101,7 @@ def train_model(
     # 4. Set up the optimizer, the loss, the learning rate scheduler and the loss scaling for AMP
     #optimizer = optim.RMSprop(model.parameters(), lr=learning_rate, weight_decay=weight_decay, momentum=momentum, foreach=True)
     optimizer = optim.Adam(model.parameters(), lr=learning_rate, weight_decay=weight_decay, foreach=True)
-    scheduler = optim.lr_scheduler.ReduceLROnPlateau(optimizer, 'max', patience=5)  # goal: maximize Dice score
-    #scheduler = optim.lr_scheduler.StepLR(optimizer, step_size=100, gamma=1.0)
+    scheduler = optim.lr_scheduler.PolynomialLR(optimizer, 'max')  # goal: maximize Dice score
     grad_scaler = torch.cuda.amp.GradScaler(enabled=amp)
     criterion = nn.MSELoss(reduction='mean')
     l1loss = nn.L1Loss(reduction='mean')
