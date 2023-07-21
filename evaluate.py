@@ -49,19 +49,23 @@ def evaluate(net, dataloader, device, amp, cfg):
             elif cfg.input_type == 'rf':
                 gt_pts = [torch.vstack([gt_pts[i, 1].min(-2)[0], gt_pts[i, 1].argmin(-2)]).T for i in range(gt_pts.shape[0])]
 
-            # tbd: validate
+            # gt points alignment
             gt_points = torch.stack(gt_pts).swapaxes(-2, -1)
             gt_points = torch.fliplr(gt_points)
-            es_points = np.array([np.nonzero(mask) for mask in masks.squeeze(1).cpu().numpy()])[:, ::-1, :]
-            if cfg.input_type == 'rf':
-                es_points[2] = 1
-                es_points[:2, :] = es_points[:2, :][::-1, :] / cfg.upscale_factor
-                es_points = t_mat @ es_points
-                es_points[:2, :] = es_points[:2, :][::-1, :]
-            es_points = es_points[:2, ...][None, ...]
-
-            es_points /= wavelength
             gt_points /= wavelength
+
+            # estimated points alignment
+            es_indices = torch.nonzero(masks.squeeze())
+            es_points = []
+            for i in range(cfg.batch_size):
+                es_pts = torch.fliplr(es_indices[es_indices[:, 0]==i, :]).T
+                if cfg.input_type == 'rf':
+                    es_pts[2] = 1
+                    es_pts[:2, :] = es_pts[:2, :][::-1, :] / cfg.upscale_factor
+                    es_pts = t_mat @ es_pts
+                    es_pts[:2, :] = es_pts[:2, :][::-1, :]
+                es_pts = es_pts[:2, ...][None, ...]
+                es_points.append(es_pts / wavelength)
 
             pala_err_batch = get_pala_error(es_points, gt_points, upscale_factor=cfg.rescale_factor)
 
