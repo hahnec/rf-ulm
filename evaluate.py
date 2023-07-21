@@ -58,7 +58,7 @@ def evaluate(net, dataloader, device, amp, cfg):
             gt_points /= wavelength
 
             # estimated points alignment
-            es_indices = torch.nonzero(masks.squeeze())
+            es_indices = torch.nonzero(masks.squeeze()).double()
             es_points = []
             for i in range(cfg.batch_size):
                 es_pts = torch.fliplr(es_indices[es_indices[:, 0]==i, :]).T
