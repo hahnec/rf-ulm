@@ -56,9 +56,6 @@ def evaluate(net, dataloader, device, amp, cfg):
             gt_points = torch.fliplr(gt_points).cpu().numpy()
             gt_points /= cfg.wavelength
 
-            if masks.sum() == 0:
-                continue
-
             # estimated points alignment
             es_indices = torch.nonzero(masks.squeeze(1)).double()
             es_points = []
