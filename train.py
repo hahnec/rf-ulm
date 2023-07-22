@@ -60,7 +60,7 @@ def train_model(
         dataset_path=cfg.data_dir,
         transforms = transforms,
         clutter_db = cfg.clutter_db,
-        sequences = [16, 17, 18, 19],
+        sequences = [1], #[16, 17, 18, 19],
         rescale_factor = cfg.rescale_factor,
         upscale_factor = cfg.upscale_factor,
         temporal_filter_opt = True if str(cfg.data_dir).lower().__contains__('rat') else False,
@@ -85,7 +85,7 @@ def train_model(
 
     # instantiate logging
     if cfg.logging:
-        experiment = wandb.init(project='SR-ULM', resume='allow', anonymous='must', config=cfg)
+        experiment = wandb.init(project='SR-ULM-TRAIN', resume='allow', anonymous='must', config=cfg)
         experiment.config.update(
             dict(epochs=epochs, batch_size=batch_size, learning_rate=learning_rate,
                 val_percent=val_percent, save_checkpoint=save_checkpoint, img_scale=img_scale, amp=amp)
@@ -253,7 +253,7 @@ if __name__ == '__main__':
 
     # load configuration
     args = get_args()
-    cfg = OmegaConf.load('./pala_unet.yml')
+    cfg = OmegaConf.load('./config.yml')
 
     # override loaded configuration with CLI arguments
     cfg = OmegaConf.merge(cfg, OmegaConf.from_cli())

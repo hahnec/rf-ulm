@@ -12,10 +12,10 @@ def dithering(points, wavelength, rescale_factor, upscale_factor, sample_num=256
     
     # no dithering if model resolution higher than target resolution
     dither_factors[dither_factors<1] = 0
-
     dither_factors *= wavelength
 
-    dither_points = dither_factors[:, None] * np.random.randn(*points.shape)
+    rand_nums = 2*np.random.rand(*points.shape)-1
+    dither_points = dither_factors[:, None] * rand_nums
 
     points += dither_points
 

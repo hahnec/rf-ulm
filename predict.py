@@ -120,10 +120,10 @@ if __name__ == '__main__':
 
     args = get_args()
 
-    cfg = OmegaConf.load('./pala_unet.yml')
+    cfg = OmegaConf.load('./config.yml')
 
     if cfg.logging:
-        experiment = wandb.init(project='pulm', resume='allow', anonymous='must', config=cfg)
+        experiment = wandb.init(project='SR-ULM-INFER', resume='allow', anonymous='must', config=cfg)
         experiment.config.update(cfg)
 
     # Model selection
@@ -149,8 +149,6 @@ if __name__ == '__main__':
     mask_values = state_dict.pop('mask_values') if 'mask_values' in state_dict.keys() else None
     net.load_state_dict(state_dict)
 
-    logging.info('Model loaded!')
-
     if cfg.input_type == 'iq':
         DatasetClass = PalaDatasetIq
         transforms = []
@@ -163,7 +161,7 @@ if __name__ == '__main__':
         dataset_path=cfg.data_dir,
         transforms=transforms,
         rf_opt = False,
-        sequences = list(range(1, 16)),
+        sequences = [1], #list(range(1, 16)),
         rescale_factor = cfg.rescale_factor,
         upscale_factor = cfg.upscale_factor,
         tile_opt = True if cfg.model.__contains__('unet') else False,
@@ -211,7 +209,8 @@ if __name__ == '__main__':
             es_points = es_points[:2, ...][None, ...]
 
             # dithering
-            es_points[0] = dithering(es_points[0], cfg.wavelength/100, rescale_factor=cfg.rescale_factor, upscale_factor=cfg.upscale_factor)
+            if cfg.dither:
+                es_points[0] = dithering(es_points[0], cfg.wavelength/20, rescale_factor=cfg.rescale_factor, upscale_factor=cfg.upscale_factor)
 
             es_points /= cfg.wavelength
             gt_points /= cfg.wavelength

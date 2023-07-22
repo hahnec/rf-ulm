@@ -1,0 +1,37 @@
+# general
+device: 'cuda' #'cpu'  #
+logging: False
+plot_opt: False
+
+# model
+model: 'mspcn'  #'unet' #
+upscale_factor: 4 #2 #10 #
+rescale_factor: 10 #10 #20
+input_type: 'rf' #'iq' #
+model_path: 'checkpoints/checkpoint_epoch1_mspcn_rf.pth' #'checkpoints/ckpt_epoch86_mspcn_4x.pth' #
+
+# training
+batch_size: 1
+lr: 0.001
+epochs: 100
+clutter_db: Null #-40
+
+# loss
+blur_opt: True
+avg_weight_opt: False
+radial_sym_opt: False
+nms_threshold: 15 #13 #20 #0.075  #0.2
+gamma: 0.9
+
+# paths
+data_path: PALA_data_InSilicoFlow/
+ubx_dir: /storage/workspaces/artorg_aimi/ws_00000/chris/${data_path}
+loc_dir: ./datasets/stof_chirp101_dataset #/home/chris/LocalDatasets/03_PALA/${data_path} #
+map_dir: /home/chris/LocalDatasets/03_PALA/${data_path}
+ubx_rat_dir: /storage/workspaces/artorg_aimi/ws_00000/chris/Rat18_2D_InVivoBrain/
+map_rat_dir: /home/chris/UbelixWorkspaces/artorg_aimi/ws_00000/chris/Rat18_2D_InVivoBrain/
+data_dir: ${map_dir} #${map_rat_dir} #
+
+# inference config
+dither: False
+save_opt: False
