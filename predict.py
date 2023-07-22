@@ -236,15 +236,15 @@ if __name__ == '__main__':
 
             if cfg.logging:
                 wandb.log({
-                    'U-Net/RMSE': result[0],
-                    'U-Net/Precision': result[1],
-                    'U-Net/Recall': result[2],
-                    'U-Net/Jaccard': result[3],
-                    'U-Net/TruePositive': result[4],
-                    'U-Net/FalsePositive': result[5],
-                    'U-Net/FalseNegative': result[6],
-                    'U-Net/InferTime': comp_time,
-                    'U-Net/FrameTime': iter_time,
+                    'RMSE': result[0],
+                    'Precision': result[1],
+                    'Recall': result[2],
+                    'Jaccard': result[3],
+                    'TruePositive': result[4],
+                    'FalsePositive': result[5],
+                    'FalseNegative': result[6],
+                    'InferTime': comp_time,
+                    'FrameTime': iter_time,
                     'frame': int(i),
                 })
 
