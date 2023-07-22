@@ -47,7 +47,7 @@ def train_model(
         gradient_clipping: float = 1.0,
         cfg = None,
 ):
-    # 1. Create dataset
+    # create dataset
     if cfg.input_type == 'iq':
         DatasetClass = PalaDatasetIq
         transforms = [RandomHorizontalFlip(), RandomVerticalFlip(), RandomRotation(degree=5), GaussianNoise()]
@@ -67,20 +67,25 @@ def train_model(
         tile_opt = True if cfg.model.__contains__('unet') else False,
         )
 
-    # 2. Split into train / validation partitions
+    # data-related configuration
+    cfg.wavelength = float(dataset.get_key('wavelength'))
+    cfg.origin_x = float(dataset.get_key('Origin')[0])
+    cfg.origin_z = float(dataset.get_key('Origin')[2])
+
+    # split into train and validation partitions
     n_val = int(len(dataset) * val_percent)
     n_train = len(dataset) - n_val
     train_set, val_set = random_split(dataset, [n_train, n_val], generator=torch.Generator().manual_seed(0))
 
-    # 3. Create data loaders
+    # create data loaders
     num_workers = min(4, os.cpu_count())
     loader_args = dict(batch_size=batch_size, num_workers=num_workers, pin_memory=True)
     train_loader = DataLoader(train_set, collate_fn=collate_fn, shuffle=True, **loader_args)
     val_loader = DataLoader(val_set, collate_fn=collate_fn, shuffle=False, drop_last=True, **loader_args)
 
-    # (Initialize logging)
+    # instantiate logging
     if cfg.logging:
-        experiment = wandb.init(project='U-Net', resume='allow', anonymous='must', config=cfg)
+        experiment = wandb.init(project='SR-ULM', resume='allow', anonymous='must', config=cfg)
         experiment.config.update(
             dict(epochs=epochs, batch_size=batch_size, learning_rate=learning_rate,
                 val_percent=val_percent, save_checkpoint=save_checkpoint, img_scale=img_scale, amp=amp)
@@ -98,7 +103,7 @@ def train_model(
             Mixed Precision: {amp}
         ''')
 
-    # 4. Set up the optimizer, the loss, the learning rate scheduler and the loss scaling for AMP
+    # set up the optimizer, the loss, the learning rate scheduler and the loss scaling for AMP
     #optimizer = optim.RMSprop(model.parameters(), lr=learning_rate, weight_decay=weight_decay, momentum=momentum, foreach=True)
     optimizer = optim.Adam(model.parameters(), lr=learning_rate, weight_decay=weight_decay, foreach=True)
     scheduler = optim.lr_scheduler.ReduceLROnPlateau(optimizer, 'max', patience=5)
@@ -245,9 +250,13 @@ def get_args():
 
 
 if __name__ == '__main__':
-    args = get_args()
 
+    # load configuration
+    args = get_args()
     cfg = OmegaConf.load('./pala_unet.yml')
+
+    # override loaded configuration with CLI arguments
+    cfg = OmegaConf.merge(cfg, OmegaConf.from_cli())
 
     logging.basicConfig(level=logging.INFO, format='%(levelname)s: %(message)s')
     device = torch.device(cfg.device)

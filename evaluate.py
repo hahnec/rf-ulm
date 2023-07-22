@@ -22,7 +22,7 @@ def evaluate(net, dataloader, device, amp, cfg):
     # iterate over the validation set
     with torch.autocast(device.type if device.type != 'mps' else 'cpu', enabled=amp):
         for batch in tqdm(dataloader, total=num_val_batches, desc='Validation round', unit='batch', leave=False):
-            #image, mask_true = batch['image'], batch['mask']
+
             image, mask_true, gt_pts = batch[:3] if cfg.input_type == 'iq' else (batch[2][:, 1].unsqueeze(1), batch[-2][:, 1].unsqueeze(1), batch[3])
 
             # move images and labels to correct device and type
@@ -52,22 +52,25 @@ def evaluate(net, dataloader, device, amp, cfg):
                 gt_pts = [torch.vstack([gt_pts[i, 1].min(-2)[0], gt_pts[i, 1].argmin(-2)]).T for i in range(gt_pts.shape[0])]
 
             # gt points alignment
-            wavelength = 9.856e-05
             gt_points = torch.stack(gt_pts).swapaxes(-2, -1)
             gt_points = torch.fliplr(gt_points).cpu().numpy()
-            gt_points /= wavelength
+            gt_points /= cfg.wavelength
+
+            if masks.sum() == 0:
+                continue
 
             # estimated points alignment
-            es_indices = torch.nonzero(masks.squeeze()).double()
+            es_indices = torch.nonzero(masks.squeeze(1)).double()
             es_points = []
             for i in range(cfg.batch_size):
                 es_pts = torch.fliplr(es_indices[es_indices[:, 0]==i, :]).T
                 if cfg.input_type == 'rf':
                     es_pts[2] = 1
-                    es_pts[:2, :] = torch.flipud(es_pts[:2, :]) / cfg.upscale_factor    # why divide by upscale?
+                    es_pts[:2, :] = torch.flipud(es_pts[:2, :])
+                    es_pts[1, :] /= cfg.upscale_factor
                     es_pts = t_mat @ es_pts
                     es_pts[:2, :] = torch.flipud(es_pts[:2, :])
-                es_pts = es_pts[:2, ...].cpu().numpy() / wavelength
+                es_pts = es_pts[:2, ...].cpu().numpy() / cfg.wavelength
                 es_points.append(es_pts)
 
             pala_err_batch = get_pala_error(es_points, gt_points, upscale_factor=cfg.rescale_factor)

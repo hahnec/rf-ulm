@@ -170,8 +170,11 @@ if __name__ == '__main__':
         transforms=transforms,
         )
 
-    wavelength = 9.856e-05
-    origin = np.array([-72,  16])
+    # data-related configuration
+    cfg.wavelength = float(dataset.get_key('wavelength'))
+    cfg.origin_x = float(dataset.get_key('Origin')[0])
+    cfg.origin_z = float(dataset.get_key('Origin')[2])
+    origin = np.array([cfg.origin_x, cfg.origin_z])
 
     t_mat = np.loadtxt('./t_mat.txt')
 
@@ -207,8 +210,8 @@ if __name__ == '__main__':
                 es_points[:2, :] = es_points[:2, :][::-1, :]
             es_points = es_points[:2, ...][None, ...]
 
-            es_points /= wavelength
-            gt_points /= wavelength
+            es_points /= cfg.wavelength
+            gt_points /= cfg.wavelength
 
             pts_es = (es_points.squeeze() + origin[:, None]).T
             pts_gt = (gt_points.squeeze() + origin[:, None]).T
