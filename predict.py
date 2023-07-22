@@ -163,7 +163,7 @@ if __name__ == '__main__':
         dataset_path=cfg.data_dir,
         transforms=transforms,
         rf_opt = False,
-        sequences = [1], #list(range(1, 16)),
+        sequences = list(range(1, 16)),
         rescale_factor = cfg.rescale_factor,
         upscale_factor = cfg.upscale_factor,
         tile_opt = True if cfg.model.__contains__('unet') else False,
@@ -211,7 +211,7 @@ if __name__ == '__main__':
             es_points = es_points[:2, ...][None, ...]
 
             # dithering
-            es_points[0] = dithering(es_points[0], cfg.wavelength/20, rescale_factor=cfg.rescale_factor, upscale_factor=cfg.upscale_factor)
+            es_points[0] = dithering(es_points[0], cfg.wavelength/100, rescale_factor=cfg.rescale_factor, upscale_factor=cfg.upscale_factor)
 
             es_points /= cfg.wavelength
             gt_points /= cfg.wavelength
