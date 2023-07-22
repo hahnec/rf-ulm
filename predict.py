@@ -160,14 +160,14 @@ if __name__ == '__main__':
         from datasets.pala_dataset.utils.collate_fn import collate_fn
     dataset = DatasetClass(
         dataset_path=cfg.data_dir,
+        transforms=transforms,
         rf_opt = False,
         sequences = list(range(1, 16)),
         rescale_factor = cfg.rescale_factor,
         upscale_factor = cfg.upscale_factor,
         tile_opt = True if cfg.model.__contains__('unet') else False,
         clutter_db = cfg.clutter_db,
-        temporal_filter_opt = False,
-        transforms=transforms,
+        temporal_filter_opt = True if str(cfg.data_dir).lower().__contains__('rat') else False,
         )
 
     # data-related configuration
