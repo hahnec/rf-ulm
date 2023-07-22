@@ -32,6 +32,7 @@ from evaluate import non_max_supp, get_pala_error
 from utils.srgb_conv import srgb_conv
 from utils.utils import plot_img_and_mask
 from utils.transform import NormalizeVol
+from utils.dithering import dithering
 
 
 def predict_img(net,
@@ -162,7 +163,7 @@ if __name__ == '__main__':
         dataset_path=cfg.data_dir,
         transforms=transforms,
         rf_opt = False,
-        sequences = list(range(1, 16)),
+        sequences = [1], #list(range(1, 16)),
         rescale_factor = cfg.rescale_factor,
         upscale_factor = cfg.upscale_factor,
         tile_opt = True if cfg.model.__contains__('unet') else False,
@@ -187,8 +188,7 @@ if __name__ == '__main__':
     tic = time.process_time()
     for i, batch in enumerate(test_loader):
         with tqdm(total=len(test_loader), desc=f'Frame {i}/{len(test_loader)}', unit='img') as pbar:
-            #logging.info(f'Predicting image {filename} ...')
-            #img = Image.open(filename)
+
             img, true_mask, gt_pts = batch[:3] if cfg.input_type == 'iq' else (batch[2][:, 1].unsqueeze(1), batch[-2][:, 1].unsqueeze(1), batch[1])
 
             mask, output, comp_time = predict_img(net=net,
@@ -209,6 +209,9 @@ if __name__ == '__main__':
                 es_points = t_mat @ es_points
                 es_points[:2, :] = es_points[:2, :][::-1, :]
             es_points = es_points[:2, ...][None, ...]
+
+            # dithering
+            es_points[0] = dithering(es_points[0], cfg.wavelength/20, rescale_factor=cfg.rescale_factor, upscale_factor=cfg.upscale_factor)
 
             es_points /= cfg.wavelength
             gt_points /= cfg.wavelength
@@ -275,11 +278,9 @@ print('Acc. Errors: %s' % str(torch.nanmean(errs, axis=0)))
 all_pts = [p for p in all_pts if p.size > 0]
 all_pts_gt = [p for p in all_pts_gt if p.size > 0]
 
+#s = [dithering(all_pts[i].copy().T, 1/20, rescale_factor=cfg.rescale_factor, upscale_factor=cfg.upscale_factor).T for i in range(len(all_pts))]
 unet_ulm_img, _ = tracks2img((np.vstack(all_pts)-origin)[:, ::-1]-origin, img_size=np.array([84, 134]), scale=10, mode='all_in')
 gtru_ulm_img, _ = tracks2img((np.vstack(all_pts_gt)-origin)[:, ::-1]-origin, img_size=np.array([84, 134]), scale=10, mode='all_in')
-
-#scale_factor = 10 / cfg.upscale_factor
-#unet_ulm_img = rescale(unet_ulm_img, scale_factor, mode='reflect', anti_aliasing=True) if scale_factor != 1 else unet_ulm_img
 
 normalize = lambda x: (x-x.min())/(x.max()-x.min()) if x.max()-x.min() > 0 else x-x.min()
 
