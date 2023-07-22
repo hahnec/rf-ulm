@@ -161,7 +161,7 @@ if __name__ == '__main__':
     dataset = DatasetClass(
         dataset_path=cfg.data_dir,
         rf_opt = False,
-        sequences = list(range(1, 16)),
+        sequences = [1], #list(range(1, 16)),
         rescale_factor = cfg.rescale_factor,
         upscale_factor = cfg.upscale_factor,
         tile_opt = True if cfg.model.__contains__('unet') else False,
@@ -198,10 +198,11 @@ if __name__ == '__main__':
             gt_points = gt_pts[:, ~(torch.isnan(gt_pts.squeeze()).sum(-1) > 0)].numpy()[:, ::-1]
             gt_points = gt_points.swapaxes(-2, -1)
             gt_points = gt_points[:, ::-1, :]
-            es_points = np.array(np.nonzero(mask))[::-1, :]
+            es_points = np.array(np.nonzero(mask), dtype=np.double)[::-1, :]
             if cfg.input_type == 'rf':
                 es_points[2] = 1
-                es_points[:2, :] = es_points[:2, :][::-1, :] / cfg.upscale_factor
+                es_points[:2, :] = es_points[:2, :][::-1, :]
+                es_points[1, :] /= cfg.upscale_factor
                 es_points = t_mat @ es_points
                 es_points[:2, :] = es_points[:2, :][::-1, :]
             es_points = es_points[:2, ...][None, ...]
