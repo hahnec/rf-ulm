@@ -161,7 +161,7 @@ if __name__ == '__main__':
         dataset_path=cfg.data_dir,
         transforms=transforms,
         rf_opt = False,
-        sequences = [1], #list(range(1, 16)),
+        sequences = list(range(1, 16)),
         rescale_factor = cfg.rescale_factor,
         upscale_factor = cfg.upscale_factor,
         tile_opt = True if cfg.model.__contains__('unet') else False,
