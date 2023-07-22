@@ -1,4 +1,3 @@
-import argparse
 import logging
 import os
 import random
@@ -23,10 +22,6 @@ from datasets.pala_dataset.pala_iq import PalaDatasetIq
 from datasets.pala_dataset.pala_rf import PalaDatasetRf
 from utils.dice_score import dice_loss
 from utils.transform import RandomHorizontalFlip, RandomVerticalFlip, RandomRotation, GaussianNoise, NormalizeVol
-
-dir_img = Path('./data/imgs/')
-dir_mask = Path('./data/masks/')
-dir_checkpoint = Path('./checkpoints/')
 
 
 img_norm = lambda x: (x-x.min())/(x.max()-x.min()) if (x.max()-x.min()) != 0 else x
@@ -57,14 +52,14 @@ def train_model(
         transforms = [NormalizeVol()]
         from datasets.pala_dataset.utils.collate_fn import collate_fn
     dataset = DatasetClass(
-        dataset_path=cfg.data_dir,
+        dataset_path = cfg.data_dir,
         transforms = transforms,
         clutter_db = cfg.clutter_db,
-        sequences = [1], #[16, 17, 18, 19],
+        sequences = [16, 17, 18, 19] if not cfg.data_dir.lower().__contains__('home') else cfg.sequences,
         rescale_factor = cfg.rescale_factor,
         upscale_factor = cfg.upscale_factor,
-        temporal_filter_opt = True if str(cfg.data_dir).lower().__contains__('rat') else False,
-        tile_opt = True if cfg.model.__contains__('unet') else False,
+        temporal_filter_opt = cfg.data_dir.lower().__contains__('rat'),
+        tile_opt = cfg.model.__contains__('unet'),
         )
 
     # data-related configuration
@@ -85,8 +80,8 @@ def train_model(
 
     # instantiate logging
     if cfg.logging:
-        experiment = wandb.init(project='SR-ULM-TRAIN', resume='allow', anonymous='must', config=cfg)
-        experiment.config.update(
+        wb = wandb.init(project='SR-ULM-TRAIN', resume='allow', anonymous='must', config=cfg)
+        wb.config.update(
             dict(epochs=epochs, batch_size=batch_size, learning_rate=learning_rate,
                 val_percent=val_percent, save_checkpoint=save_checkpoint, img_scale=img_scale, amp=amp)
         )
@@ -111,13 +106,13 @@ def train_model(
     criterion = nn.MSELoss(reduction='mean')
     l1loss = nn.L1Loss(reduction='mean')
     global_step = 0
-    lambda_value = 0.01 if cfg.model.__contains__('unet') else 1
+    lambda_value = 0.01 if cfg.model.__contains__('unet') else cfg.lambda1
     
     # mSPCN Gaussian
     psf_heatmap = torch.from_numpy(matlab_style_gauss2D(shape=(7,7),sigma=1))
     gfilter = torch.reshape(psf_heatmap, [1, 1, 7, 7])
     gfilter = gfilter.to(device)
-    amplitude = 50 if cfg.model.__contains__('mspcn') else 1
+    amplitude = 50 if cfg.model.__contains__('mspcn') else cfg.lambda0
 
     # 5. Begin training
     for epoch in range(1, epochs+1):
@@ -137,7 +132,7 @@ def train_model(
                     masks_true = F.conv2d(masks_true, gfilter, padding=gfilter.shape[-1]//2)
                     masks_true /= masks_true.max()
                     masks_true *= amplitude
-                    if cfg.model == 'mspcn':
+                    if cfg.model == 'mspcn' and cfg.input_type == 'iq':
                         masks_pred = F.conv2d(masks_pred, gfilter, padding=gfilter.shape[-1]//2)
                         
                     loss = criterion(masks_pred.squeeze(1), masks_true.squeeze(1).float())
@@ -173,7 +168,7 @@ def train_model(
                 global_step += 1
                 epoch_loss += loss.item()
                 if cfg.logging:
-                    experiment.log({
+                    wb.log({
                         'train loss': loss.item(),
                         'step': global_step,
                         'epoch': epoch
@@ -200,7 +195,7 @@ def train_model(
                         logging.info('Validation Dice score: {}'.format(val_score))
                         try:
                             if cfg.logging:
-                                experiment.log({
+                                wb.log({
                                     'learning rate': optimizer.param_groups[0]['lr'],
                                     'validation Dice': val_score,
                                     'images': wandb.Image(images[0].cpu()),
@@ -225,34 +220,16 @@ def train_model(
                             print(e)
 
         if save_checkpoint:
-            Path(dir_checkpoint).mkdir(parents=True, exist_ok=True)
+            dir_checkpoint = Path('./checkpoints/')
+            dir_checkpoint.mkdir(parents=True, exist_ok=True)
             state_dict = model.state_dict()
-            #state_dict['mask_values'] = dataset.mask_values
             torch.save(state_dict, str(dir_checkpoint / 'checkpoint_epoch{}.pth'.format(epoch)))
             logging.info(f'Checkpoint {epoch} saved!')
-
-
-def get_args():
-    parser = argparse.ArgumentParser(description='Train the UNet on images and target masks')
-    parser.add_argument('--epochs', '-e', metavar='E', type=int, default=5, help='Number of epochs')
-    parser.add_argument('--batch-size', '-b', dest='batch_size', metavar='B', type=int, default=1, help='Batch size')
-    parser.add_argument('--learning-rate', '-l', metavar='LR', type=float, default=1e-5,
-                        help='Learning rate', dest='lr')
-    parser.add_argument('--load', '-f', type=str, default=False, help='Load model from a .pth file')
-    parser.add_argument('--scale', '-s', type=float, default=1, help='Downscaling factor of the images')
-    parser.add_argument('--validation', '-v', dest='val', type=float, default=10.0,
-                        help='Percent of the data that is used as validation (0-100)')
-    parser.add_argument('--amp', action='store_true', default=False, help='Use mixed precision')
-    parser.add_argument('--bilinear', action='store_true', default=False, help='Use bilinear upsampling')
-    parser.add_argument('--classes', '-c', type=int, default=2, help='Number of classes')
-
-    return parser.parse_args()
 
 
 if __name__ == '__main__':
 
     # load configuration
-    args = get_args()
     cfg = OmegaConf.load('./config.yml')
 
     # override loaded configuration with CLI arguments
@@ -262,13 +239,10 @@ if __name__ == '__main__':
     device = torch.device(cfg.device)
     logging.info(f'Using device {device}')
 
+    # model selection
     in_channels = 1
-
-    # Model selection
     if cfg.model == 'unet':
         # UNet model
-        model = UNet(n_channels=in_channels, n_classes=1, bilinear=args.bilinear)
-        #model = SlounUNet(n_channels=1, n_classes=1, bilinear=False)
         model = SlounAdaptUNet(n_channels=in_channels, n_classes=1, bilinear=False)
     elif cfg.model == 'mspcn':
         # mSPCN model
@@ -278,11 +252,10 @@ if __name__ == '__main__':
 
     model = model.to(memory_format=torch.channels_last)
 
-    if args.load:
-        state_dict = torch.load(args.load, map_location=device)
-        del state_dict['mask_values']
+    if cfg.fine_tune:
+        state_dict = torch.load(cfg.model_path, map_location=device)
         model.load_state_dict(state_dict)
-        logging.info(f'Model loaded from {args.load}')
+        logging.info(f'Model loaded from {cfg.model_path}')
 
     model.to(device=device)
     train_model(
@@ -291,8 +264,8 @@ if __name__ == '__main__':
         batch_size=cfg.batch_size,
         learning_rate=cfg.lr,
         device=device,
-        img_scale=args.scale,
-        val_percent=args.val / 100,
-        amp=args.amp,
+        img_scale=0.5,
+        val_percent=0.1,
+        amp=False,
         cfg = cfg
     )

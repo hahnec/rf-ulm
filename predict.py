@@ -1,4 +1,3 @@
-import argparse
 import logging
 import os
 import time
@@ -35,23 +34,23 @@ from utils.transform import NormalizeVol
 from utils.dithering import dithering
 
 
-def predict_img(net,
-                img,
-                device,
-                scale_factor=1,
-                out_threshold=0.5
-                ):
+def predict_img(
+        net,
+        img,
+        device,
+        out_threshold=0.5,
+    ):
+
     net.eval()
-    #img = torch.from_numpy(BasicDataset.preprocess(None, img, scale_factor, is_mask=False))
-    #img = img.unsqueeze(0)
     img = img.to(device=device, dtype=torch.float32)
 
     with torch.no_grad():
-        start = time.time()
+        tic = time.process_time()
         output = net(img)
-        comp_time = time.time() - start
+        toc = time.process_time() - tic
         #output = F.interpolate(output, (full_img.size[1], full_img.size[0]), mode='bilinear')
         output = output.squeeze().cpu()
+
         # non-maximum suppression
         if False:
             nms = non_max_supp(output)
@@ -60,83 +59,29 @@ def predict_img(net,
         else:
             mask = regional_mask(output.numpy(), th=out_threshold)
 
-    return mask[None, ...], output, comp_time
-
-
-def get_args():
-    parser = argparse.ArgumentParser(description='Predict masks from input images')
-    parser.add_argument('--model', '-m', default='MODEL.pth', metavar='FILE',
-                        help='Specify the file in which the model is stored')
-    parser.add_argument('--input', '-i', metavar='INPUT', nargs='+', help='Filenames of input images', required=False)
-    parser.add_argument('--output', '-o', metavar='OUTPUT', nargs='+', help='Filenames of output images')
-    parser.add_argument('--viz', '-v', action='store_true',
-                        help='Visualize the images as they are processed')
-    parser.add_argument('--no-save', '-n', action='store_true', help='Do not save the output masks')
-    parser.add_argument('--mask-threshold', '-t', type=float, default=0.5,
-                        help='Minimum probability value to consider a mask pixel white')
-    parser.add_argument('--scale', '-s', type=float, default=0.5,
-                        help='Scale factor for the input images')
-    parser.add_argument('--bilinear', action='store_true', default=False, help='Use bilinear upsampling')
-
-    return parser.parse_args()
-
-
-def get_output_filenames(args):
-    def _generate_name(fn):
-        return f'{os.path.splitext(fn)[0]}_OUT.png'
-
-    return args.output or list(map(_generate_name, args.input))
-
-
-def mask_to_image(mask: np.ndarray, mask_values):
-    if isinstance(mask_values[0], list):
-        out = np.zeros((mask.shape[-2], mask.shape[-1], len(mask_values[0])), dtype=np.uint8)
-    elif mask_values == [0, 1]:
-        out = np.zeros((mask.shape[-2], mask.shape[-1]), dtype=bool)
-    else:
-        out = np.zeros((mask.shape[-2], mask.shape[-1]), dtype=np.uint8)
-
-    if mask.ndim == 3:
-        mask = np.argmax(mask, axis=0)
-
-    for i, v in enumerate(mask_values):
-        out[mask == i] = v
-
-    return Image.fromarray(out)
-
-
-def img_color_map(img=None, cmap='inferno'):
-
-    # get color map
-    colormap = plt.get_cmap(cmap)
-
-    # apply color map omitting alpha channel
-    img = colormap(img)[..., :3]
-
-    return img
+    return mask[None, ...], output, toc
 
 
 if __name__ == '__main__':
 
-    args = get_args()
-
+    # load configuration
     cfg = OmegaConf.load('./config.yml')
 
+    # override loaded configuration with CLI arguments
+    cfg = OmegaConf.merge(cfg, OmegaConf.from_cli())
+
     if cfg.logging:
-        experiment = wandb.init(project='SR-ULM-INFER', resume='allow', anonymous='must', config=cfg)
-        experiment.config.update(cfg)
+        wb = wandb.init(project='SR-ULM-INFER', resume='allow', anonymous='must', config=cfg)
+        wb.config.update(cfg)
 
     # Model selection
+    in_channels = 1
     if cfg.model == 'unet':
         # UNet model
-        # n_channels=3 for RGB images
-        # n_classes is the number of probabilities you want to get per pixel
-        net = UNet(n_channels=1, n_classes=1, bilinear=args.bilinear)
-        #model = SlounUNet(n_channels=1, n_classes=1, bilinear=False)
-        net = SlounAdaptUNet(n_channels=1, n_classes=1, bilinear=False)
+        net = SlounAdaptUNet(n_channels=in_channels, n_classes=1, bilinear=False)
     elif cfg.model == 'mspcn':
         # mSPCN model
-        net = Net(upscale_factor=cfg.upscale_factor)
+        net = Net(upscale_factor=cfg.upscale_factor, in_channels=in_channels)
     else:
         raise Exception('Model name not recognized')
 
@@ -160,13 +105,12 @@ if __name__ == '__main__':
     dataset = DatasetClass(
         dataset_path=cfg.data_dir,
         transforms=transforms,
-        rf_opt = False,
-        sequences = list(range(1, 16)),
+        sequences = list(range(1, 121)) if cfg.data_dir.lower().__contains__('rat') else cfg.sequences,
         rescale_factor = cfg.rescale_factor,
         upscale_factor = cfg.upscale_factor,
-        tile_opt = True if cfg.model.__contains__('unet') else False,
+        tile_opt = cfg.model.lower().__contains__('unet'),
         clutter_db = cfg.clutter_db,
-        temporal_filter_opt = True if str(cfg.data_dir).lower().__contains__('rat') else False,
+        temporal_filter_opt = cfg.data_dir.lower().__contains__('rat'),
         )
 
     # data-related configuration
@@ -174,12 +118,15 @@ if __name__ == '__main__':
     cfg.origin_x = float(dataset.get_key('Origin')[0])
     cfg.origin_z = float(dataset.get_key('Origin')[2])
     origin = np.array([cfg.origin_x, cfg.origin_z])
-
-    t_mat = np.loadtxt('./t_mat.txt')
-
+    wv_idx = 1
+    t_mats = np.load('./t_mats.npy')
+    t_mat = t_mats[wv_idx]
+    
+    # data loader
     num_workers = min(4, os.cpu_count())
     loader_args = dict(batch_size=1, num_workers=num_workers, pin_memory=True)
     test_loader = DataLoader(dataset, shuffle=False, drop_last=True, **loader_args)
+
     ac_rmse_err = []
     all_pts = []
     all_pts_gt = []
@@ -187,13 +134,14 @@ if __name__ == '__main__':
     for i, batch in enumerate(test_loader):
         with tqdm(total=len(test_loader), desc=f'Frame {i}/{len(test_loader)}', unit='img') as pbar:
 
-            img, true_mask, gt_pts = batch[:3] if cfg.input_type == 'iq' else (batch[2][:, 1].unsqueeze(1), batch[-2][:, 1].unsqueeze(1), batch[1])
+            img, true_mask, gt_pts = batch[:3] if cfg.input_type == 'iq' else (batch[2][:, wv_idx].unsqueeze(1), batch[-2][:, wv_idx].unsqueeze(1), batch[1])
 
-            mask, output, comp_time = predict_img(net=net,
+            mask, output, comp_time = predict_img(
+                            net=net,
                             img=img,
-                            scale_factor=args.scale,
                             out_threshold=cfg.nms_threshold,
-                            device=device)
+                            device=device,
+                            )
 
             # points alignment
             gt_points = gt_pts[:, ~(torch.isnan(gt_pts.squeeze()).sum(-1) > 0)].numpy()[:, ::-1]
@@ -248,16 +196,6 @@ if __name__ == '__main__':
                     'frame': int(i),
                 })
 
-            if cfg.save_opt:
-                out_filename = out_files[i]
-                result = mask_to_image(mask, mask_values)
-                result.save(out_filename)
-                logging.info(f'Mask saved to {out_filename}')
-
-            if cfg.plot_opt:
-                logging.info(f'Visualizing results for image, close to continue...')
-                plot_img_and_mask(img.squeeze(), mask.squeeze())
-
             if False:
                 # calculate the g-mean for each threshold
                 fpr, tpr, thresholds = roc_curve(true_mask.float().numpy().flatten(), output.flatten())
@@ -277,29 +215,29 @@ print('Acc. Errors: %s' % str(torch.nanmean(errs, axis=0)))
 all_pts = [p for p in all_pts if p.size > 0]
 all_pts_gt = [p for p in all_pts_gt if p.size > 0]
 
-#s = [dithering(all_pts[i].copy().T, 1/20, rescale_factor=cfg.rescale_factor, upscale_factor=cfg.upscale_factor).T for i in range(len(all_pts))]
 unet_ulm_img, _ = tracks2img((np.vstack(all_pts)-origin)[:, ::-1]-origin, img_size=np.array([84, 134]), scale=10, mode='all_in')
 gtru_ulm_img, _ = tracks2img((np.vstack(all_pts_gt)-origin)[:, ::-1]-origin, img_size=np.array([84, 134]), scale=10, mode='all_in')
-
-normalize = lambda x: (x-x.min())/(x.max()-x.min()) if x.max()-x.min() > 0 else x-x.min()
 
 # gamma
 unet_ulm_img **= cfg.gamma
 gtru_ulm_img **= cfg.gamma
 
 # sRGB gamma correction
+normalize = lambda x: (x-x.min())/(x.max()-x.min()) if x.max()-x.min() > 0 else x-x.min()
 unet_ulm_img = srgb_conv(normalize(unet_ulm_img))
 gtru_ulm_img = srgb_conv(normalize(gtru_ulm_img))
 
 # color mapping
-unet_ulm_img = img_color_map(img=normalize(unet_ulm_img), cmap='inferno')
-gtru_ulm_img = img_color_map(img=normalize(gtru_ulm_img), cmap='inferno')
+cmap = 'hot' if str(cfg.data_dir).lower().__contains__('rat') else 'inferno'
+img_color_map = lambda img, cmap=cmap: plt.get_cmap(cmap)(img)[..., :3]
+unet_ulm_img = img_color_map(img=normalize(unet_ulm_img))
+gtru_ulm_img = img_color_map(img=normalize(gtru_ulm_img))
 
 if cfg.logging:
-    wandb.summary['ULM/TotalRMSE'] = unet_rmse_mean
-    wandb.summary['ULM/TotalRMSEstd'] = unet_rmse_std
-    wandb.summary['ULM/TotalJaccard'] = torch.nanmean(errs[..., 3], axis=0)
-    wandb.summary['ULM/SSIM'] = structural_similarity(gtru_ulm_img, unet_ulm_img, channel_axis=2)
+    wandb.summary['TotalRMSE'] = unet_rmse_mean
+    wandb.summary['TotalRMSEstd'] = unet_rmse_std
+    wandb.summary['TotalJaccard'] = torch.nanmean(errs[..., 3], axis=0)
+    wandb.summary['SSIM'] = structural_similarity(gtru_ulm_img, unet_ulm_img, channel_axis=2)
     wandb.log({"unet_ulm_img": wandb.Image(unet_ulm_img)})
     wandb.log({"gtru_ulm_img": wandb.Image(gtru_ulm_img)})
     wandb.save(str(Path('.') / 'logged_errors.csv'))

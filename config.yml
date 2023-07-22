@@ -1,7 +1,6 @@
 # general
-device: 'cuda' #'cpu'  #
-logging: False
-plot_opt: False
+device: 'cuda'
+logging: True
 
 # model
 model: 'mspcn'  #'unet' #
@@ -15,23 +14,24 @@ batch_size: 1
 lr: 0.001
 epochs: 100
 clutter_db: Null #-40
+fine_tune: False
 
 # loss
-blur_opt: True
+lambda0: 50
+lambda1: 1
+nms_threshold: 15 #13 #20 #0.075  #0.2
 avg_weight_opt: False
 radial_sym_opt: False
-nms_threshold: 15 #13 #20 #0.075  #0.2
-gamma: 0.9
 
 # paths
 data_path: PALA_data_InSilicoFlow/
 ubx_dir: /storage/workspaces/artorg_aimi/ws_00000/chris/${data_path}
-loc_dir: ./datasets/stof_chirp101_dataset #/home/chris/LocalDatasets/03_PALA/${data_path} #
 map_dir: /home/chris/LocalDatasets/03_PALA/${data_path}
 ubx_rat_dir: /storage/workspaces/artorg_aimi/ws_00000/chris/Rat18_2D_InVivoBrain/
 map_rat_dir: /home/chris/UbelixWorkspaces/artorg_aimi/ws_00000/chris/Rat18_2D_InVivoBrain/
 data_dir: ${map_dir} #${map_rat_dir} #
+sequences: [1]
 
 # inference config
+gamma: 0.9
 dither: False
-save_opt: False
