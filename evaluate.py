@@ -11,7 +11,7 @@ from datasets.pala_dataset.utils.pala_error import rmse_unique
 from datasets.pala_dataset.utils.radial_pala import radial_pala
 
 
-def align_points(masks, gt_pts, t_mat, cfg):
+def align_points(masks, gt_pts, t_mat, cfg, sr_img=None):
     
     # gt points alignment
     gt_points = []
@@ -22,8 +22,12 @@ def align_points(masks, gt_pts, t_mat, cfg):
         pts_gt /= cfg.wavelength
         gt_points.append(pts_gt)
 
-    # estimated points alignment
     es_indices = torch.nonzero(masks.squeeze(1)).double()
+    # apply radial symmetry
+    if cfg.radial_sym_opt and sr_img is not None: 
+        es_indices[:, 1:] = torch.tensor(radial_pala(sr_img, es_indices[:, 1:].long().cpu().numpy(), w=2), device=cfg.device)
+
+    # estimated points alignment
     es_points = []
     for i in range(cfg.batch_size):
         es_pts = torch.fliplr(es_indices[es_indices[:, 0]==i, :]).T
@@ -33,7 +37,7 @@ def align_points(masks, gt_pts, t_mat, cfg):
             es_pts[1, :] /= cfg.upscale_factor
             es_pts = t_mat @ es_pts
             es_pts[:2, :] = torch.flipud(es_pts[:2, :])
-        es_pts = es_pts[:2, ...] 
+        es_pts = es_pts[:2, ...]
 
         # dithering
         if cfg.dither:
@@ -81,7 +85,7 @@ def evaluate(net, dataloader, device, amp, cfg):
             imgs_nms = non_max_supp_torch(masks_pred, size=cfg.nms_size)
             masks = imgs_nms > cfg.nms_threshold
 
-            es_points, gt_points = align_points(masks, gt_pts, t_mat=t_mats[wv_idx], cfg=cfg)
+            es_points, gt_points = align_points(masks, gt_pts, t_mat=t_mats[wv_idx], cfg=cfg, sr_img=output)
 
             pala_err_batch = get_pala_error(es_points, gt_points, upscale_factor=cfg.upscale_factor)
 
@@ -103,7 +107,7 @@ def evaluate(net, dataloader, device, amp, cfg):
     return dice_score / max(num_val_batches, 1), pala_err_batch, masks, threshold
 
 
-def get_pala_error(es_points: np.ndarray, gt_points: np.ndarray, upscale_factor: float = 1, sr_img=None, avg_weight_opt=False, radial_sym_opt=False):
+def get_pala_error(es_points: np.ndarray, gt_points: np.ndarray, upscale_factor: float = 1, sr_img=None, avg_weight_opt=False):
 
     origin = np.array([-72, 16])
 
@@ -127,9 +131,6 @@ def get_pala_error(es_points: np.ndarray, gt_points: np.ndarray, upscale_factor:
                 except ValueError:
                     pass
                 es_pts[i] = pt[::-1] / upscale_factor + origin
-        
-        # apply radial symmetry
-        if radial_sym_opt: es_pts[:, :2] = radial_pala(sr_img, es_pts[:, :2], w=2)
 
         result = rmse_unique(pts_es, pts_gt, tol=1/4)
         results.append(result)
