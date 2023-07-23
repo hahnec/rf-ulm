@@ -48,7 +48,6 @@ def predict_img(
         tic = time.process_time()
         output = net(img)
         toc = time.process_time() - tic
-        #output = F.interpolate(output, (full_img.size[1], full_img.size[0]), mode='bilinear')
         output = output.squeeze().cpu()
 
         # non-maximum suppression
@@ -147,12 +146,12 @@ if __name__ == '__main__':
             gt_points = gt_pts[:, ~(torch.isnan(gt_pts.squeeze()).sum(-1) > 0)].numpy()[:, ::-1]
             gt_points = gt_points.swapaxes(-2, -1)
             gt_points = gt_points[:, ::-1, :]
-            t_mat = t_mats[wv_idx]
             es_points = np.array(np.nonzero(mask), dtype=np.double)[::-1, :]
             if cfg.input_type == 'rf':
                 es_points[2] = 1
                 es_points[:2, :] = es_points[:2, :][::-1, :]
                 es_points[1, :] /= cfg.upscale_factor
+                t_mat = t_mats[wv_idx].double().cpu().numpy()
                 es_points = t_mat @ es_points
                 es_points[:2, :] = es_points[:2, :][::-1, :]
             es_points = es_points[:2, ...][None, ...]
@@ -199,7 +198,7 @@ if __name__ == '__main__':
 
             if False:
                 # calculate the g-mean for each threshold
-                fpr, tpr, thresholds = roc_curve(true_mask.float().numpy().flatten(), output.flatten())
+                fpr, tpr, thresholds = roc_curve(true_mask[0].float().numpy().flatten(), output[0].flatten())
                 #precision, recall, thresholds = precision_recall_curve(true_mask.float().numpy().flatten(), output.float().numpy().flatten())
                 gmeans = (tpr * (1-fpr))**.5
                 th_idx = np.argmax(gmeans)
