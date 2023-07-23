@@ -102,6 +102,7 @@ def train_model(
     #optimizer = optim.RMSprop(model.parameters(), lr=learning_rate, weight_decay=weight_decay, momentum=momentum, foreach=True)
     optimizer = optim.Adam(model.parameters(), lr=learning_rate, weight_decay=weight_decay, foreach=True)
     scheduler = optim.lr_scheduler.ReduceLROnPlateau(optimizer, 'max', patience=5)
+    #scheduler = optim.lr_scheduler.CosineAnnealingLR(optimizer, cfg.epochs)
     grad_scaler = torch.cuda.amp.GradScaler(enabled=amp)
     criterion = nn.MSELoss(reduction='mean')
     l1loss = nn.L1Loss(reduction='mean')
