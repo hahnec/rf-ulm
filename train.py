@@ -14,7 +14,7 @@ from torch.utils.data import DataLoader, random_split
 from tqdm import tqdm
 from omegaconf import OmegaConf
 
-from evaluate import evaluate, non_max_supp
+from evaluate import evaluate, non_max_supp_torch
 from unet import UNet, SlounUNet, SlounAdaptUNet
 from mspcn.model import Net
 from mspcn.main import matlab_style_gauss2D
@@ -140,24 +140,24 @@ def train_model(
                     loss = criterion(masks_pred.squeeze(1), masks_true.squeeze(1).float())
                     loss += l1loss(masks_pred.squeeze(1), torch.zeros_like(masks_pred.squeeze(1))) * lambda_value
 
-                    #mask = masks_true[0, 0, ::cfg.upscale_factor, ::cfg.upscale_factor] * amplitude
-                    #img = images[0, 0].clone()
-                    #img[img<0] = 0
-                    #img = img/img.max()
-                    #mask = mask/mask.max()
-                    #mask_review_img = torch.dstack([mask, img, mask]).cpu().numpy()
-                    #import matplotlib.pyplot as plt
-                    #fig, axs = plt.subplots(nrows=1,ncols=1, figsize=(15,9))
-                    ##axs[0].imshow(images[0, 0].cpu().numpy())
-                    ##axs[1].imshow(masks_true[0].cpu().numpy())
-                    #axs.imshow(mask_review_img[:, 500:800])
-                    #import imageio
-                    #imageio.imsave('rf_label_frame.png', mask_review_img[:, 500:800])
-                    #plt.show()
+                #mask = masks_true[0, 0, ::cfg.upscale_factor, ::cfg.upscale_factor] * amplitude
+                #img = images[0, 0].clone()
+                #img[img<0] = 0
+                #img = img/img.max()
+                #mask = mask/mask.max()
+                #mask_review_img = torch.dstack([mask, img, mask]).cpu().numpy()
+                #import matplotlib.pyplot as plt
+                #fig, axs = plt.subplots(nrows=1,ncols=1, figsize=(15,9))
+                ##axs[0].imshow(images[0, 0].cpu().numpy())
+                ##axs[1].imshow(masks_true[0].cpu().numpy())
+                #axs.imshow(mask_review_img[:, 500:800])
+                #import imageio
+                #imageio.imsave('rf_label_frame.png', mask_review_img[:, 500:800])
+                #plt.show()
 
                 # activation followed by non-maximum suppression
                 #masks_pred = torch.sigmoid(masks_pred)
-                #imgs_nms = non_max_supp(masks_pred)
+                #imgs_nms = non_max_supp_torch(masks_pred)
                 #masks_nms = imgs_nms > cfg.nms_threshold
 
                 optimizer.zero_grad(set_to_none=True)

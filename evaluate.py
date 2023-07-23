@@ -36,10 +36,9 @@ def evaluate(net, dataloader, device, amp, cfg):
             masks_pred = net(image)
 
             if mask_true[0].sum() > 0: # no positive samples in y_true are meaningless
+                # calculate the g-mean for each threshold
                 fpr, tpr, thresholds = roc_curve(mask_true[0].float().cpu().numpy().flatten(), masks_pred[0].float().cpu().numpy().flatten())
                 #precision, recall, thresholds = precision_recall_curve(mask_true.float().numpy().flatten(), masks_pred.float().numpy().flatten())
-
-                # calculate the g-mean for each threshold
                 gmeans = (tpr * (1-fpr))**.5
                 th_idx = np.argmax(gmeans)
                 threshold = thresholds[th_idx]
