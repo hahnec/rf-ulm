@@ -207,37 +207,37 @@ if __name__ == '__main__':
             tic = time.process_time()
 
 errs = torch.tensor(ac_rmse_err)
-unet_rmse_mean = torch.nanmean(errs[..., 0], axis=0)
-unet_rmse_std = torch.std(errs[..., 0][~torch.isnan(errs[..., 0])], axis=0)
+sres_rmse_mean = torch.nanmean(errs[..., 0], axis=0)
+sres_rmse_std = torch.std(errs[..., 0][~torch.isnan(errs[..., 0])], axis=0)
 print('Acc. Errors: %s' % str(torch.nanmean(errs, axis=0)))
 
 # remove empty arrays
 all_pts = [p for p in all_pts if p.size > 0]
 all_pts_gt = [p for p in all_pts_gt if p.size > 0]
 
-unet_ulm_img, _ = tracks2img((np.vstack(all_pts)-origin)[:, ::-1]-origin, img_size=np.array([84, 134]), scale=10, mode='all_in')
+sres_ulm_img, _ = tracks2img((np.vstack(all_pts)-origin)[:, ::-1]-origin, img_size=np.array([84, 134]), scale=10, mode='all_in')
 gtru_ulm_img, _ = tracks2img((np.vstack(all_pts_gt)-origin)[:, ::-1]-origin, img_size=np.array([84, 134]), scale=10, mode='all_in')
 
 # gamma
-unet_ulm_img **= cfg.gamma
+sres_ulm_img **= cfg.gamma
 gtru_ulm_img **= cfg.gamma
 
 # sRGB gamma correction
 normalize = lambda x: (x-x.min())/(x.max()-x.min()) if x.max()-x.min() > 0 else x-x.min()
-unet_ulm_img = srgb_conv(normalize(unet_ulm_img))
+sres_ulm_img = srgb_conv(normalize(sres_ulm_img))
 gtru_ulm_img = srgb_conv(normalize(gtru_ulm_img))
 
 # color mapping
 cmap = 'hot' if str(cfg.data_dir).lower().__contains__('rat') else 'inferno'
 img_color_map = lambda img, cmap=cmap: plt.get_cmap(cmap)(img)[..., :3]
-unet_ulm_img = img_color_map(img=normalize(unet_ulm_img))
+sres_ulm_img = img_color_map(img=normalize(sres_ulm_img))
 gtru_ulm_img = img_color_map(img=normalize(gtru_ulm_img))
 
 if cfg.logging:
-    wandb.summary['TotalRMSE'] = unet_rmse_mean
-    wandb.summary['TotalRMSEstd'] = unet_rmse_std
+    wandb.summary['TotalRMSE'] = sres_rmse_mean
+    wandb.summary['TotalRMSEstd'] = sres_rmse_std
     wandb.summary['TotalJaccard'] = torch.nanmean(errs[..., 3], axis=0)
-    wandb.summary['SSIM'] = structural_similarity(gtru_ulm_img, unet_ulm_img, channel_axis=2)
-    wandb.log({"unet_ulm_img": wandb.Image(unet_ulm_img)})
+    wandb.summary['SSIM'] = structural_similarity(gtru_ulm_img, sres_ulm_img, channel_axis=2)
+    wandb.log({"sres_ulm_img": wandb.Image(sres_ulm_img)})
     wandb.log({"gtru_ulm_img": wandb.Image(gtru_ulm_img)})
     wandb.save(str(Path('.') / 'logged_errors.csv'))
