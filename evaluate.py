@@ -18,7 +18,7 @@ def evaluate(net, dataloader, device, amp, cfg):
     num_val_batches = len(dataloader)
     dice_score = 0
 
-    name_ext = '_' + str(cfg.upscale_factor) + '_' + str(cfg.rescale_factor)
+    name_ext = '_' + str(int(cfg.upscale_factor)) + '_' + str(int(cfg.rescale_factor))
     t_mats = torch.tensor(np.load('./t_mats' + name_ext + '.npy')).to(cfg.device)
     wv_idx = 1
 

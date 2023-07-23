@@ -119,7 +119,7 @@ if __name__ == '__main__':
     cfg.origin_z = float(dataset.get_key('Origin')[2])
     origin = np.array([cfg.origin_x, cfg.origin_z])
     wv_idx = 1
-    name_ext = '_' + str(cfg.upscale_factor) + '_' + str(cfg.rescale_factor)
+    name_ext = '_' + str(int(cfg.upscale_factor)) + '_' + str(int(cfg.rescale_factor))
     t_mats = torch.tensor(np.load('./t_mats' + name_ext + '.npy')).to(cfg.device)
     
     # data loader
