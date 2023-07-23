@@ -114,7 +114,7 @@ def train_model(
     gfilter = gfilter.to(device)
     amplitude = 50 if cfg.model.__contains__('mspcn') else cfg.lambda0
 
-    # 5. Begin training
+    # training
     for epoch in range(1, epochs+1):
         model.train()
         epoch_loss = 0
@@ -175,7 +175,7 @@ def train_model(
                     })
                 pbar.set_postfix(**{'loss (batch)': loss.item()})
 
-                # Evaluation round
+                # evaluation
                 division_step = (n_train // (5 * batch_size))
                 if division_step > 0:
                     if global_step % division_step == 0:
