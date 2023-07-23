@@ -44,7 +44,7 @@ def evaluate(net, dataloader, device, amp, cfg):
             else:
                 threshold = float('NaN')
 
-            imgs_nms = non_max_supp(masks_pred)
+            imgs_nms = non_max_supp_torch(masks_pred, size=cfg.nms_size)
             masks = imgs_nms > cfg.nms_threshold
 
             if cfg.input_type == 'iq':
@@ -139,3 +139,9 @@ def non_max_supp(masks_pred, norm_opt=False):
     nms_imgs = torch.tensor(np.array(nms_imgs), device=masks_pred.device).unsqueeze(1).float()
 
     return nms_imgs
+
+def non_max_supp_torch(masks_pred, size=3, norm_opt=False):
+
+    masks_nms = torch.nn.functional.max_pool2d(masks_pred, kernel_size=size, stride=1, padding=size//2)
+
+    return masks_nms

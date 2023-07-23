@@ -27,7 +27,7 @@ from datasets.pala_dataset.utils.radial_pala import radial_pala
 from datasets.pala_dataset.utils.centroids import regional_mask
 from unet import UNet, SlounUNet, SlounAdaptUNet
 from mspcn.model import Net
-from evaluate import non_max_supp, get_pala_error
+from evaluate import non_max_supp, non_max_supp_torch, get_pala_error
 from utils.srgb_conv import srgb_conv
 from utils.utils import plot_img_and_mask
 from utils.transform import NormalizeVol
@@ -53,7 +53,7 @@ def predict_img(
 
         # non-maximum suppression
         if False:
-            nms = non_max_supp(output)
+            nms = non_max_supp_torch(output, cfg.nms_size)
             mask = nms > out_threshold
             mask = mask.long().numpy()
         else:
@@ -237,7 +237,6 @@ if cfg.logging:
     wandb.summary['TotalRMSE'] = sres_rmse_mean
     wandb.summary['TotalRMSEstd'] = sres_rmse_std
     wandb.summary['TotalJaccard'] = torch.nanmean(errs[..., 3], axis=0)
-    wandb.summary['SSIM'] = structural_similarity(gtru_ulm_img, sres_ulm_img, channel_axis=2)
     wandb.log({"sres_ulm_img": wandb.Image(sres_ulm_img)})
     wandb.log({"gtru_ulm_img": wandb.Image(gtru_ulm_img)})
     wandb.save(str(Path('.') / 'logged_errors.csv'))
