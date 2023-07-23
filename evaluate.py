@@ -13,11 +13,12 @@ from datasets.pala_dataset.utils.radial_pala import radial_pala
 
 @torch.inference_mode()
 def evaluate(net, dataloader, device, amp, cfg):
+
     net.eval()
     num_val_batches = len(dataloader)
     dice_score = 0
 
-    t_mat = torch.tensor(np.loadtxt('./t_mat.txt')).to(cfg.device)
+    t_mat = torch.tensor(np.load('./t_mats.npy')[1]).to(cfg.device)
 
     # iterate over the validation set
     with torch.autocast(device.type if device.type != 'mps' else 'cpu', enabled=amp):
