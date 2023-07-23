@@ -119,8 +119,8 @@ if __name__ == '__main__':
     cfg.origin_z = float(dataset.get_key('Origin')[2])
     origin = np.array([cfg.origin_x, cfg.origin_z])
     wv_idx = 1
-    t_mats = np.load('./t_mats.npy')
-    t_mat = t_mats[wv_idx]
+    name_ext = '_' + str(cfg.upscale_factor) + '_' + str(cfg.rescale_factor)
+    t_mats = torch.tensor(np.load('./t_mats' + name_ext + '.npy')).to(cfg.device)
     
     # data loader
     num_workers = min(4, os.cpu_count())
@@ -147,6 +147,7 @@ if __name__ == '__main__':
             gt_points = gt_pts[:, ~(torch.isnan(gt_pts.squeeze()).sum(-1) > 0)].numpy()[:, ::-1]
             gt_points = gt_points.swapaxes(-2, -1)
             gt_points = gt_points[:, ::-1, :]
+            t_mat = t_mats[wv_idx]
             es_points = np.array(np.nonzero(mask), dtype=np.double)[::-1, :]
             if cfg.input_type == 'rf':
                 es_points[2] = 1

@@ -18,14 +18,16 @@ def evaluate(net, dataloader, device, amp, cfg):
     num_val_batches = len(dataloader)
     dice_score = 0
 
-    t_mat = torch.tensor(np.load('./t_mats.npy')[1]).to(cfg.device)
+    name_ext = '_' + str(cfg.upscale_factor) + '_' + str(cfg.rescale_factor)
+    t_mats = torch.tensor(np.load('./t_mats' + name_ext + '.npy')).to(cfg.device)
+    wv_idx = 1
 
     # iterate over the validation set
     with torch.autocast(device.type if device.type != 'mps' else 'cpu', enabled=amp):
         for batch in tqdm(dataloader, total=num_val_batches, desc='Validation round', unit='batch', leave=False):
 
             image, mask_true, gt_pts = batch[:3] if cfg.input_type == 'iq' else (batch[2][:, 1].unsqueeze(1), batch[-2][:, 1].unsqueeze(1), batch[3])
-
+            
             # move images and labels to correct device and type
             image = image.to(device=device, dtype=torch.float32, memory_format=torch.channels_last)
             mask_true = mask_true.to(device=device, dtype=torch.long)
@@ -58,6 +60,7 @@ def evaluate(net, dataloader, device, amp, cfg):
             gt_points /= cfg.wavelength
 
             # estimated points alignment
+            t_mat = t_mats[wv_idx]
             es_indices = torch.nonzero(masks.squeeze(1)).double()
             es_points = []
             for i in range(cfg.batch_size):
