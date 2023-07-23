@@ -28,37 +28,10 @@ from datasets.pala_dataset.utils.centroids import regional_mask
 from unet import UNet, SlounUNet, SlounAdaptUNet
 from mspcn.model import Net
 from evaluate import non_max_supp, non_max_supp_torch, get_pala_error
+from evaluate import align_points
 from utils.srgb_conv import srgb_conv
 from utils.utils import plot_img_and_mask
 from utils.transform import NormalizeVol
-from utils.dithering import dithering
-
-
-def predict_img(
-        net,
-        img,
-        device,
-        out_threshold=0.5,
-    ):
-
-    net.eval()
-    img = img.to(device=device, dtype=torch.float32)
-
-    with torch.no_grad():
-        tic = time.process_time()
-        output = net(img)
-        toc = time.process_time() - tic
-        output = output.squeeze().cpu()
-
-        # non-maximum suppression
-        if False:
-            nms = non_max_supp_torch(output, cfg.nms_size)
-            mask = nms > out_threshold
-            mask = mask.long().numpy()
-        else:
-            mask = regional_mask(output.numpy(), th=out_threshold)
-
-    return mask[None, ...], output, toc
 
 
 if __name__ == '__main__':
@@ -89,7 +62,7 @@ if __name__ == '__main__':
     logging.info(f'Using device {device}')
 
     net.to(device=device)
-    state_dict = torch.load(cfg.model_path, map_location=device)
+    state_dict = torch.load(Path('./checkpoints') / cfg.model_path, map_location=device)
     mask_values = state_dict.pop('mask_values') if 'mask_values' in state_dict.keys() else None
     net.load_state_dict(state_dict)
 
@@ -135,40 +108,33 @@ if __name__ == '__main__':
 
             img, true_mask, gt_pts = batch[:3] if cfg.input_type == 'iq' else (batch[2][:, wv_idx].unsqueeze(1), batch[-2][:, wv_idx].unsqueeze(1), batch[1])
 
-            mask, output, comp_time = predict_img(
-                            net=net,
-                            img=img,
-                            out_threshold=cfg.nms_threshold,
-                            device=device,
-                            )
+            net.eval()
+            img = img.to(device=cfg.device, dtype=torch.float32)
 
-            # points alignment
-            gt_points = gt_pts[:, ~(torch.isnan(gt_pts.squeeze()).sum(-1) > 0)].numpy()[:, ::-1]
-            gt_points = gt_points.swapaxes(-2, -1)
-            gt_points = gt_points[:, ::-1, :]
-            es_points = np.array(np.nonzero(mask), dtype=np.double)[::-1, :]
-            if cfg.input_type == 'rf':
-                es_points[2] = 1
-                es_points[:2, :] = es_points[:2, :][::-1, :]
-                es_points[1, :] /= cfg.upscale_factor
-                t_mat = t_mats[wv_idx].double().cpu().numpy()
-                es_points = t_mat @ es_points
-                es_points[:2, :] = es_points[:2, :][::-1, :]
-            es_points = es_points[:2, ...][None, ...]
+            with torch.no_grad():
+                infer_start = time.process_time()
+                output = net(img)
+                infer_time = time.process_time() - infer_start
+                output = output.squeeze().cpu()
 
-            # dithering
-            if cfg.dither:
-                es_points[0] = dithering(es_points[0], cfg.wavelength/20, rescale_factor=cfg.rescale_factor, upscale_factor=cfg.upscale_factor)
+            # non-maximum suppression
+            if False:
+                nms = non_max_supp_torch(output, cfg.nms_size)
+                mask = nms > cfg.nms_threshold
+                mask = mask.long().numpy()
+            else:
+                mask = regional_mask(output.numpy(), th=cfg.nms_threshold)
 
-            es_points /= cfg.wavelength
-            gt_points /= cfg.wavelength
+            masks = mask[None, ...]
+
+            es_points, gt_points = align_points(torch.tensor(masks, device=cfg.device), gt_pts, t_mat=t_mats[wv_idx], cfg=cfg)
 
             pts_es = (es_points.squeeze() + origin[:, None]).T
             pts_gt = (gt_points.squeeze() + origin[:, None]).T
             all_pts.append(pts_es)
             all_pts_gt.append(pts_gt)
 
-            iter_time = time.process_time() - tic
+            frame_time = time.process_time() - tic
             
             if False:
                 import matplotlib.pyplot as plt
@@ -191,8 +157,8 @@ if __name__ == '__main__':
                     'TruePositive': result[4],
                     'FalsePositive': result[5],
                     'FalseNegative': result[6],
-                    'InferTime': comp_time,
-                    'FrameTime': iter_time,
+                    'InferTime': infer_time,
+                    'FrameTime': frame_time,
                     'frame': int(i),
                 })
 
@@ -237,6 +203,7 @@ if cfg.logging:
     wandb.summary['TotalRMSE'] = sres_rmse_mean
     wandb.summary['TotalRMSEstd'] = sres_rmse_std
     wandb.summary['TotalJaccard'] = torch.nanmean(errs[..., 3], axis=0)
+    wandb.summary['SSIM'] = structural_similarity(gtru_ulm_img, sres_ulm_img, channel_axis=2)
     wandb.log({"sres_ulm_img": wandb.Image(sres_ulm_img)})
     wandb.log({"gtru_ulm_img": wandb.Image(gtru_ulm_img)})
     wandb.save(str(Path('.') / 'logged_errors.csv'))

@@ -255,7 +255,7 @@ if __name__ == '__main__':
     model = model.to(memory_format=torch.channels_last)
 
     if cfg.fine_tune:
-        state_dict = torch.load(cfg.model_path, map_location=device)
+        state_dict = torch.load(Path('./checkpoints') / cfg.model_path, map_location=device)
         model.load_state_dict(state_dict)
         logging.info(f'Model loaded from {cfg.model_path}')
 
