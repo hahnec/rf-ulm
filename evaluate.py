@@ -14,10 +14,13 @@ from datasets.pala_dataset.utils.radial_pala import radial_pala
 def align_points(masks, gt_pts, t_mat, cfg):
     
     # gt points alignment
-    gt_points = gt_pts[:, ~(torch.isnan(gt_pts.squeeze()).sum(-1) > 0)].numpy()[:, ::-1]
-    gt_points = gt_points.swapaxes(-2, -1)
-    gt_points = np.fliplr(gt_points)
-    gt_points /= cfg.wavelength
+    gt_points = []
+    for batch_gt_pts in gt_pts:
+        pts_gt = batch_gt_pts[~(torch.isnan(batch_gt_pts.squeeze()).sum(-1) > 0)].numpy()[:, ::-1]
+        pts_gt = pts_gt.swapaxes(-2, -1)
+        pts_gt = np.fliplr(pts_gt)
+        pts_gt /= cfg.wavelength
+        gt_points.append(pts_gt)
 
     # estimated points alignment
     es_indices = torch.nonzero(masks.squeeze(1)).double()
@@ -38,7 +41,7 @@ def align_points(masks, gt_pts, t_mat, cfg):
 
         es_points.append(es_pts.cpu().numpy() / cfg.wavelength)
 
-    return np.stack(es_points), gt_points
+    return es_points, gt_points
 
 
 @torch.inference_mode()
@@ -131,6 +134,4 @@ def get_pala_error(es_points: np.ndarray, gt_points: np.ndarray, upscale_factor:
         result = rmse_unique(pts_es, pts_gt, tol=1/4)
         results.append(result)
 
-    rmse, precision, recall, jaccard, tp_num, fp_num, fn_num = torch.nanmean(torch.tensor(results), axis=0) if len(results) > 0 else (float('NaN'), float('NaN'), float('NaN'), float('NaN'), float('NaN'), float('NaN'), float('NaN'))
-
-    return rmse, precision, recall, jaccard, tp_num, fp_num, fn_num
+    return results

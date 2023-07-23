@@ -192,31 +192,30 @@ def train_model(
                         val_score, pala_err_batch, masks_nms, threshold = evaluate(model, val_loader, device, amp, cfg)
                         scheduler.step(val_score)
 
-                        rmse, precision, recall, jaccard, tp_num, fp_num, fn_num = pala_err_batch
-
                         logging.info('Validation Dice score: {}'.format(val_score))
                         try:
                             if cfg.logging:
-                                wb.log({
-                                    'learning rate': optimizer.param_groups[0]['lr'],
-                                    'validation Dice': val_score,
-                                    'images': wandb.Image(images[0].cpu()),
-                                    'masks': {
-                                        'true': wandb.Image(img_norm(masks_true[0].float().cpu())*255),
-                                        'pred': wandb.Image(img_norm(masks_pred[0].float().cpu())*255),    #(masks_pred.argmax(dim=1)[0]).float().cpu()),#
-                                        'nms': wandb.Image(img_norm(masks_nms[0].float().cpu())*255),
-                                    },
-                                    'step': global_step,
-                                    'epoch': epoch,
-                                    'rmse': rmse,
-                                    'precision': precision,
-                                    'recall': recall,
-                                    'jaccard': jaccard,
-                                    'threshold': threshold,
-                                    'avg_detected': float(masks_nms[0].float().cpu().sum()),
-                                    'pred_max': float(masks_pred[0].float().cpu().max()),
-                                    **histograms
-                                })
+                                for rmse, precision, recall, jaccard, tp_num, fp_num, fn_num in pala_err_batch:
+                                    wb.log({
+                                        'learning rate': optimizer.param_groups[0]['lr'],
+                                        'validation Dice': val_score,
+                                        'images': wandb.Image(images[0].cpu()),
+                                        'masks': {
+                                            'true': wandb.Image(img_norm(masks_true[0].float().cpu())*255),
+                                            'pred': wandb.Image(img_norm(masks_pred[0].float().cpu())*255),    #(masks_pred.argmax(dim=1)[0]).float().cpu()),#
+                                            'nms': wandb.Image(img_norm(masks_nms[0].float().cpu())*255),
+                                        },
+                                        'step': global_step,
+                                        'epoch': epoch,
+                                        'rmse': rmse,
+                                        'precision': precision,
+                                        'recall': recall,
+                                        'jaccard': jaccard,
+                                        'threshold': threshold,
+                                        'avg_detected': float(masks_nms[0].float().cpu().sum()),
+                                        'pred_max': float(masks_pred[0].float().cpu().max()),
+                                        **histograms
+                                    })
                         except Exception as e:
                             print('Validation upload failed')
                             print(e)

@@ -129,8 +129,8 @@ if __name__ == '__main__':
 
             es_points, gt_points = align_points(torch.tensor(masks, device=cfg.device), gt_pts, t_mat=t_mats[wv_idx], cfg=cfg)
 
-            pts_es = (es_points.squeeze() + origin[:, None]).T
-            pts_gt = (gt_points.squeeze() + origin[:, None]).T
+            pts_es = (es_points[0] + origin[:, None]).T
+            pts_gt = (gt_points[0] + origin[:, None]).T
             all_pts.append(pts_es)
             all_pts_gt.append(pts_gt)
 
@@ -145,7 +145,7 @@ if __name__ == '__main__':
 
             # localization assessment
             output = output.float().squeeze().cpu().numpy()
-            result = get_pala_error(es_points, gt_points, upscale_factor=cfg.upscale_factor, sr_img=output, avg_weight_opt=cfg.avg_weight_opt, radial_sym_opt=cfg.radial_sym_opt)
+            result = get_pala_error(es_points, gt_points, upscale_factor=cfg.upscale_factor, sr_img=output, avg_weight_opt=cfg.avg_weight_opt, radial_sym_opt=cfg.radial_sym_opt)[0]
             ac_rmse_err.append(result)
 
             if cfg.logging:
