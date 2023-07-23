@@ -53,6 +53,7 @@ def train_model(
         from datasets.pala_dataset.utils.collate_fn import collate_fn
     dataset = DatasetClass(
         dataset_path = cfg.data_dir,
+        train = True,
         transforms = transforms,
         clutter_db = cfg.clutter_db,
         sequences = [16, 17, 18, 19] if not cfg.data_dir.lower().__contains__('home') else cfg.sequences,
