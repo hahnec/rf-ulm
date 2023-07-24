@@ -116,11 +116,12 @@ if __name__ == '__main__':
                 output = output.squeeze().cpu()
 
             # non-maximum suppression
-            if False:
+            if cfg.nms_size is not None:
                 nms = non_max_supp_torch(output, cfg.nms_size)
                 mask = nms > cfg.nms_threshold
                 mask = mask.long().numpy()
             else:
+                # cpu-based local maxima (time-consuming)
                 mask = regional_mask(output.numpy(), th=cfg.nms_threshold)
 
             masks = mask[None, ...]
