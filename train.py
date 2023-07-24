@@ -29,7 +29,6 @@ img_norm = lambda x: (x-x.min())/(x.max()-x.min()) if (x.max()-x.min()) != 0 els
 
 def train_model(
         model,
-        device,
         epochs: int = 5,
         batch_size: int = 1,
         learning_rate: float = 1e-5,
@@ -94,7 +93,7 @@ def train_model(
             Training size:   {n_train}
             Validation size: {n_val}
             Checkpoints:     {save_checkpoint}
-            Device:          {device.type}
+            Device:          {cfg.device}
             Images scaling:  {img_scale}
             Mixed Precision: {amp}
         ''')
@@ -113,7 +112,7 @@ def train_model(
     # mSPCN Gaussian
     psf_heatmap = torch.from_numpy(matlab_style_gauss2D(shape=(7,7),sigma=1))
     gfilter = torch.reshape(psf_heatmap, [1, 1, 7, 7])
-    gfilter = gfilter.to(device)
+    gfilter = gfilter.to(cfg.device)
     amplitude = 50 if cfg.model.__contains__('mspcn') else cfg.lambda0
 
     # training
@@ -124,10 +123,10 @@ def train_model(
             for batch in train_loader:
                 images, masks_true = batch[:2] if cfg.input_type == 'iq' else (batch[2][:, 1].unsqueeze(1), batch[-2][:, 1].unsqueeze(1))
 
-                images = images.to(device=device, dtype=torch.float32, memory_format=torch.channels_last)
-                masks_true = masks_true.to(device=device).float()#, dtype=torch.long)
+                images = images.to(device=cfg.device, dtype=torch.float32, memory_format=torch.channels_last)
+                masks_true = masks_true.to(device=cfg.device).float()#, dtype=torch.long)
 
-                with torch.autocast(device.type if device.type != 'mps' else 'cpu', enabled=amp):
+                with torch.autocast(cfg.device if cfg.device != 'mps' else 'cpu', enabled=amp):
                     masks_pred = model(images)
 
                     # mask blurring
@@ -189,7 +188,7 @@ def train_model(
                             if not torch.isinf(value.grad).any() and not torch.isnan(value.grad).any():
                                 histograms['Gradients/' + tag] = wandb.Histogram(value.grad.data.cpu())
                         
-                        val_score, pala_err_batch, masks_nms, threshold = evaluate(model, val_loader, device, amp, cfg)
+                        val_score, pala_err_batch, masks_nms, threshold = evaluate(model, val_loader, cfg.device, amp, cfg)
                         scheduler.step(val_score)
 
                         logging.info('Validation Dice score: {}'.format(val_score))
@@ -237,8 +236,7 @@ if __name__ == '__main__':
     cfg = OmegaConf.merge(cfg, OmegaConf.from_cli())
 
     logging.basicConfig(level=logging.INFO, format='%(levelname)s: %(message)s')
-    device = torch.device(cfg.device)
-    logging.info(f'Using device {device}')
+    logging.info(f'Using device {cfg.device}')
 
     # model selection
     in_channels = 1
@@ -254,17 +252,16 @@ if __name__ == '__main__':
     model = model.to(memory_format=torch.channels_last)
 
     if cfg.fine_tune:
-        state_dict = torch.load(Path('./checkpoints') / cfg.model_path, map_location=device)
+        state_dict = torch.load(Path('./checkpoints') / cfg.model_path, map_location=cfg.device)
         model.load_state_dict(state_dict)
         logging.info(f'Model loaded from {cfg.model_path}')
 
-    model.to(device=device)
+    model.to(device=cfg.device)
     train_model(
         model=model,
         epochs=cfg.epochs,
         batch_size=cfg.batch_size,
         learning_rate=cfg.lr,
-        device=device,
         img_scale=0.5,
         val_percent=0.1,
         amp=False,
