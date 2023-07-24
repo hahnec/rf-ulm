@@ -85,9 +85,8 @@ def train_model(
             dict(epochs=epochs, batch_size=batch_size, learning_rate=learning_rate,
                 val_percent=val_percent, save_checkpoint=save_checkpoint, img_scale=img_scale, amp=amp)
         )
-        wandb.define_metric('train_loss', step_metric='train_step')
-        wandb.define_metric('train_points', step_metric='train_step')
         wandb.define_metric('epoch', step_metric='epoch')
+        wandb.define_metric('train_loss', step_metric='train_step')
         wandb.define_metric('rmse', step_metric='val_step')
         wandb.define_metric('jaccard', step_metric='val_step')
         wandb.define_metric('recall', step_metric='val_step')
@@ -99,7 +98,7 @@ def train_model(
         wandb.define_metric('validation_dice', step_metric='val_step')
         wandb.define_metric('images', step_metric='val_step')
         wandb.define_metric('masks', step_metric='val_step')
-        
+
         logging.info(f'''Starting training:
             Epochs:          {epochs}
             Batch size:      {batch_size}
