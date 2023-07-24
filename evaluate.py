@@ -23,6 +23,7 @@ def align_points(masks, gt_pts, t_mat, cfg, sr_img=None):
         if cfg.input_type == 'rf': pts_gt /= cfg.wavelength
         gt_points.append(pts_gt)
 
+    # extract indices from predicted map
     es_indices = torch.nonzero(masks.squeeze(1)).double()
     es_indices = es_indices.cpu().numpy()
 
@@ -43,7 +44,7 @@ def align_points(masks, gt_pts, t_mat, cfg, sr_img=None):
         if cfg.input_type == 'iq':
             es_pts = es_indices[es_indices[:, 0]==i, 1:].T
             es_pts /= cfg.upscale_factor
-        es_pts = es_pts[:2, ...]#.cpu().numpy()
+        es_pts = es_pts[:2, ...]
 
         # dithering
         if cfg.dither:
