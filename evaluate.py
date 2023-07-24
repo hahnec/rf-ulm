@@ -35,6 +35,7 @@ def align_points(masks, gt_pts, t_mat, cfg, sr_img=None):
     es_points = []
     for i in range(cfg.batch_size):
         if cfg.input_type == 'rf':
+            #es_pts = np.vstack([es_indices[es_indices[:, 0]==i, :][:, 1:].T, np.ones(es_indices.shape[0])])
             es_pts = np.fliplr(es_indices[es_indices[:, 0]==i, :]).T
             es_pts[2] = 1
             es_pts[0, :] /= cfg.upscale_factor
@@ -47,7 +48,7 @@ def align_points(masks, gt_pts, t_mat, cfg, sr_img=None):
 
         # dithering
         if cfg.dither:
-            es_pts = dithering(es_pts, 1/20, rescale_factor=cfg.rescale_factor, upscale_factor=cfg.upscale_factor)
+            es_pts = dithering(es_pts, 10, rescale_factor=cfg.rescale_factor, upscale_factor=cfg.upscale_factor)
 
         es_points.append(es_pts)
 

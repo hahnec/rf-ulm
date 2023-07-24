@@ -1,7 +1,7 @@
 import numpy as np
 
 
-def dithering(points, wavelength, rescale_factor, upscale_factor, sample_num=256, tx_num=128, img_size=np.array([84, 134]), ulm_render_scale=10):
+def dithering(points, ulm_render_scale, rescale_factor, upscale_factor, sample_num=256, tx_num=128, img_size=np.array([84, 134])):
 
     # get numerical resolutions
     res_target = img_size*ulm_render_scale
@@ -12,9 +12,9 @@ def dithering(points, wavelength, rescale_factor, upscale_factor, sample_num=256
     
     # no dithering if model resolution higher than target resolution
     dither_factors[dither_factors<1] = 0
-    dither_factors *= wavelength
+    dither_factors /= ulm_render_scale
 
-    rand_nums = 2*np.random.rand(*points.shape)-1
+    rand_nums = np.random.rand(*points.shape)-.5    # [-.5, .5] range
     dither_points = dither_factors[:, None] * rand_nums
 
     points += dither_points
