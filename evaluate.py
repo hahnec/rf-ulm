@@ -26,7 +26,7 @@ def align_points(masks, gt_pts, t_mat, cfg, sr_img=None):
     es_indices = torch.nonzero(masks.squeeze(1)).double()
     # apply radial symmetry
     if cfg.radial_sym_opt and sr_img is not None: 
-        es_indices[:, 1:] = torch.tensor(radial_pala(sr_img, es_indices[:, 1:].long().cpu().numpy(), w=2), device=cfg.device)
+        es_indices[:, 1:] = torch.tensor(radial_pala(sr_img.cpu().numpy(), es_indices[:, 1:].long().cpu().numpy(), w=2), device=cfg.device)
 
     # estimated points alignment
     es_points = []

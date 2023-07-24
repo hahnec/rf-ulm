@@ -121,13 +121,13 @@ if __name__ == '__main__':
                 mask = nms > cfg.nms_threshold
                 mask = mask.squeeze(1)
             else:
-                # cpu-based local maxima (time-consuming)
+                # cpu-based local maxima (time-consuming for large outputs)
                 mask = regional_mask(output.squeeze().cpu().numpy(), th=cfg.nms_threshold)
                 mask = torch.tensor(mask, device=cfg.device)[None, ...]
             nms_time = time.process_time()-nms_start
-            
+
             pts_start = time.process_time()
-            es_points, gt_points = align_points(mask, gt_pts, t_mat=t_mats[wv_idx], cfg=cfg, sr_img=output.cpu().numpy())
+            es_points, gt_points = align_points(mask, gt_pts, t_mat=t_mats[wv_idx], cfg=cfg, sr_img=output)
             pts_time = time.process_time() - pts_start
 
             pts_es = (es_points[0] + origin[:, None]).T
