@@ -90,7 +90,7 @@ if __name__ == '__main__':
     origin = np.array([cfg.origin_x, cfg.origin_z])
     wv_idx = 1
     name_ext = '_' + str(int(cfg.upscale_factor)) + '_' + str(int(cfg.rescale_factor))
-    t_mats = torch.tensor(np.load('./t_mats' + name_ext + '.npy')).to(cfg.device)
+    t_mats = torch.tensor(np.load('./t_mats' + name_ext + '.npy')).to(cfg.device) if cfg.input_type == 'rf' else np.zeros((3,3,3))
     
     # data loader
     num_workers = min(4, os.cpu_count())
@@ -116,6 +116,7 @@ if __name__ == '__main__':
                 output = output
 
             # non-maximum suppression
+            nms_start = time.process_time()
             if cfg.nms_size is not None:
                 nms = non_max_supp_torch(output, cfg.nms_size)
                 mask = nms > cfg.nms_threshold
@@ -123,10 +124,12 @@ if __name__ == '__main__':
             else:
                 # cpu-based local maxima (time-consuming)
                 mask = regional_mask(output.squeeze().cpu().numpy(), th=cfg.nms_threshold)
-            
             masks = mask[None, ...]
-
+            nms_time = time.process_time()-nms_start
+            
+            pts_start = time.process_time()
             es_points, gt_points = align_points(torch.tensor(masks, device=cfg.device), gt_pts, t_mat=t_mats[wv_idx], cfg=cfg, sr_img=output.cpu().numpy())
+            pts_time = time.process_time() - pts_start
 
             pts_es = (es_points[0] + origin[:, None]).T
             pts_gt = (gt_points[0] + origin[:, None]).T
@@ -155,8 +158,10 @@ if __name__ == '__main__':
                     'TruePositive': result[4],
                     'FalsePositive': result[5],
                     'FalseNegative': result[6],
-                    'InferTime': infer_time,
                     'FrameTime': frame_time,
+                    'InferTime': infer_time,
+                    'NMS_Time': nms_time,
+                    'PointsTime': pts_time,
                     'frame': int(i),
                 })
 
