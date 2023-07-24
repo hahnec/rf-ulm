@@ -17,8 +17,12 @@ def non_max_supp(masks_pred, norm_opt=False):
 
     return nms_imgs
 
-def non_max_supp_torch(masks_pred, size=3, norm_opt=False):
+def non_max_supp_torch(frame, size=3, norm_opt=False):
 
-    masks_nms = torch.nn.functional.max_pool2d(masks_pred, kernel_size=size, stride=1, padding=size//2)
+    mask = frame.clone()
 
-    return masks_nms
+    max_pool = torch.nn.functional.max_pool2d(mask, kernel_size=size, stride=1, padding=size//2)
+
+    mask[max_pool != mask] = 0
+
+    return mask
