@@ -19,10 +19,8 @@ def non_max_supp(masks_pred, norm_opt=False):
 
 def non_max_supp_torch(frame, size=3, norm_opt=False):
 
-    mask = frame.clone()
+    mask = torch.nn.functional.max_pool2d(frame.clone(), kernel_size=size, stride=1, padding=size//2)
 
-    max_pool = torch.nn.functional.max_pool2d(mask, kernel_size=size, stride=1, padding=size//2)
-
-    mask[max_pool != mask] = 0
+    mask[mask != frame] = 0
 
     return mask
