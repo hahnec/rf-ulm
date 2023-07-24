@@ -24,24 +24,26 @@ def align_points(masks, gt_pts, t_mat, cfg, sr_img=None):
         gt_points.append(pts_gt)
 
     es_indices = torch.nonzero(masks.squeeze(1)).double()
+    es_indices = es_indices.cpu().numpy()
+
     # apply radial symmetry
     if cfg.radial_sym_opt and sr_img is not None: 
-        es_indices[:, 1:] = torch.tensor(radial_pala(sr_img.cpu().numpy(), es_indices[:, 1:].long().cpu().numpy(), w=2), device=cfg.device)
+        es_indices[:, 1:] = radial_pala(sr_img.cpu().numpy(), es_indices[:, 1:].long(), w=2)
 
     # estimated points alignment
     es_points = []
     for i in range(cfg.batch_size):
         if cfg.input_type == 'rf':
-            es_pts = torch.fliplr(es_indices[es_indices[:, 0]==i, :]).T
+            es_pts = np.fliplr(es_indices[es_indices[:, 0]==i, :]).T
             es_pts[2] = 1
-            es_pts[:2, :] = torch.flipud(es_pts[:2, :])
+            es_pts[:2, :] = np.flipud(es_pts[:2, :])
             es_pts[1, :] /= cfg.upscale_factor
             es_pts = t_mat @ es_pts
-            es_pts[:2, :] = torch.flipud(es_pts[:2, :]) / cfg.wavelength
+            es_pts[:2, :] = np.flipud(es_pts[:2, :]) / cfg.wavelength
         if cfg.input_type == 'iq':
             es_pts = es_indices[es_indices[:, 0]==i, 1:].T
             es_pts /= cfg.upscale_factor
-        es_pts = es_pts[:2, ...].cpu().numpy()
+        es_pts = es_pts[:2, ...]#.cpu().numpy()
 
         # dithering
         if cfg.dither:

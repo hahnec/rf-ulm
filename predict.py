@@ -90,7 +90,7 @@ if __name__ == '__main__':
     origin = np.array([cfg.origin_x, cfg.origin_z])
     wv_idx = 1
     name_ext = '_' + str(int(cfg.upscale_factor)) + '_' + str(int(cfg.rescale_factor))
-    t_mats = torch.tensor(np.load('./t_mats' + name_ext + '.npy')).to(cfg.device) if cfg.input_type == 'rf' else np.zeros((3,3,3))
+    t_mats = np.load('./t_mats' + name_ext + '.npy') if cfg.input_type == 'rf' else np.zeros((3,3,3))
     
     # data loader
     num_workers = min(4, os.cpu_count())
@@ -117,8 +117,8 @@ if __name__ == '__main__':
             # non-maximum suppression
             nms_start = time.process_time()
             if cfg.nms_size is not None:
-                nms = non_max_supp_torch(output, cfg.nms_size)
-                mask = nms > cfg.nms_threshold
+                mask = non_max_supp_torch(output, cfg.nms_size)
+                mask = mask > cfg.nms_threshold
                 mask = mask.squeeze(1)
             else:
                 # cpu-based local maxima (time-consuming for large outputs)
