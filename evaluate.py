@@ -85,7 +85,7 @@ def evaluate(net, dataloader, device, amp, cfg):
             imgs_nms = non_max_supp_torch(masks_pred, size=cfg.nms_size)
             masks = imgs_nms > cfg.nms_threshold
 
-            es_points, gt_points = align_points(masks, gt_pts, t_mat=t_mats[wv_idx], cfg=cfg, sr_img=output)
+            es_points, gt_points = align_points(masks, gt_pts, t_mat=t_mats[wv_idx], cfg=cfg)
 
             pala_err_batch = get_pala_error(es_points, gt_points, upscale_factor=cfg.upscale_factor)
 
