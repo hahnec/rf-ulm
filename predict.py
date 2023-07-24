@@ -145,7 +145,7 @@ if __name__ == '__main__':
 
             # localization assessment
             output = output.float().squeeze().cpu().numpy()
-            result = get_pala_error(es_points, gt_points, upscale_factor=cfg.upscale_factor, sr_img=output, avg_weight_opt=cfg.avg_weight_opt)[0]
+            result = get_pala_error(es_points, gt_points)[0]
             ac_rmse_err.append(result)
 
             if cfg.logging:

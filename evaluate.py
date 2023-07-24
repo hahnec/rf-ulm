@@ -52,6 +52,21 @@ def align_points(masks, gt_pts, t_mat, cfg, sr_img=None):
     return es_points, gt_points
 
 
+def get_pala_error(es_points: np.ndarray, gt_points: np.ndarray):
+
+    results = []
+    for es_pts, gt_pts in zip(es_points, gt_points):
+        if gt_pts.size == 0:
+            continue
+        pts_es = es_pts.T
+        pts_gt = gt_pts.T
+
+        result = rmse_unique(pts_es, pts_gt, tol=1/4)
+        results.append(result)
+
+    return results
+
+
 @torch.inference_mode()
 def evaluate(net, dataloader, device, amp, cfg):
 
@@ -91,7 +106,7 @@ def evaluate(net, dataloader, device, amp, cfg):
 
             es_points, gt_points = align_points(masks, gt_pts, t_mat=t_mats[wv_idx], cfg=cfg)
 
-            pala_err_batch = get_pala_error(es_points, gt_points, upscale_factor=cfg.upscale_factor)
+            pala_err_batch = get_pala_error(es_points, gt_points)
 
             if cfg.model in ('unet', 'mspcn'):
                 assert mask_true.min() >= 0 and mask_true.max() <= 1, 'True mask indices should be in [0, 1]'
@@ -109,34 +124,3 @@ def evaluate(net, dataloader, device, amp, cfg):
     net.train()
 
     return dice_score / max(num_val_batches, 1), pala_err_batch, masks, threshold
-
-
-def get_pala_error(es_points: np.ndarray, gt_points: np.ndarray, upscale_factor: float = 1, sr_img=None, avg_weight_opt=False):
-
-    origin = np.array([-72, 16])
-
-    results = []
-    for es_pts, gt_pts in zip(es_points, gt_points):
-        if gt_pts.size == 0:
-            continue
-        pts_es = (es_pts / upscale_factor + origin[:, None]).T
-        pts_gt = (gt_pts / upscale_factor + origin[:, None]).T
-
-        # do weighting based on super-resolved image
-        if not sr_img is None and avg_weight_opt:
-            w = 4
-            coords = np.stack(np.meshgrid(np.arange(-w, w+1), np.arange(-w, w+1)))
-            for i, pt in enumerate(es_pts):
-                pt = ((pt-origin) * upscale_factor).astype(int)[::-1]
-                shift_coords = pt[:, None, None]+coords
-                try:
-                    patch = sr_img[pt[0]-w:pt[0]+w+1, pt[1]-w:pt[1]+w+1][None, ...]
-                    pt = np.sum(shift_coords*patch/patch.sum(), axis=(-2, -1))
-                except ValueError:
-                    pass
-                es_pts[i] = pt[::-1] / upscale_factor + origin
-
-        result = rmse_unique(pts_es, pts_gt, tol=1/4)
-        results.append(result)
-
-    return results
