@@ -37,10 +37,9 @@ def align_points(masks, gt_pts, t_mat, cfg, sr_img=None):
         if cfg.input_type == 'rf':
             es_pts = np.fliplr(es_indices[es_indices[:, 0]==i, :]).T
             es_pts[2] = 1
-            es_pts[:2, :] = np.flipud(es_pts[:2, :])
-            es_pts[1, :] /= cfg.upscale_factor
+            es_pts[0, :] /= cfg.upscale_factor
             es_pts = t_mat @ es_pts
-            es_pts[:2, :] = np.flipud(es_pts[:2, :]) / cfg.wavelength
+            es_pts[:2, :] /= cfg.wavelength
         if cfg.input_type == 'iq':
             es_pts = es_indices[es_indices[:, 0]==i, 1:].T
             es_pts /= cfg.upscale_factor
@@ -77,9 +76,12 @@ def evaluate(net, dataloader, amp, cfg):
     num_val_batches = len(dataloader)
     dice_score = 0
 
-    name_ext = '_' + str(int(cfg.upscale_factor)) + '_' + str(int(cfg.rescale_factor))
-    t_mats = torch.tensor(np.load('./t_mats' + name_ext + '.npy')).to(cfg.device)
     wv_idx = 1
+    name_ext = '_' + str(int(cfg.upscale_factor)) + '_' + str(int(cfg.rescale_factor))
+    t_mats = np.load('./t_mats' + name_ext + '.npy') if cfg.input_type == 'rf' else np.zeros((3,3,3))
+    # flip matrices to avoid coordinate flipping during inference
+    t_mats[:, :2] = t_mats[:, :2][:, ::-1]
+    t_mats[:, :2, :2] = t_mats[:, :2, :2][:, :, ::-1]
 
     # iterate over the validation set
     with torch.autocast(cfg.device if cfg.device != 'mps' else 'cpu', enabled=amp):

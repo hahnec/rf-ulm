@@ -63,6 +63,7 @@ if __name__ == '__main__':
     state_dict = torch.load(Path('./checkpoints') / cfg.model_path, map_location=cfg.device)
     mask_values = state_dict.pop('mask_values') if 'mask_values' in state_dict.keys() else None
     net.load_state_dict(state_dict)
+    net.eval()
 
     if cfg.input_type == 'iq':
         DatasetClass = PalaDatasetIq
@@ -91,6 +92,9 @@ if __name__ == '__main__':
     wv_idx = 1
     name_ext = '_' + str(int(cfg.upscale_factor)) + '_' + str(int(cfg.rescale_factor))
     t_mats = np.load('./t_mats' + name_ext + '.npy') if cfg.input_type == 'rf' else np.zeros((3,3,3))
+    # flip matrices to avoid coordinate flipping during inference
+    t_mats[:, :2] = t_mats[:, :2][:, ::-1]
+    t_mats[:, :2, :2] = t_mats[:, :2, :2][:, :, ::-1]
     
     # data loader
     num_workers = min(4, os.cpu_count())
@@ -104,9 +108,10 @@ if __name__ == '__main__':
     for i, batch in enumerate(test_loader):
         with tqdm(total=len(test_loader), desc=f'Frame {i}/{len(test_loader)}', unit='img') as pbar:
 
+            tic = time.process_time()
+
             img, true_mask, gt_pts = batch[:3] if cfg.input_type == 'iq' else (batch[2][:, wv_idx].unsqueeze(1), batch[-2][:, wv_idx].unsqueeze(1), batch[1])
 
-            net.eval()
             img = img.to(device=cfg.device, dtype=torch.float32)
 
             with torch.no_grad():
@@ -171,8 +176,6 @@ if __name__ == '__main__':
                 gmeans = (tpr * (1-fpr))**.5
                 th_idx = np.argmax(gmeans)
                 threshold = thresholds[th_idx]
-
-            tic = time.process_time()
 
 errs = torch.tensor(ac_rmse_err)
 sres_rmse_mean = torch.nanmean(errs[..., 0], axis=0)
