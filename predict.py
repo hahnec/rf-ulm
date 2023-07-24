@@ -113,22 +113,21 @@ if __name__ == '__main__':
                 infer_start = time.process_time()
                 output = net(img)
                 infer_time = time.process_time() - infer_start
-                output = output
 
             # non-maximum suppression
             nms_start = time.process_time()
             if cfg.nms_size is not None:
                 nms = non_max_supp_torch(output, cfg.nms_size)
                 mask = nms > cfg.nms_threshold
-                mask = mask.squeeze(1).long().cpu().numpy()
+                mask = mask.squeeze(1)
             else:
                 # cpu-based local maxima (time-consuming)
                 mask = regional_mask(output.squeeze().cpu().numpy(), th=cfg.nms_threshold)
-            masks = mask[None, ...]
+                mask = torch.tensor(mask, device=cfg.device)[None, ...]
             nms_time = time.process_time()-nms_start
             
             pts_start = time.process_time()
-            es_points, gt_points = align_points(torch.tensor(masks, device=cfg.device), gt_pts, t_mat=t_mats[wv_idx], cfg=cfg, sr_img=output.cpu().numpy())
+            es_points, gt_points = align_points(mask, gt_pts, t_mat=t_mats[wv_idx], cfg=cfg, sr_img=output.cpu().numpy())
             pts_time = time.process_time() - pts_start
 
             pts_es = (es_points[0] + origin[:, None]).T
