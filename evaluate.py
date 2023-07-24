@@ -7,6 +7,7 @@ from sklearn.metrics import precision_recall_curve
 
 from utils.dice_score import multiclass_dice_coeff, dice_coeff
 from utils.nms_funs import non_max_supp, non_max_supp_torch
+from utils.dithering import dithering
 from datasets.pala_dataset.utils.pala_error import rmse_unique
 from datasets.pala_dataset.utils.radial_pala import radial_pala
 
@@ -37,13 +38,13 @@ def align_points(masks, gt_pts, t_mat, cfg, sr_img=None):
             es_pts[1, :] /= cfg.upscale_factor
             es_pts = t_mat @ es_pts
             es_pts[:2, :] = torch.flipud(es_pts[:2, :])
-        es_pts = es_pts[:2, ...]
+        es_pts = es_pts[:2, ...].cpu().numpy() / cfg.wavelength
 
         # dithering
         if cfg.dither:
-            es_pts = dithering(es_pts, cfg.wavelength/20, rescale_factor=cfg.rescale_factor, upscale_factor=cfg.upscale_factor)
+            es_pts = dithering(es_pts, 1/20, rescale_factor=cfg.rescale_factor, upscale_factor=cfg.upscale_factor)
 
-        es_points.append(es_pts.cpu().numpy() / cfg.wavelength)
+        es_points.append(es_pts)
 
     return es_points, gt_points
 
