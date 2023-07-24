@@ -137,6 +137,8 @@ if __name__ == '__main__':
 
             pts_es = (es_points[0] + origin[:, None]).T
             pts_gt = (gt_points[0] + origin[:, None]).T
+            if cfg.input_type == 'iq': pts_es += np.array([cfg.origin_z, cfg.origin_x])[:, None].T
+
             all_pts.append(pts_es)
             all_pts_gt.append(pts_gt)
 

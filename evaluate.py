@@ -44,7 +44,6 @@ def align_points(masks, gt_pts, t_mat, cfg, sr_img=None):
         if cfg.input_type == 'iq':
             es_pts = es_indices[es_indices[:, 0]==i, 1:].T
             es_pts /= cfg.upscale_factor
-            es_pts += np.array([cfg.origin_z, cfg.origin_x])[:, None]
         es_pts = es_pts[:2, ...]
 
         # dithering
