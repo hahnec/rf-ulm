@@ -56,12 +56,11 @@ if __name__ == '__main__':
     else:
         raise Exception('Model name not recognized')
 
-    device = torch.device(cfg.device)
     logging.info(f'Loading model {cfg.model_path}')
-    logging.info(f'Using device {device}')
+    logging.info(f'Using device {cfg.device}')
 
-    net.to(device=device)
-    state_dict = torch.load(Path('./checkpoints') / cfg.model_path, map_location=device)
+    net.to(device=cfg.device)
+    state_dict = torch.load(Path('./checkpoints') / cfg.model_path, map_location=cfg.device)
     mask_values = state_dict.pop('mask_values') if 'mask_values' in state_dict.keys() else None
     net.load_state_dict(state_dict)
 
