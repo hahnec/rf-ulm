@@ -31,14 +31,15 @@ def align_points(masks, gt_pts, t_mat, cfg, sr_img=None):
     # estimated points alignment
     es_points = []
     for i in range(cfg.batch_size):
-        es_pts = torch.fliplr(es_indices[es_indices[:, 0]==i, :]).T
         if cfg.input_type == 'rf':
+            es_pts = torch.fliplr(es_indices[es_indices[:, 0]==i, :]).T
             es_pts[2] = 1
             es_pts[:2, :] = torch.flipud(es_pts[:2, :])
             es_pts[1, :] /= cfg.upscale_factor
             es_pts = t_mat @ es_pts
             es_pts[:2, :] = torch.flipud(es_pts[:2, :]) / cfg.wavelength
         if cfg.input_type == 'iq':
+            es_pts = es_indices[es_indices[:, 0]==i, 1:].T
             es_pts /= cfg.upscale_factor
         es_pts = es_pts[:2, ...].cpu().numpy()
 
