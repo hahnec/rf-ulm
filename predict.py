@@ -113,20 +113,20 @@ if __name__ == '__main__':
                 infer_start = time.process_time()
                 output = net(img)
                 infer_time = time.process_time() - infer_start
-                output = output.squeeze().cpu()
+                output = output
 
             # non-maximum suppression
             if cfg.nms_size is not None:
                 nms = non_max_supp_torch(output, cfg.nms_size)
                 mask = nms > cfg.nms_threshold
-                mask = mask.long().numpy()
+                mask = mask.squeeze(1).long().cpu().numpy()
             else:
                 # cpu-based local maxima (time-consuming)
-                mask = regional_mask(output.numpy(), th=cfg.nms_threshold)
-
+                mask = regional_mask(output.squeeze().cpu().numpy(), th=cfg.nms_threshold)
+            
             masks = mask[None, ...]
 
-            es_points, gt_points = align_points(torch.tensor(masks, device=cfg.device), gt_pts, t_mat=t_mats[wv_idx], cfg=cfg, sr_img=np.array(output))
+            es_points, gt_points = align_points(torch.tensor(masks, device=cfg.device), gt_pts, t_mat=t_mats[wv_idx], cfg=cfg, sr_img=output.cpu().numpy())
 
             pts_es = (es_points[0] + origin[:, None]).T
             pts_gt = (gt_points[0] + origin[:, None]).T
@@ -143,7 +143,6 @@ if __name__ == '__main__':
                 plt.show()
 
             # localization assessment
-            output = output.float().squeeze().cpu().numpy()
             result = get_pala_error(es_points, gt_points)[0]
             ac_rmse_err.append(result)
 
