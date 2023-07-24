@@ -85,7 +85,21 @@ def train_model(
             dict(epochs=epochs, batch_size=batch_size, learning_rate=learning_rate,
                 val_percent=val_percent, save_checkpoint=save_checkpoint, img_scale=img_scale, amp=amp)
         )
-
+        wandb.define_metric('train_loss', step_metric='train_step')
+        wandb.define_metric('train_points', step_metric='train_step')
+        wandb.define_metric('epoch', step_metric='epoch')
+        wandb.define_metric('rmse', step_metric='val_step')
+        wandb.define_metric('jaccard', step_metric='val_step')
+        wandb.define_metric('recall', step_metric='val_step')
+        wandb.define_metric('precision', step_metric='val_step')
+        wandb.define_metric('threshold', step_metric='val_step')
+        wandb.define_metric('avg_detected', step_metric='val_step')
+        wandb.define_metric('pred_max', step_metric='val_step')
+        wandb.define_metric('lr', step_metric='val_step')
+        wandb.define_metric('validation_dice', step_metric='val_step')
+        wandb.define_metric('images', step_metric='val_step')
+        wandb.define_metric('masks', step_metric='val_step')
+        
         logging.info(f'''Starting training:
             Epochs:          {epochs}
             Batch size:      {batch_size}
@@ -106,7 +120,8 @@ def train_model(
     grad_scaler = torch.cuda.amp.GradScaler(enabled=amp)
     criterion = nn.MSELoss(reduction='mean')
     l1loss = nn.L1Loss(reduction='mean')
-    global_step = 0
+    train_step = 0
+    val_step = 0
     lambda_value = 0.01 if cfg.model.__contains__('unet') else cfg.lambda1
     
     # mSPCN Gaussian
@@ -166,12 +181,12 @@ def train_model(
                 grad_scaler.update()
 
                 pbar.update(images.shape[0])
-                global_step += 1
+                train_step += 1
                 epoch_loss += loss.item()
                 if cfg.logging:
                     wb.log({
                         'train loss': loss.item(),
-                        'step': global_step,
+                        'train_step': train_step,
                         'epoch': epoch
                     })
                 pbar.set_postfix(**{'loss (batch)': loss.item()})
@@ -179,7 +194,7 @@ def train_model(
                 # evaluation
                 division_step = (n_train // (5 * batch_size))
                 if division_step > 0:
-                    if global_step % division_step == 0:
+                    if train_step % division_step == 0:
                         histograms = {}
                         for tag, value in model.named_parameters():
                             tag = tag.replace('/', '.')
@@ -196,15 +211,15 @@ def train_model(
                             if cfg.logging:
                                 for rmse, precision, recall, jaccard, tp_num, fp_num, fn_num in pala_err_batch:
                                     wb.log({
-                                        'learning rate': optimizer.param_groups[0]['lr'],
-                                        'validation Dice': val_score,
+                                        'lr': optimizer.param_groups[0]['lr'],
+                                        'validation_dice': val_score,
                                         'images': wandb.Image(images[0].cpu()),
                                         'masks': {
                                             'true': wandb.Image(img_norm(masks_true[0].float().cpu())*255),
                                             'pred': wandb.Image(img_norm(masks_pred[0].float().cpu())*255),    #(masks_pred.argmax(dim=1)[0]).float().cpu()),#
                                             'nms': wandb.Image(img_norm(masks_nms[0].float().cpu())*255),
                                         },
-                                        'step': global_step,
+                                        'val_step': val_step,
                                         'epoch': epoch,
                                         'rmse': rmse,
                                         'precision': precision,
@@ -218,6 +233,7 @@ def train_model(
                         except Exception as e:
                             print('Validation upload failed')
                             print(e)
+                        val_step += 1
 
         if save_checkpoint:
             dir_checkpoint = Path('./checkpoints/')
