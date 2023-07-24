@@ -20,7 +20,7 @@ def align_points(masks, gt_pts, t_mat, cfg, sr_img=None):
         pts_gt = batch_gt_pts[~(torch.isnan(batch_gt_pts.squeeze()).sum(-1) > 0)].numpy()[:, ::-1]
         pts_gt = pts_gt.swapaxes(-2, -1)
         pts_gt = np.fliplr(pts_gt)
-        pts_gt /= cfg.wavelength
+        if cfg.input_type == 'rf': pts_gt /= cfg.wavelength
         gt_points.append(pts_gt)
 
     es_indices = torch.nonzero(masks.squeeze(1)).double()
@@ -37,8 +37,10 @@ def align_points(masks, gt_pts, t_mat, cfg, sr_img=None):
             es_pts[:2, :] = torch.flipud(es_pts[:2, :])
             es_pts[1, :] /= cfg.upscale_factor
             es_pts = t_mat @ es_pts
-            es_pts[:2, :] = torch.flipud(es_pts[:2, :])
-        es_pts = es_pts[:2, ...].cpu().numpy() / cfg.wavelength
+            es_pts[:2, :] = torch.flipud(es_pts[:2, :]) / cfg.wavelength
+        if cfg.input_type == 'iq':
+            es_pts /= cfg.upscale_factor
+        es_pts = es_pts[:2, ...].cpu().numpy()
 
         # dithering
         if cfg.dither:
