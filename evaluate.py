@@ -82,6 +82,7 @@ def evaluate(net, dataloader, amp, cfg):
     try:
         t_mats = np.load('./t_mats' + name_ext + '.npy') if cfg.input_type == 'rf' else np.zeros((3,3,3))
     except ValueError:
+        import time
         time.sleep(1)
         t_mats = np.load('./t_mats' + name_ext + '.npy')
 
