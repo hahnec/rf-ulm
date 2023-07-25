@@ -30,7 +30,7 @@ from mspcn.model import Net
 from evaluate import non_max_supp, non_max_supp_torch, get_pala_error, align_points
 from utils.srgb_conv import srgb_conv
 from utils.utils import plot_img_and_mask
-from utils.transform import NormalizeVol
+from utils.transform import Normalize, NormalizeVol
 
 
 if __name__ == '__main__':
@@ -67,7 +67,7 @@ if __name__ == '__main__':
 
     if cfg.input_type == 'iq':
         DatasetClass = PalaDatasetIq
-        transforms = []
+        transforms = [Normalize(mean=0, std=1)]
         collate_fn = None
     elif cfg.input_type == 'rf':
         DatasetClass = PalaDatasetRf

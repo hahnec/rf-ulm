@@ -21,7 +21,7 @@ from mspcn.main import matlab_style_gauss2D
 from datasets.pala_dataset.pala_iq import PalaDatasetIq
 from datasets.pala_dataset.pala_rf import PalaDatasetRf
 from utils.dice_score import dice_loss
-from utils.transform import RandomHorizontalFlip, RandomVerticalFlip, RandomRotation, GaussianNoise, NormalizeVol
+from utils.transform import Normalize, NormalizeVol
 
 
 img_norm = lambda x: (x-x.min())/(x.max()-x.min()) if (x.max()-x.min()) != 0 else x
@@ -44,7 +44,7 @@ def train_model(
     # create dataset
     if cfg.input_type == 'iq':
         DatasetClass = PalaDatasetIq
-        transforms = [RandomHorizontalFlip(), RandomVerticalFlip(), RandomRotation(degree=5), GaussianNoise()]
+        transforms = [Normalize(mean=0, std=1)]
         collate_fn = None
     elif cfg.input_type == 'rf':
         DatasetClass = PalaDatasetRf
