@@ -246,11 +246,14 @@ def train_model(
                         samples = torch.dstack(gt_samples_list).cpu().numpy()
                         points = torch.hstack(gt_points_list).cpu().numpy()
                         t_mats = get_samples2points_mapping(samples, points)
-                        save_tmats(t_mats, cfg.tmats_name)
+                        save_tmats(t_mats, name=cfg.tmats_name)
                         gt_samples_list, gt_points_list = [], []
                     else:
-                        gt_samples_list.append(batch[3].flatten(0, 1))
-                        gt_points_list.append(batch[1].swapaxes(-1, -2).flatten(0, 1))
+                        for j in range(cfg.batch_size):
+                            # filter zeros (introduced by collate_fn for consistency)
+                            mask = (batch[1][j] != 0).sum(-1) == 0
+                            gt_samples_list.append(batch[3][j][..., ~mask])
+                            gt_points_list.append(batch[1][j][~mask, :].T)
 
         if save_checkpoint:
             dir_checkpoint = Path('./checkpoints/')
