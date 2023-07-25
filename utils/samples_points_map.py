@@ -2,7 +2,7 @@ import numpy as np
 import scipy
 
 
-save_tmats = lambda tmats, name: np.save(name + 't_mats.npy', tmats) if name is None else np.save(name + '.npy', tmats)
+save_tmats = lambda tmats, name=None: np.save('t_mats.npy', tmats) if name is None else np.save(name + '.npy', tmats)
 
 
 def get_samples2points_mapping(samples, points, p=6, weights_opt=False):

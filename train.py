@@ -242,7 +242,7 @@ def train_model(
 
                 # compute transformation matrix
                 if cfg.input_type == 'rf':
-                    if (len(gt_samples_list)+1) % 50 == 0:
+                    if (len(gt_samples_list)+1) % 20 == 0:
                         samples = torch.dstack(gt_samples_list).cpu().numpy()
                         points = torch.hstack(gt_points_list).cpu().numpy()
                         t_mats = get_samples2points_mapping(samples, points)
