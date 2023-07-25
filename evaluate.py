@@ -94,14 +94,14 @@ def evaluate(net, dataloader, amp, cfg):
     with torch.autocast(cfg.device if cfg.device != 'mps' else 'cpu', enabled=amp):
         for batch in tqdm(dataloader, total=num_val_batches, desc='Validation round', unit='batch', leave=False):
 
-            image, mask_true, gt_pts = batch[:3] if cfg.input_type == 'iq' else (batch[2][:, 1].unsqueeze(1), batch[-2][:, 1].unsqueeze(1), batch[1])
+            imgs, true_masks, gt_pts = batch[:3] if cfg.input_type == 'iq' else (batch[2][:, wv_idx].unsqueeze(1), batch[-2][:, wv_idx].unsqueeze(1), batch[1])
             
             # move images and labels to correct device and type
-            image = image.to(device=cfg.device, dtype=torch.float32, memory_format=torch.channels_last)
-            mask_true = mask_true.to(device=cfg.device, dtype=torch.long)
+            imgs = imgs.to(device=cfg.device, dtype=torch.float32, memory_format=torch.channels_last)
+            true_masks = true_masks.to(device=cfg.device, dtype=torch.long)
 
             # predict the mask
-            masks_pred = net(image)
+            masks_pred = net(imgs)
 
             # evaluation metrics
             imgs_nms = non_max_supp_torch(masks_pred, size=cfg.nms_size)
@@ -110,9 +110,9 @@ def evaluate(net, dataloader, amp, cfg):
             pala_err_batch = get_pala_error(es_points, gt_points)
 
             # threshold analysis
-            if mask_true[0].sum() > 0: # no positive samples in y_true are meaningless
+            if true_masks[0].sum() > 0: # no positive samples in y_true are meaningless
                 # calculate the g-mean for each threshold
-                fpr, tpr, thresholds = roc_curve(mask_true[0].float().cpu().numpy().flatten(), masks_pred[0].float().cpu().numpy().flatten())
+                fpr, tpr, thresholds = roc_curve(true_masks[0].float().cpu().numpy().flatten(), masks_pred[0].float().cpu().numpy().flatten())
                 #precision, recall, thresholds = precision_recall_curve(mask_true.float().numpy().flatten(), masks_pred.float().numpy().flatten())
                 gmeans = (tpr * (1-fpr))**.5
                 th_idx = np.argmax(gmeans)
@@ -122,17 +122,17 @@ def evaluate(net, dataloader, amp, cfg):
             
             # dice score
             if cfg.model in ('unet', 'mspcn'):
-                assert mask_true.min() >= 0 and mask_true.max() <= 1, 'True mask indices should be in [0, 1]'
+                assert true_masks.min() >= 0 and true_masks.max() <= 1, 'True mask indices should be in [0, 1]'
                 #mask_pred = (F.sigmoid(mask_pred) > 0.5).float()
                 # compute the Dice score
-                dice_score += dice_coeff(masks, mask_true, reduce_batch_first=False)
+                dice_score += dice_coeff(masks, true_masks, reduce_batch_first=False)
             else:
-                assert mask_true.min() >= 0 and mask_true.max() < net.n_classes, 'True mask indices should be in [0, n_classes['
+                assert true_masks.min() >= 0 and true_masks.max() < net.n_classes, 'True mask indices should be in [0, n_classes['
                 # convert to one-hot format
-                mask_true = F.one_hot(mask_true, net.n_classes).permute(0, 3, 1, 2).float()
+                true_masks = F.one_hot(true_masks, net.n_classes).permute(0, 3, 1, 2).float()
                 mask_pred = F.one_hot(mask_pred.argmax(dim=1), net.n_classes).permute(0, 3, 1, 2).float()
                 # compute the Dice score, ignoring background
-                dice_score += multiclass_dice_coeff(mask_pred[:, 1:], mask_true[:, 1:], reduce_batch_first=False)
+                dice_score += multiclass_dice_coeff(mask_pred[:, 1:], true_masks[:, 1:], reduce_batch_first=False)
 
     net.train()
 
