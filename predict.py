@@ -16,6 +16,7 @@ from pathlib import Path
 import matplotlib.pyplot as plt
 from sklearn.metrics import roc_curve
 from sklearn.metrics import precision_recall_curve
+from sklearn.cluster import DBSCAN
 from skimage.transform import rescale
 from skimage.metrics import structural_similarity
 from simple_tracker.tracks2img import tracks2img
@@ -31,6 +32,7 @@ from evaluate import non_max_supp, non_max_supp_torch, get_pala_error, align_poi
 from utils.srgb_conv import srgb_conv
 from utils.utils import plot_img_and_mask
 from utils.transform import Normalize, NormalizeVol
+from utils.point_fusion import cluster_points
 
 
 if __name__ == '__main__':
@@ -73,6 +75,7 @@ if __name__ == '__main__':
         DatasetClass = PalaDatasetRf
         transforms = [NormalizeVol()]
         from datasets.pala_dataset.utils.collate_fn import collate_fn
+        cluster_obj = DBSCAN(eps=1/4, min_samples=1)
     dataset = DatasetClass(
         dataset_path=cfg.data_dir,
         transforms=transforms,
@@ -89,7 +92,7 @@ if __name__ == '__main__':
     cfg.origin_x = float(dataset.get_key('Origin')[0])
     cfg.origin_z = float(dataset.get_key('Origin')[2])
     origin = np.array([cfg.origin_x, cfg.origin_z])
-    wv_idx = 1
+    wv_idcs = [1] if cfg.input_type == 'iq' else list(range(3))
     name_ext = '_' + str(int(cfg.upscale_factor)) + '_' + str(int(cfg.rescale_factor))
     t_mats = np.load('./t_mats' + name_ext + '.npy') if cfg.input_type == 'rf' else np.zeros((3,3,3))
     # flip matrices to avoid coordinate flipping during inference
@@ -110,30 +113,39 @@ if __name__ == '__main__':
 
             tic = time.process_time()
 
-            img, true_mask, gt_pts = batch[:3] if cfg.input_type == 'iq' else (batch[2][:, wv_idx].unsqueeze(1), batch[-2][:, wv_idx].unsqueeze(1), batch[1])
+            wv_es_points = []
+            for wv_idx in wv_idcs:
+                img, true_mask, gt_pts = batch[:3] if cfg.input_type == 'iq' else (batch[2][:, wv_idx].unsqueeze(1), batch[-2][:, wv_idx].unsqueeze(1), batch[1])
 
-            img = img.to(device=cfg.device, dtype=torch.float32)
+                img = img.to(device=cfg.device, dtype=torch.float32)
 
-            with torch.no_grad():
-                infer_start = time.process_time()
-                output = net(img)
-                infer_time = time.process_time() - infer_start
+                with torch.no_grad():
+                    infer_start = time.process_time()
+                    output = net(img)
+                    infer_time = time.process_time() - infer_start
 
-            # non-maximum suppression
-            nms_start = time.process_time()
-            if cfg.nms_size is not None:
-                mask = non_max_supp_torch(output, cfg.nms_size)
-                mask = mask > cfg.nms_threshold
-                mask = mask.squeeze(1)
+                # non-maximum suppression
+                nms_start = time.process_time()
+                if cfg.nms_size is not None:
+                    mask = non_max_supp_torch(output, cfg.nms_size)
+                    mask = mask > cfg.nms_threshold
+                    mask = mask.squeeze(1)
+                else:
+                    # cpu-based local maxima (time-consuming for large outputs)
+                    mask = regional_mask(output.squeeze().cpu().numpy(), th=cfg.nms_threshold)
+                    mask = torch.tensor(mask, device=cfg.device)[None, ...]
+                nms_time = time.process_time()-nms_start
+
+                pts_start = time.process_time()
+                es_points, gt_points = align_points(mask, gt_pts, t_mat=t_mats[wv_idx], cfg=cfg, sr_img=output)
+                pts_time = time.process_time() - pts_start
+                
+                wv_es_points.append(es_points)
+
+            if cfg.input_type == 'rf':
+                es_points = [cluster_points(wv_es_points[1][0].T, wv_es_points[0][0].T, wv_es_points[2][0].T, cluster_obj=cluster_obj).T]
             else:
-                # cpu-based local maxima (time-consuming for large outputs)
-                mask = regional_mask(output.squeeze().cpu().numpy(), th=cfg.nms_threshold)
-                mask = torch.tensor(mask, device=cfg.device)[None, ...]
-            nms_time = time.process_time()-nms_start
-
-            pts_start = time.process_time()
-            es_points, gt_points = align_points(mask, gt_pts, t_mat=t_mats[wv_idx], cfg=cfg, sr_img=output)
-            pts_time = time.process_time() - pts_start
+                es_points = wv_es_points[0]
 
             pts_es = (es_points[0] + origin[:, None]).T
             pts_gt = (gt_points[0] + origin[:, None]).T
