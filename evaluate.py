@@ -78,13 +78,12 @@ def evaluate(net, dataloader, amp, cfg):
     dice_score = 0
 
     wv_idx = 1
-    name_ext = '_' + str(int(cfg.upscale_factor)) + '_' + str(int(cfg.rescale_factor))
     try:
-        t_mats = np.load('./t_mats' + name_ext + '.npy') if cfg.input_type == 'rf' else np.zeros((3,3,3))
+        t_mats = np.load(cfg.tmats_name + '.npy') if cfg.input_type == 'rf' else np.zeros((3,3,3))
     except ValueError:
         import time
         time.sleep(1)
-        t_mats = np.load('./t_mats' + name_ext + '.npy')
+        t_mats = np.load(cfg.tmats_name + '.npy')
 
     # flip matrices to avoid coordinate flipping during inference
     t_mats[:, :2] = t_mats[:, :2][:, ::-1]

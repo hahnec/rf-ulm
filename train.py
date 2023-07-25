@@ -120,9 +120,9 @@ def train_model(
     grad_scaler = torch.cuda.amp.GradScaler(enabled=amp)
     criterion = nn.MSELoss(reduction='mean')
     l1loss = nn.L1Loss(reduction='mean')
+    lambda_value = 0.01 if cfg.model.__contains__('unet') else cfg.lambda1
     train_step = 0
     val_step = 0
-    lambda_value = 0.01 if cfg.model.__contains__('unet') else cfg.lambda1
     
     # mSPCN Gaussian
     psf_heatmap = torch.from_numpy(matlab_style_gauss2D(shape=(7,7),sigma=1))
@@ -130,8 +130,10 @@ def train_model(
     gfilter = gfilter.to(cfg.device)
     amplitude = 50 if cfg.model.__contains__('mspcn') else cfg.lambda0
 
-    # variable init for transformation fit
+    # variable init for coordinate transformation
     gt_samples_list, gt_points_list = [], []
+    wb_name = '_' + wb.name if cfg.logging else ''
+    cfg.tmats_name = 't_mats_' + str(int(cfg.upscale_factor)) + '_' + str(int(cfg.rescale_factor)) + wb_name
 
     # training
     for epoch in range(1, epochs+1):
@@ -244,10 +246,7 @@ def train_model(
                         samples = torch.dstack(gt_samples_list).cpu().numpy()
                         points = torch.hstack(gt_points_list).cpu().numpy()
                         t_mats = get_samples2points_mapping(samples, points)
-                        # save accumulated mean transformation
-                        wb_name = '_' + wb.name if cfg.logging else ''
-                        name_ext = str(int(cfg.upscale_factor)) + '_' + str(int(cfg.rescale_factor)) + wb_name
-                        save_tmats(t_mats, name_ext)
+                        save_tmats(t_mats, cfg.tmats_name)
                         gt_samples_list, gt_points_list = [], []
                     else:
                         gt_samples_list.append(batch[3].flatten(0, 1))
