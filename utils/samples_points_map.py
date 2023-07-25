@@ -5,7 +5,7 @@ import scipy
 save_tmats = lambda tmats, name='t_mats': np.save(name + '.npy', tmats)
 
 
-def get_samples2points_mapping(samples, points):
+def get_samples2points_mapping(samples, points, p=6, weights_opt=False):
 
     # choose earliest arriving sample positions for each target 
     rf_pts = np.array([samples.min(1), samples.argmin(1)])
@@ -13,10 +13,8 @@ def get_samples2points_mapping(samples, points):
     # homogenize B-mode points
     bmode_pts = np.array([*points, np.ones(points.shape[-1])])
 
-    p = 6
-
     # compute weights
-    if False:
+    if weights_opt:
         bmode_mean = np.mean(points, axis=-1)[:, None]
         bmode_dist = ((points - bmode_mean)**2).sum(0)**.5
         weights = bmode_dist[None, :] / bmode_dist.max()
