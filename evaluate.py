@@ -103,6 +103,13 @@ def evaluate(net, dataloader, amp, cfg):
             # predict the mask
             masks_pred = net(image)
 
+            # evaluation metrics
+            imgs_nms = non_max_supp_torch(masks_pred, size=cfg.nms_size)
+            masks = imgs_nms > cfg.nms_threshold
+            es_points, gt_points = align_points(masks, gt_pts, t_mat=t_mats[wv_idx], cfg=cfg)
+            pala_err_batch = get_pala_error(es_points, gt_points)
+
+            # threshold analysis
             if mask_true[0].sum() > 0: # no positive samples in y_true are meaningless
                 # calculate the g-mean for each threshold
                 fpr, tpr, thresholds = roc_curve(mask_true[0].float().cpu().numpy().flatten(), masks_pred[0].float().cpu().numpy().flatten())
@@ -112,14 +119,8 @@ def evaluate(net, dataloader, amp, cfg):
                 threshold = thresholds[th_idx]
             else:
                 threshold = float('NaN')
-
-            imgs_nms = non_max_supp_torch(masks_pred, size=cfg.nms_size)
-            masks = imgs_nms > cfg.nms_threshold
-
-            es_points, gt_points = align_points(masks, gt_pts, t_mat=t_mats[wv_idx], cfg=cfg)
-
-            pala_err_batch = get_pala_error(es_points, gt_points)
-
+            
+            # dice score
             if cfg.model in ('unet', 'mspcn'):
                 assert mask_true.min() >= 0 and mask_true.max() <= 1, 'True mask indices should be in [0, 1]'
                 #mask_pred = (F.sigmoid(mask_pred) > 0.5).float()
