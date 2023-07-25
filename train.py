@@ -34,7 +34,6 @@ def train_model(
         batch_size: int = 1,
         learning_rate: float = 1e-5,
         val_percent: float = 0.1,
-        save_checkpoint: bool = True,
         img_scale: float = 0.5,
         amp: bool = False,
         weight_decay: float = 1e-8,
@@ -83,8 +82,7 @@ def train_model(
     if cfg.logging:
         wb = wandb.init(project='SR-ULM-TRAIN', resume='allow', anonymous='must', config=cfg)
         wb.config.update(
-            dict(epochs=epochs, batch_size=batch_size, learning_rate=learning_rate,
-                val_percent=val_percent, save_checkpoint=save_checkpoint, img_scale=img_scale, amp=amp)
+            dict(epochs=epochs, batch_size=batch_size, learning_rate=learning_rate, val_percent=val_percent, img_scale=img_scale, amp=amp)
         )
         wandb.define_metric('epoch', step_metric='epoch')
         wandb.define_metric('train_loss', step_metric='train_step')
@@ -106,7 +104,6 @@ def train_model(
             Learning rate:   {learning_rate}
             Training size:   {n_train}
             Validation size: {n_val}
-            Checkpoints:     {save_checkpoint}
             Device:          {cfg.device}
             Images scaling:  {img_scale}
             Mixed Precision: {amp}
@@ -255,12 +252,12 @@ def train_model(
                             gt_samples_list.append(batch[3][j][..., ~mask])
                             gt_points_list.append(batch[1][j][~mask, :].T)
 
-        if save_checkpoint:
-            dir_checkpoint = Path('./checkpoints/')
-            dir_checkpoint.mkdir(parents=True, exist_ok=True)
-            state_dict = model.state_dict()
-            torch.save(state_dict, str(dir_checkpoint / 'checkpoint_epoch{}.pth'.format(epoch)))
-            logging.info(f'Checkpoint {epoch} saved!')
+    if cfg.logging:
+        dir_checkpoint = Path('./ckpts/')
+        dir_checkpoint.mkdir(parents=True, exist_ok=True)
+        state_dict = model.state_dict()
+        torch.save(state_dict, str(dir_checkpoint / (wb.name+str('_ckpt_epoch{}.pth'.format(epoch)))))
+        logging.info(f'Checkpoint {epoch} saved!')
 
 
 if __name__ == '__main__':
