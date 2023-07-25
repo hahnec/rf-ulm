@@ -22,6 +22,7 @@ from datasets.pala_dataset.pala_iq import PalaDatasetIq
 from datasets.pala_dataset.pala_rf import PalaDatasetRf
 from utils.dice_score import dice_loss
 from utils.transform import Normalize, NormalizeVol
+from utils.samples_points_map import get_samples2points_mapping
 
 
 img_norm = lambda x: (x-x.min())/(x.max()-x.min()) if (x.max()-x.min()) != 0 else x
@@ -129,6 +130,9 @@ def train_model(
     gfilter = gfilter.to(cfg.device)
     amplitude = 50 if cfg.model.__contains__('mspcn') else cfg.lambda0
 
+    # variable init for transformation fit
+    gt_samples_list, gt_points_list = [], []
+
     # training
     for epoch in range(1, epochs+1):
         model.train()
@@ -233,6 +237,17 @@ def train_model(
                             print('Validation upload failed')
                             print(e)
                         val_step += 1
+
+                # compute transformation matrices
+                if (len(gt_samples_list)+1) % 100 == 0:
+                    t_mats = get_samples2points_mapping(np.dstack(gt_samples_list), np.hstack(gt_points_list))
+                    # save accumulated mean transformation
+                    name_ext = '_' + str(int(cfg.upscale_factor)) + '_' + str(int(cfg.rescale_factor)) + '_' + wb.name
+                    np.save('t_mats' + name_ext + '.npy', t_mats)
+                    gt_samples_list, gt_points_list = [], []
+                else:
+                    gt_samples_list.append(gt_samples)
+                    gt_points_list.append(gt_points)
 
         if save_checkpoint:
             dir_checkpoint = Path('./checkpoints/')
