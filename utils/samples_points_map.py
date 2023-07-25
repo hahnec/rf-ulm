@@ -1,4 +1,8 @@
 import numpy as np
+import scipy
+
+
+save_tmats = lambda tmats, name_ext='': np.save('t_mats_' + name_ext + '.npy', tmats)
 
 
 def get_samples2points_mapping(samples, points):
