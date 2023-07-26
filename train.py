@@ -131,7 +131,7 @@ def train_model(
     # variable init for coordinate transformation
     gt_samples_list, gt_points_list = [], []
     wb_name = '_' + wb.name if cfg.logging else ''
-    cfg.tmats_name = 't_mats_' + str(int(cfg.upscale_factor)) + '_' + str(int(cfg.rescale_factor)) + wb_name
+    cfg.tmats_name = 't_mats_' + str(int(cfg.upscale_factor)) + '_' + str(cfg.rescale_factor) + wb_name
 
     # training
     for epoch in range(1, epochs+1):
@@ -139,7 +139,7 @@ def train_model(
         epoch_loss = 0
         with tqdm(total=n_train, desc=f'Epoch {epoch}/{epochs}', unit='img') as pbar:
             for batch in train_loader:
-                images, masks_true = batch[:2] if cfg.input_type == 'iq' else (batch[2][:, 1].unsqueeze(1), batch[-2][:, 1].unsqueeze(1))
+                images, masks_true = batch[:2] if cfg.input_type == 'iq' else (batch[2][:, 1], batch[-2][:, 1])
 
                 images = images.to(device=cfg.device, dtype=torch.float32, memory_format=torch.channels_last)
                 masks_true = masks_true.to(device=cfg.device).float()#, dtype=torch.long)
@@ -273,7 +273,7 @@ if __name__ == '__main__':
     logging.info(f'Using device {cfg.device}')
 
     # model selection
-    in_channels = 1
+    in_channels = 2 if cfg.input_type == 'rf' and cfg.rescale_factor == 1 else 1
     if cfg.model == 'unet':
         # UNet model
         model = SlounAdaptUNet(n_channels=in_channels, n_classes=1, bilinear=False)
