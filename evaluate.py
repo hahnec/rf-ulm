@@ -57,7 +57,8 @@ def evaluate(model, dataloader, amp, cfg):
 
             # point fusion from compounded waves
             if cfg.input_type == 'rf':
-                es_points = [cluster_points(wv_es_points[1][0].T, wv_es_points[0][0].T, wv_es_points[2][0].T, cluster_obj=cluster_obj).T]
+                pts = np.vstack([wv_es_points[1][0].T, wv_es_points[0][0].T, wv_es_points[2][0].T])
+                es_points = [cluster_points(pts, cluster_obj=cluster_obj).T] if pts.size > 0 else pts
             else:
                 es_points = wv_es_points[0]
 
