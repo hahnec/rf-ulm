@@ -166,7 +166,7 @@ if __name__ == '__main__':
             pts_gt = (gt_points[0] + origin[:, None]).T
 
             # shift IQ coordinates to origin
-            if cfg.input_type == 'iq': pts_es += np.array([cfg.origin_z, cfg.origin_x])[:, None].T
+            if cfg.input_type == 'iq': pts_es += np.array([[cfg.origin_z, cfg.origin_x]])
 
             all_pts.append(pts_es)
             all_pts_gt.append(pts_gt)
