@@ -55,6 +55,19 @@ if __name__ == '__main__':
     elif cfg.model == 'mspcn':
         # mSPCN model
         net = Net(upscale_factor=cfg.upscale_factor, in_channels=in_channels)
+    elif cfg.model == 'edsr':
+        # EDSR model
+        from models.edsr import EDSR
+        class Args:
+            pass
+        args = Args()
+        args.n_feats = 64
+        args.n_resblocks = 16
+        args.n_colors = 2 if cfg.input_type == 'rf' and cfg.rescale_factor == 1 else 1
+        args.rgb_range = 1
+        args.scale = (cfg.upscale_factor, cfg.upscale_factor)
+        args.res_scale = 1
+        model = EDSR(args)
     else:
         raise Exception('Model name not recognized')
 
