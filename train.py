@@ -118,7 +118,7 @@ def train_model(
     grad_scaler = torch.cuda.amp.GradScaler(enabled=amp)
     criterion = nn.MSELoss(reduction='mean')
     l1loss = nn.L1Loss(reduction='mean')
-    lambda_value = 0.01 if cfg.model.__contains__('unet') else cfg.lambda1
+    lambda_value = 0.01 if cfg.model.__contains__('unet') and self.input_type == 'iq' else cfg.lambda1
     train_step = 0
     val_step = 0
     
@@ -126,7 +126,7 @@ def train_model(
     psf_heatmap = torch.from_numpy(matlab_style_gauss2D(shape=(7,7),sigma=1))
     gfilter = torch.reshape(psf_heatmap, [1, 1, 7, 7])
     gfilter = gfilter.to(cfg.device)
-    amplitude = 50 if cfg.model.__contains__('mspcn') else cfg.lambda0
+    amplitude = 50 if cfg.model.__contains__('mspcn') and self.input_type == 'iq' else cfg.lambda0
 
     # variable init for coordinate transformation
     gt_samples_list, gt_points_list = [], []
