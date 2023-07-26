@@ -28,7 +28,8 @@ from datasets.pala_dataset.utils.radial_pala import radial_pala
 from datasets.pala_dataset.utils.centroids import regional_mask
 from unet import UNet, SlounUNet, SlounAdaptUNet
 from mspcn.model import Net
-from evaluate import non_max_supp, non_max_supp_torch, get_pala_error, align_points
+from utils.nms_funs import non_max_supp, non_max_supp_torch
+from utils.point_align import align_points, get_pala_error
 from utils.srgb_conv import srgb_conv
 from utils.utils import plot_img_and_mask
 from utils.transform import Normalize, NormalizeVol
