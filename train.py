@@ -67,6 +67,7 @@ def train_model(
     cfg.wavelength = float(dataset.get_key('wavelength'))
     cfg.origin_x = float(dataset.get_key('Origin')[0])
     cfg.origin_z = float(dataset.get_key('Origin')[2])
+    cfg.wv_idcs = [0] if cfg.input_type == 'iq' else list(range(3))
 
     # split into train and validation partitions
     n_val = int(len(dataset) * val_percent)
@@ -139,7 +140,7 @@ def train_model(
         epoch_loss = 0
         with tqdm(total=n_train, desc=f'Epoch {epoch}/{epochs}', unit='img') as pbar:
             for batch in train_loader:
-                images, masks_true = batch[:2] if cfg.input_type == 'iq' else (batch[2][:, 1], batch[-2][:, 1])
+                images, masks_true = batch[:2] if cfg.input_type == 'iq' else (batch[2].flatten(0, 1), batch[-2].flatten(0, 1))
 
                 images = images.to(device=cfg.device, dtype=torch.float32, memory_format=torch.channels_last)
                 masks_true = masks_true.to(device=cfg.device).float()#, dtype=torch.long)
@@ -275,13 +276,13 @@ if __name__ == '__main__':
     # model selection
     in_channels = 2 if cfg.input_type == 'rf' and cfg.rescale_factor == 1 else 1
     if cfg.model == 'unet':
-        # UNet model
+        # U-Net
         model = SlounAdaptUNet(n_channels=in_channels, n_classes=1, bilinear=False)
     elif cfg.model == 'mspcn':
-        # mSPCN model
+        # mSPCN
         model = Net(upscale_factor=cfg.upscale_factor, in_channels=in_channels)
     elif cfg.model == 'edsr':
-        # EDSR model
+        # EDSR
         from models.edsr import EDSR
         class Args:
             pass

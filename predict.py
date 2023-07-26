@@ -48,16 +48,16 @@ if __name__ == '__main__':
         wb = wandb.init(project='SR-ULM-INFER', resume='allow', anonymous='must', config=cfg)
         wb.config.update(cfg)
 
-    # Model selection
-    in_channels = 1
+    # model selection
+    in_channels = 2 if cfg.input_type == 'rf' and cfg.rescale_factor == 1 else 1
     if cfg.model == 'unet':
-        # UNet model
+        # U-Net
         model = SlounAdaptUNet(n_channels=in_channels, n_classes=1, bilinear=False)
     elif cfg.model == 'mspcn':
-        # mSPCN model
+        # mSPCN
         model = Net(upscale_factor=cfg.upscale_factor, in_channels=in_channels)
     elif cfg.model == 'edsr':
-        # EDSR model
+        # EDSR
         from models.edsr import EDSR
         class Args:
             pass
@@ -145,10 +145,10 @@ if __name__ == '__main__':
                     mask = mask > cfg.nms_threshold
                     mask = mask.squeeze(1)
                 else:
-                    # cpu-based local maxima (time-consuming for large outputs)
+                    # cpu-based local maxima (time-consuming for large frames)
                     mask = regional_mask(output.squeeze().cpu().numpy(), th=cfg.nms_threshold)
                     mask = torch.tensor(mask, device=cfg.device)[None, ...]
-                nms_time = time.process_time()-nms_start
+                nms_time = time.process_time() - nms_start
 
                 pts_start = time.process_time()
                 es_points, gt_points = align_points(mask, gt_pts, t_mat=t_mats[wv_idx], cfg=cfg, sr_img=output)
@@ -198,14 +198,6 @@ if __name__ == '__main__':
                     'PointsTime': pts_time,
                     'frame': int(i),
                 })
-
-            if False:
-                # calculate the g-mean for each threshold
-                fpr, tpr, thresholds = roc_curve(true_mask[0].float().numpy().flatten(), output[0].flatten())
-                #precision, recall, thresholds = precision_recall_curve(true_mask.float().numpy().flatten(), output.float().numpy().flatten())
-                gmeans = (tpr * (1-fpr))**.5
-                th_idx = np.argmax(gmeans)
-                threshold = thresholds[th_idx]
 
 errs = torch.tensor(ac_rmse_err)
 sres_rmse_mean = torch.nanmean(errs[..., 0], axis=0)
