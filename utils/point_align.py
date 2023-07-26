@@ -14,7 +14,6 @@ def align_points(masks, gt_pts, t_mat, cfg, sr_img=None):
         pts_gt = batch_gt_pts[~(torch.isnan(batch_gt_pts.squeeze()).sum(-1) > 0)].numpy()[:, ::-1]
         pts_gt = pts_gt.swapaxes(-2, -1)
         pts_gt = np.fliplr(pts_gt)
-        if cfg.input_type == 'rf': pts_gt /= cfg.wavelength
         gt_points.append(pts_gt)
 
     # extract indices from predicted map
@@ -34,7 +33,6 @@ def align_points(masks, gt_pts, t_mat, cfg, sr_img=None):
             es_pts[2] = 1
             es_pts[0, :] /= cfg.upscale_factor
             es_pts = t_mat @ es_pts
-            es_pts[:2, :] /= cfg.wavelength
         if cfg.input_type == 'iq':
             es_pts = es_indices[es_indices[:, 0]==i, 1:].T
             es_pts /= cfg.upscale_factor
