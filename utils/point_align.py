@@ -56,7 +56,7 @@ def get_pala_error(es_points: np.ndarray, gt_points: np.ndarray, tol=1/4):
         if gt_pts.size == 0:
             continue
 
-        result = rmse_unique(pts_es.T, pts_gt.T, tol=tol)
+        result = rmse_unique(es_pts.T, gt_pts.T, tol=tol)
         results.append(result)
 
     return results
