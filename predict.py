@@ -51,10 +51,10 @@ if __name__ == '__main__':
     in_channels = 1
     if cfg.model == 'unet':
         # UNet model
-        net = SlounAdaptUNet(n_channels=in_channels, n_classes=1, bilinear=False)
+        model = SlounAdaptUNet(n_channels=in_channels, n_classes=1, bilinear=False)
     elif cfg.model == 'mspcn':
         # mSPCN model
-        net = Net(upscale_factor=cfg.upscale_factor, in_channels=in_channels)
+        model = Net(upscale_factor=cfg.upscale_factor, in_channels=in_channels)
     elif cfg.model == 'edsr':
         # EDSR model
         from models.edsr import EDSR
@@ -74,11 +74,11 @@ if __name__ == '__main__':
     logging.info(f'Loading model {cfg.model_path}')
     logging.info(f'Using device {cfg.device}')
 
-    net.to(device=cfg.device)
+    model.to(device=cfg.device)
     state_dict = torch.load(Path('./checkpoints') / cfg.model_path, map_location=cfg.device)
     mask_values = state_dict.pop('mask_values') if 'mask_values' in state_dict.keys() else None
-    net.load_state_dict(state_dict)
-    net.eval()
+    model.load_state_dict(state_dict)
+    model.eval()
 
     if cfg.input_type == 'iq':
         DatasetClass = PalaDatasetIq
@@ -134,7 +134,7 @@ if __name__ == '__main__':
 
                 with torch.no_grad():
                     infer_start = time.process_time()
-                    output = net(img)
+                    output = model(img)
                     infer_time = time.process_time() - infer_start
 
                 # non-maximum suppression
