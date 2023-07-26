@@ -3,9 +3,7 @@ from scipy.spatial.distance import cdist
 from sklearn.cluster import DBSCAN
 
 
-def cluster_points(*args, tol=1/4, cluster_obj=None):
-
-    pts = np.vstack(args)
+def cluster_points(pts, tol=1/4, cluster_obj=None):
 
     # init cluster object
     co = DBSCAN(eps=tol, min_samples=1) if cluster_obj is None else cluster_obj
