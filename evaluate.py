@@ -120,18 +120,10 @@ def evaluate(net, dataloader, amp, cfg):
                 threshold = float('NaN')
             
             # dice score
-            if cfg.model in ('unet', 'mspcn'):
-                assert true_masks.min() >= 0 and true_masks.max() <= 1, 'True mask indices should be in [0, 1]'
-                #mask_pred = (F.sigmoid(mask_pred) > 0.5).float()
-                # compute the Dice score
-                dice_score += dice_coeff(masks, true_masks, reduce_batch_first=False)
-            else:
-                assert true_masks.min() >= 0 and true_masks.max() < net.n_classes, 'True mask indices should be in [0, n_classes['
-                # convert to one-hot format
-                true_masks = F.one_hot(true_masks, net.n_classes).permute(0, 3, 1, 2).float()
-                mask_pred = F.one_hot(mask_pred.argmax(dim=1), net.n_classes).permute(0, 3, 1, 2).float()
-                # compute the Dice score, ignoring background
-                dice_score += multiclass_dice_coeff(mask_pred[:, 1:], true_masks[:, 1:], reduce_batch_first=False)
+            assert true_masks.min() >= 0 and true_masks.max() <= 1, 'True mask indices should be in [0, 1]'
+            #mask_pred = (F.sigmoid(mask_pred) > 0.5).float()
+            # compute the Dice score
+            dice_score += dice_coeff(masks, true_masks, reduce_batch_first=False)
 
     net.train()
 
