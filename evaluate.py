@@ -93,7 +93,7 @@ def evaluate(net, dataloader, amp, cfg):
     with torch.autocast(cfg.device if cfg.device != 'mps' else 'cpu', enabled=amp):
         for batch in tqdm(dataloader, total=num_val_batches, desc='Validation round', unit='batch', leave=False):
 
-            imgs, true_masks, gt_pts = batch[:3] if cfg.input_type == 'iq' else (batch[2][:, wv_idx].unsqueeze(1), batch[-2][:, wv_idx].unsqueeze(1), batch[1])
+            imgs, true_masks, gt_pts = batch[:3] if cfg.input_type == 'iq' else (batch[2][:, wv_idx], batch[-2][:, wv_idx], batch[1])
             
             # move images and labels to correct device and type
             imgs = imgs.to(device=cfg.device, dtype=torch.float32, memory_format=torch.channels_last)
