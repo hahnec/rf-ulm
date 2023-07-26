@@ -89,7 +89,7 @@ if __name__ == '__main__':
         DatasetClass = PalaDatasetRf
         transforms = [NormalizeVol()]
         from datasets.pala_dataset.utils.collate_fn import collate_fn
-        cluster_obj = DBSCAN(eps=1/4, min_samples=1)
+        cluster_obj = DBSCAN(eps=cfg.eps, min_samples=1)
     dataset = DatasetClass(
         dataset_path=cfg.data_dir,
         transforms=transforms,
@@ -157,7 +157,7 @@ if __name__ == '__main__':
                 wv_es_points.append(es_points)
 
             if cfg.input_type == 'rf':
-                pts = np.vstack([wv_es_points[1][0].T, wv_es_points[0][0].T, wv_es_points[2][0].T])
+                pts = np.hstack([wv_es_points[1][0], wv_es_points[0][0], wv_es_points[2][0]]).T
                 es_points = [cluster_points(pts, cluster_obj=cluster_obj).T] if pts.size > 0 else pts
             else:
                 es_points = wv_es_points[0]

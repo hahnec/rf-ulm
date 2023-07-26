@@ -19,7 +19,7 @@ def evaluate(model, dataloader, amp, cfg):
 
     if cfg.input_type == 'rf':
         from sklearn.cluster import DBSCAN
-        cluster_obj = DBSCAN(eps=1/4, min_samples=1)
+        cluster_obj = DBSCAN(eps=cfg.eps, min_samples=1)
 
     try:
         t_mats = np.load(cfg.tmats_name + '.npy') if cfg.input_type == 'rf' else np.zeros((3,3,3))
@@ -57,7 +57,7 @@ def evaluate(model, dataloader, amp, cfg):
 
             # point fusion from compounded waves
             if cfg.input_type == 'rf':
-                pts = np.vstack([wv_es_points[1][0].T, wv_es_points[0][0].T, wv_es_points[2][0].T])
+                pts = np.hstack([wv_es_points[1][0], wv_es_points[0][0], wv_es_points[2][0]]).T
                 es_points = [cluster_points(pts, cluster_obj=cluster_obj).T] if pts.size > 0 else pts
             else:
                 es_points = wv_es_points[0]
