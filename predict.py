@@ -75,7 +75,7 @@ if __name__ == '__main__':
     logging.info(f'Using device {cfg.device}')
 
     model.to(device=cfg.device)
-    state_dict = torch.load(Path('./checkpoints') / cfg.model_path, map_location=cfg.device)
+    state_dict = torch.load(Path('./ckpts') / cfg.model_path, map_location=cfg.device)
     mask_values = state_dict.pop('mask_values') if 'mask_values' in state_dict.keys() else None
     model.load_state_dict(state_dict)
     model.eval()
