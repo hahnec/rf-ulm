@@ -49,16 +49,14 @@ def align_points(masks, gt_pts, t_mat, cfg, sr_img=None):
     return es_points, gt_points
 
 
-def get_pala_error(es_points: np.ndarray, gt_points: np.ndarray):
+def get_pala_error(es_points: np.ndarray, gt_points: np.ndarray, tol=1/4):
 
     results = []
     for es_pts, gt_pts in zip(es_points, gt_points):
         if gt_pts.size == 0:
             continue
-        pts_es = es_pts.T
-        pts_gt = gt_pts.T
 
-        result = rmse_unique(pts_es, pts_gt, tol=1/4)
+        result = rmse_unique(pts_es.T, pts_gt.T, tol=tol)
         results.append(result)
 
     return results
