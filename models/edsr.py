@@ -33,8 +33,8 @@ class EDSR(nn.Module):
 
         # define tail module
         m_tail = [
-            Upsampler(conv, scale, 1, act=False),
-            conv(1, args.n_colors, kernel_size)
+            Upsampler(conv, scale, n_feats, act=False),
+            conv(n_feats, 1, kernel_size)
         ]
 
         self.head = nn.Sequential(*m_head)
