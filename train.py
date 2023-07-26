@@ -143,7 +143,7 @@ def train_model(
                 images, masks_true = batch[:2] if cfg.input_type == 'iq' else (batch[2].flatten(0, 1), batch[-2].flatten(0, 1))
 
                 # skip blank frames (avoid learning from errors)
-                if torch.any(images.view(images.shape[0], -1).sum() == 0) or torch.any(images.view(masks_true.shape[0], -1).sum() == 0):
+                if torch.any(images.view(images.shape[0], -1).sum() == 0) or torch.any(masks_true.view(masks_true.shape[0], -1).sum() == 0):
                     continue
 
                 images = images.to(device=cfg.device, dtype=torch.float32, memory_format=torch.channels_last)
