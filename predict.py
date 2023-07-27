@@ -84,11 +84,11 @@ if __name__ == '__main__':
     if cfg.input_type == 'iq':
         DatasetClass = PalaDatasetIq
         transforms = [Normalize(mean=0, std=1)]
-        collate_fn = None
+        from datasets.pala_dataset.utils.collate_fn_iq import collate_fn
     elif cfg.input_type == 'rf':
         DatasetClass = PalaDatasetRf
         transforms = [NormalizeVol()]
-        from datasets.pala_dataset.utils.collate_fn import collate_fn
+        from datasets.pala_dataset.utils.collate_fn_rf import collate_fn
         cluster_obj = DBSCAN(eps=cfg.eps, min_samples=1)
     dataset = DatasetClass(
         dataset_path=cfg.data_dir,
