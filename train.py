@@ -128,7 +128,12 @@ def train_model(
     psf_heatmap = torch.from_numpy(matlab_style_gauss2D(shape=(7,7),sigma=1))
     gfilter = torch.reshape(psf_heatmap, [1, 1, 7, 7])
     gfilter = gfilter.to(cfg.device)
-    amplitude = 50 if cfg.model.__contains__('mspcn') and cfg.input_type == 'iq' else cfg.lambda0
+    if cfg.model.__contains__('mspcn') and cfg.input_type == 'iq':
+        amplitude = 50
+    elif cfg.model.__contains__('unet') and cfg.input_type == 'iq':
+        amplitude = 1
+    else: 
+        amplitude = cfg.lambda0
 
     # variable init for coordinate transformation
     gt_samples_list, gt_points_list = [], []
