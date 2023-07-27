@@ -129,7 +129,7 @@ if __name__ == '__main__':
 
             wv_es_points = []
             for wv_idx in wv_idcs:
-                img, true_mask, gt_pts = batch[:3] if cfg.input_type == 'iq' else (batch[2][:, wv_idx], batch[-2][:, wv_idx], batch[1])
+                img, true_mask, gt_pts = batch[:3] if cfg.input_type == 'iq' else (batch[0][:, wv_idx], batch[1][:, wv_idx], batch[4])
 
                 img = img.to(device=cfg.device, dtype=torch.float32)
 

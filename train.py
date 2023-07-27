@@ -45,11 +45,11 @@ def train_model(
     if cfg.input_type == 'iq':
         DatasetClass = PalaDatasetIq
         transforms = [Normalize(mean=0, std=1)]
-        collate_fn = None
+        from datasets.pala_dataset.utils.collate_fn_iq import collate_fn
     elif cfg.input_type == 'rf':
         DatasetClass = PalaDatasetRf
         transforms = [NormalizeVol()]
-        from datasets.pala_dataset.utils.collate_fn import collate_fn
+        from datasets.pala_dataset.utils.collate_fn_rf import collate_fn
     dataset = DatasetClass(
         dataset_path = cfg.data_dir,
         train = True,
@@ -141,7 +141,7 @@ def train_model(
         epoch_loss = 0
         with tqdm(total=n_train, desc=f'Epoch {epoch}/{epochs}', unit='img') as pbar:
             for batch in train_loader:
-                images, masks_true = batch[:2] if cfg.input_type == 'iq' else (batch[2].flatten(0, 1), batch[-2].flatten(0, 1))
+                images, masks_true = batch[:2] if cfg.input_type == 'iq' else (batch[0].flatten(0, 1), batch[1].flatten(0, 1))
 
                 # skip blank frames (avoid learning from false frames)
                 if torch.any(images.view(images.shape[0], -1).sum() == 0) or torch.any(masks_true.view(masks_true.shape[0], -1).sum() == 0):
@@ -255,9 +255,9 @@ def train_model(
                     else:
                         for j in range(cfg.batch_size):
                             # filter zeros (introduced by collate_fn for consistency)
-                            mask = (batch[1][j] != 0).sum(-1) == 0
-                            gt_samples_list.append(batch[3][j][..., ~mask])
-                            gt_points_list.append(batch[1][j][~mask, :].T)
+                            mask = (batch[4][j] != float('nan')).sum(-1) == 0
+                            gt_samples_list.append(batch[2][j][..., ~mask])
+                            gt_points_list.append(batch[4][j][~mask, :].T)
 
     if cfg.logging:
         dir_checkpoint = Path('./ckpts/')

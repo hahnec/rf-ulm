@@ -38,7 +38,7 @@ def evaluate(model, dataloader, amp, cfg):
             
             wv_es_points = []
             for wv_idx in cfg.wv_idcs:
-                imgs, true_masks, gt_pts = batch[:3] if cfg.input_type == 'iq' else (batch[2][:, wv_idx], batch[-2][:, wv_idx], batch[1])
+                imgs, true_masks, gt_pts = batch[:3] if cfg.input_type == 'iq' else (batch[0][:, wv_idx], batch[1][:, wv_idx], batch[4])
                 
                 # move images and labels to correct device and type
                 imgs = imgs.to(device=cfg.device, dtype=torch.float32, memory_format=torch.channels_last)
