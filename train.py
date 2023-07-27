@@ -82,7 +82,7 @@ def train_model(
 
     # instantiate logging
     if cfg.logging:
-        wb = wandb.init(project='SR-ULM-TRAIN', resume='allow', anonymous='must', config=cfg)
+        wb = wandb.init(project='SR-ULM-TRAIN', resume='allow', anonymous='must', config=cfg, group='train')
         wb.config.update(
             dict(epochs=epochs, batch_size=batch_size, learning_rate=learning_rate, val_percent=val_percent, img_scale=img_scale, amp=amp)
         )

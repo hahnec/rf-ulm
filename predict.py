@@ -45,7 +45,7 @@ if __name__ == '__main__':
     cfg = OmegaConf.merge(cfg, OmegaConf.from_cli())
 
     if cfg.logging:
-        wb = wandb.init(project='SR-ULM-INFER', resume='allow', anonymous='must', config=cfg)
+        wb = wandb.init(project='SR-ULM-INFER', resume='allow', anonymous='must', config=cfg, group=cfg.logging)
         wb.config.update(cfg)
 
     # model selection
