@@ -178,9 +178,9 @@ def train_model(
                 #fig, axs = plt.subplots(nrows=1,ncols=1, figsize=(15,9))
                 ##axs[0].imshow(images[0, 0].cpu().numpy())
                 ##axs[1].imshow(masks_true[0].cpu().numpy())
-                #axs.imshow(mask_review_img[:, 500:800])
+                #axs.imshow(mask_review_img)
                 #import imageio
-                #imageio.imsave('rf_label_frame.png', mask_review_img[:, 500:800])
+                #imageio.imsave('rf_label_frame.png', mask_review_img)
                 #plt.show()
 
                 # activation followed by non-maximum suppression
@@ -254,13 +254,13 @@ def train_model(
                     if (len(gt_samples_list)+1) > 20:
                         samples = torch.dstack(gt_samples_list).cpu().numpy()
                         points = torch.hstack(gt_points_list).cpu().numpy()
-                        t_mats = get_samples2points_mapping(samples, points)
+                        t_mats = get_samples2points_mapping(samples, points, p=6, weights_opt=False)
                         save_tmats(t_mats, name=cfg.tmats_name)
                         gt_samples_list, gt_points_list = [], []
                     else:
                         for j in range(cfg.batch_size):
-                            # filter nans (introduced by collate_fn for consistency)
-                            mask = torch.isnan(batch[4][j]).sum(-1) > 0
+                            # filter nans (introduced by GT samples outside transducer width and collate_fn for dimension consistency)
+                            mask =(torch.isnan(batch[2][j]).sum((0,1)) > 0) | (torch.isnan(batch[4][j]).sum(-1) > 0)
                             gt_samples_list.append(batch[2][j][..., ~mask])
                             gt_points_list.append(batch[4][j][~mask, :].T)
 
