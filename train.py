@@ -259,8 +259,8 @@ def train_model(
                         gt_samples_list, gt_points_list = [], []
                     else:
                         for j in range(cfg.batch_size):
-                            # filter zeros (introduced by collate_fn for consistency)
-                            mask = (batch[4][j] != float('nan')).sum(-1) == 0
+                            # filter nans (introduced by collate_fn for consistency)
+                            mask = torch.isnan(batch[4][j]).sum(-1) > 0
                             gt_samples_list.append(batch[2][j][..., ~mask])
                             gt_points_list.append(batch[4][j][~mask, :].T)
 
