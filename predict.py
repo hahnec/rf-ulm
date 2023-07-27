@@ -99,6 +99,7 @@ if __name__ == '__main__':
         tile_opt = False,
         clutter_db = cfg.clutter_db,
         temporal_filter_opt = cfg.data_dir.lower().__contains__('rat'),
+        pow_law_opt = cfg.pow_law_opt,
         )
 
     # data-related configuration
