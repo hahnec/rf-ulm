@@ -72,11 +72,11 @@ if __name__ == '__main__':
     else:
         raise Exception('Model name not recognized')
 
-    logging.info(f'Loading model {cfg.model_path}')
+    logging.info(f'Loading model {cfg.model_file}')
     logging.info(f'Using device {cfg.device}')
 
     model.to(device=cfg.device)
-    ckpt_paths = [fn for fn in Path('./ckpts').iterdir() if fn.name.startswith(cfg.model_path.split('_')[0])]
+    ckpt_paths = [fn for fn in Path('./ckpts').iterdir() if fn.name.startswith(cfg.model_file.split('_')[0])]
     state_dict = torch.load(str(ckpt_paths[0]), map_location=cfg.device)
     model.load_state_dict(state_dict)
     model.eval()

@@ -310,10 +310,10 @@ if __name__ == '__main__':
     model = model.to(memory_format=torch.channels_last)
 
     if cfg.fine_tune:
-        ckpt_paths = [fn for fn in Path('./ckpts').iterdir() if fn.name.startswith(cfg.model_path.split('_')[0])]
+        ckpt_paths = [fn for fn in Path('./ckpts').iterdir() if fn.name.startswith(cfg.model_file.split('_')[0])]
         state_dict = torch.load(str(ckpt_paths[0]), map_location=cfg.device)
         model.load_state_dict(state_dict)
-        logging.info(f'Model loaded from {cfg.model_path}')
+        logging.info(f'Model loaded from {cfg.model_file}')
 
     model.to(device=cfg.device)
     train_model(
