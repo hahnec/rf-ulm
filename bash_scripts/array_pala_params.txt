@@ -1,4 +1,4 @@
 mspcn avid-music 15
 edsr smart-mountain 10
-unet divine-gorge 15
+unet divine-gorge .5
 
