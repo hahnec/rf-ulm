@@ -76,8 +76,8 @@ if __name__ == '__main__':
     logging.info(f'Using device {cfg.device}')
 
     model.to(device=cfg.device)
-    state_dict = torch.load(Path('./ckpts') / cfg.model_path, map_location=cfg.device)
-    mask_values = state_dict.pop('mask_values') if 'mask_values' in state_dict.keys() else None
+    ckpt_paths = [fn for fn in Path('./ckpts').iterdir() if fn.name.startswith(cfg.model_path.split('_')[0])]
+    state_dict = torch.load(str(ckpt_paths[0]), map_location=cfg.device)
     model.load_state_dict(state_dict)
     model.eval()
 
