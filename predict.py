@@ -96,7 +96,7 @@ if __name__ == '__main__':
         sequences = list(range(1, 121)) if cfg.data_dir.lower().__contains__('rat') else cfg.sequences,
         rescale_factor = cfg.rescale_factor,
         upscale_factor = cfg.upscale_factor,
-        tile_opt = cfg.model.lower().__contains__('unet'),
+        tile_opt = False,
         clutter_db = cfg.clutter_db,
         temporal_filter_opt = cfg.data_dir.lower().__contains__('rat'),
         )
