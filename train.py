@@ -68,7 +68,8 @@ def train_model(
     cfg.wavelength = float(dataset.get_key('wavelength'))
     cfg.origin_x = float(dataset.get_key('Origin')[0])
     cfg.origin_z = float(dataset.get_key('Origin')[2])
-    cfg.wv_idcs = [0] if cfg.input_type == 'iq' else list(range(3))
+    cfg.wv_idcs = list(range(3)) if cfg.wv_idcs is None else cfg.wv_idcs
+    cfg.wv_idcs = [0] if cfg.input_type == 'iq' else cfg.wv_idcs
 
     # split into train and validation partitions
     n_val = int(len(dataset) * val_percent)

@@ -108,7 +108,8 @@ if __name__ == '__main__':
     cfg.origin_x = float(dataset.get_key('Origin')[0])
     cfg.origin_z = float(dataset.get_key('Origin')[2])
     origin = np.array([cfg.origin_x, cfg.origin_z])
-    wv_idcs = [1] if cfg.input_type == 'iq' else list(range(3))
+    cfg.wv_idcs = [1] if cfg.input_type == 'iq' else cfg.wv_idcs
+    cfg.wv_idcs = [0] if cfg.input_type == 'iq' else cfg.wv_idcs
     name_ext = '_' + str(int(cfg.upscale_factor)) + '_' + str(int(cfg.rescale_factor))
     fnames = [fname for fname in Path('.').iterdir() if str(fname).lower().__contains__('t_mats' + name_ext)]
     t_mats = np.load(fnames[0]) if cfg.input_type == 'rf' else np.zeros((3,3,3))
@@ -131,7 +132,7 @@ if __name__ == '__main__':
             tic = time.process_time()
 
             wv_es_points = []
-            for wv_idx in wv_idcs:
+            for wv_idx in cfg.wv_idcs:
                 img, true_mask, gt_pts = batch[:3] if cfg.input_type == 'iq' else (batch[0][:, wv_idx], batch[1][:, wv_idx], batch[4])
 
                 img = img.to(device=cfg.device, dtype=torch.float32)
@@ -159,7 +160,7 @@ if __name__ == '__main__':
                 
                 wv_es_points.append(es_points)
 
-            if cfg.input_type == 'rf':
+            if len(cfg.wv_idcs) > 1:
                 pts = np.hstack([wv_es_points[1][0], wv_es_points[0][0], wv_es_points[2][0]]).T
                 es_points = [cluster_points(pts, cluster_obj=cluster_obj).T] if pts.size > 0 else pts
             else:
