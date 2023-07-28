@@ -1,4 +1,4 @@
 edsr avid-music 15 iq
-edsr smart-mountain 13 rf
-unet divine-gorge .5 iq
+unet divine-gorge 0.01 iq
+edsr floral-jazz 13 rf
 
