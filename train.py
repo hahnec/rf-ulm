@@ -116,7 +116,7 @@ def train_model(
     # set up the optimizer, the loss, the learning rate scheduler and the loss scaling for AMP
     #optimizer = optim.RMSprop(model.parameters(), lr=learning_rate, weight_decay=weight_decay, momentum=momentum, foreach=True)
     optimizer = optim.AdamW(model.parameters(), lr=learning_rate, weight_decay=weight_decay, foreach=True)
-    scheduler = optim.lr_scheduler.CosineAnnealingLR(optimizer, cfg.epochs)
+    scheduler = optim.lr_scheduler.CosineAnnealingLR(optimizer, last_epoch=cfg.epochs)
     #scheduler = optim.lr_scheduler.PolynomialLR(optimizer, cfg.epochs, power=1)
     grad_scaler = torch.cuda.amp.GradScaler(enabled=amp)
     criterion = nn.MSELoss(reduction='mean')
@@ -220,7 +220,6 @@ def train_model(
                                 histograms['Gradients/' + tag] = wandb.Histogram(value.grad.data.cpu())
                         
                         val_score, pala_err_batch, masks_nms, threshold = evaluate(model, val_loader, amp, cfg)
-                        scheduler.step()
 
                         logging.info('Validation Dice score: {}'.format(val_score))
                         try:
@@ -270,6 +269,8 @@ def train_model(
                             mask =(torch.isnan(batch[2][j]).sum((0,1)) > 0) | (torch.isnan(batch[4][j]).sum(-1) > 0)
                             gt_samples_list.append(batch[2][j][..., ~mask])
                             gt_points_list.append(batch[4][j][~mask, :].T)
+        
+        scheduler.step()
 
     if cfg.logging:
         dir_checkpoint = Path('./ckpts/')
