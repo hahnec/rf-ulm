@@ -25,5 +25,6 @@ param_store=~/20_sr-ulm/bash_scripts/array_pala_params.txt
 model=$(cat $param_store | awk -v var=$SLURM_ARRAY_TASK_ID 'NR==var {print $1}')
 model_file=$(cat $param_store | awk -v var=$SLURM_ARRAY_TASK_ID 'NR==var {print $2}')
 threshold=$(cat $param_store | awk -v var=$SLURM_ARRAY_TASK_ID 'NR==var {print $3}')
+type=$(cat $param_store | awk -v var=$SLURM_ARRAY_TASK_ID 'NR==var {print $4}')
 
-python3 ./predict.py model=${model} model_file=${model_file} th=${threshold} batch_size=1 data_dir=/storage/workspaces/artorg_aimi/ws_00000/chris/PALA_data_InSilicoFlow/ logging=pala_array
+python3 ./predict.py model=${model} model_file=${model_file} th=${threshold} input_type=${type} batch_size=1 data_dir=/storage/workspaces/artorg_aimi/ws_00000/chris/PALA_data_InSilicoFlow/ logging=pala_array
