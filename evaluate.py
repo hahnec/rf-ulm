@@ -66,7 +66,7 @@ def evaluate(model, dataloader, amp, cfg):
             pala_err_batch = get_pala_error(es_points, gt_points)
 
             # threshold analysis
-            if true_masks[0].sum() > 0:
+            if true_masks[0].sum() > 0 and torch.any(~torch.isnan(masks_pred)):
                 threshold = estimate_threshold(true_masks, masks_pred)
             else:
                 threshold = float('NaN')
