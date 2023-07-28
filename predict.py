@@ -213,7 +213,7 @@ if __name__ == '__main__':
     all_pts_gt = [p for p in all_pts_gt if p.size > 0]
 
     sres_ulm_img, _ = tracks2img((np.vstack(all_pts)-origin)[:, ::-1]-origin, img_size=np.array([84, 134]), scale=10, mode='all_in')
-    gtru_ulm_img, _ = tracks2img((np.vstack(all_pts_gt)-origin)[:, ::-1]-origin, img_size=np.array([84, 134]), scale=10, mode='all_in')
+    gtru_ulm_img, _ = tracks2img((np.vstack(all_pts_gt)-origin)[:, ::-1], img_size=np.array([84, 134]), scale=10, mode='all_in')
 
     # gamma
     sres_ulm_img **= cfg.gamma
