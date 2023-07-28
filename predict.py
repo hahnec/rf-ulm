@@ -97,6 +97,7 @@ if __name__ == '__main__':
         rescale_factor = cfg.rescale_factor,
         upscale_factor = cfg.upscale_factor,
         tile_opt = False,
+        scale_opt = cfg.model.lower().__contains__('unet'),
         clutter_db = cfg.clutter_db,
         temporal_filter_opt = cfg.data_dir.lower().__contains__('rat'),
         pow_law_opt = cfg.pow_law_opt,

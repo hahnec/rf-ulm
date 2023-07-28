@@ -60,6 +60,7 @@ def train_model(
         upscale_factor = cfg.upscale_factor,
         temporal_filter_opt = cfg.data_dir.lower().__contains__('rat'),
         tile_opt = cfg.model.__contains__('unet'),
+        scale_opt = cfg.model.lower().__contains__('unet'),
         angle_threshold = cfg.angle_threshold,
         )
 
