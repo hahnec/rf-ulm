@@ -165,14 +165,8 @@ if __name__ == '__main__':
             else:
                 es_points = wv_es_points[0]
 
-            pts_es = (es_points[0] + origin[:, None]).T
-            pts_gt = (gt_points[0] + origin[:, None]).T
-
-            # shift IQ coordinates to origin
-            if cfg.input_type == 'iq': pts_es += np.array([[cfg.origin_z, cfg.origin_x]])
-
-            all_pts.append(pts_es)
-            all_pts_gt.append(pts_gt)
+            all_pts.append(es_points[0].T)
+            all_pts_gt.append(gt_points[0].T)
 
             frame_time = time.process_time() - tic
             
@@ -212,8 +206,8 @@ if __name__ == '__main__':
     all_pts = [p for p in all_pts if p.size > 0]
     all_pts_gt = [p for p in all_pts_gt if p.size > 0]
 
-    sres_ulm_img, _ = tracks2img((np.vstack(all_pts)-origin)[:, ::-1]-origin, img_size=np.array([84, 134]), scale=10, mode='all_in')
-    gtru_ulm_img, _ = tracks2img((np.vstack(all_pts_gt)-origin)[:, ::-1], img_size=np.array([84, 134]), scale=10, mode='all_in')
+    sres_ulm_img, _ = tracks2img((np.vstack(all_pts))[:, ::-1]-origin, img_size=np.array([84, 134]), scale=10, mode='all_in')
+    gtru_ulm_img, _ = tracks2img((np.vstack(all_pts_gt))[:, ::-1]-origin, img_size=np.array([84, 134]), scale=10, mode='all_in')
 
     # gamma
     sres_ulm_img **= cfg.gamma
