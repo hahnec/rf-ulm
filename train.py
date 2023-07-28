@@ -90,10 +90,6 @@ def train_model(
         )
         wandb.define_metric('epoch', step_metric='epoch')
         wandb.define_metric('train_loss', step_metric='train_step')
-        wandb.define_metric('rmse', step_metric='val_step')
-        wandb.define_metric('jaccard', step_metric='val_step')
-        wandb.define_metric('recall', step_metric='val_step')
-        wandb.define_metric('precision', step_metric='val_step')
         wandb.define_metric('threshold', step_metric='val_step')
         wandb.define_metric('avg_detected', step_metric='val_step')
         wandb.define_metric('pred_max', step_metric='val_step')
@@ -101,6 +97,10 @@ def train_model(
         wandb.define_metric('validation_dice', step_metric='val_step')
         wandb.define_metric('images', step_metric='val_step')
         wandb.define_metric('masks', step_metric='val_step')
+        wandb.define_metric('rmse', step_metric='eval_step')
+        wandb.define_metric('jaccard', step_metric='eval_step')
+        wandb.define_metric('recall', step_metric='eval_step')
+        wandb.define_metric('precision', step_metric='eval_step')
 
         logging.info(f'''Starting training:
             Epochs:          {epochs}
@@ -125,6 +125,7 @@ def train_model(
     lambda_value = 0.01 if cfg.model.__contains__('unet') and cfg.input_type == 'iq' else cfg.lambda1
     train_step = 0
     val_step = 0
+    eval_step = 0
     
     # mSPCN Gaussian
     psf_heatmap = torch.from_numpy(matlab_style_gauss2D(shape=(7,7),sigma=1))
@@ -225,27 +226,32 @@ def train_model(
                         logging.info('Validation Dice score: {}'.format(val_score))
                         try:
                             if cfg.logging:
+                                wb.log({
+                                    'lr': optimizer.param_groups[0]['lr'],
+                                    'validation_dice': val_score,
+                                    'images': wandb.Image(images[0].cpu()),
+                                    'masks': {
+                                        'true': wandb.Image(img_norm(masks_true[0].float().cpu())*255),
+                                        'pred': wandb.Image(img_norm(masks_pred[0].float().cpu())*255),    #(masks_pred.argmax(dim=1)[0]).float().cpu()),#
+                                        'nms': wandb.Image(img_norm(masks_nms[0].float().cpu())*255),
+                                    },
+                                    'val_step': val_step,
+                                    'epoch': epoch,
+                                    'threshold': threshold,
+                                    'avg_detected': float(masks_nms[0].float().cpu().sum()),
+                                    'pred_max': float(masks_pred[0].float().cpu().max()),
+                                    **histograms
+                                })
+                                # iterate through batch localization metrics
                                 for rmse, precision, recall, jaccard, tp_num, fp_num, fn_num in pala_err_batch:
                                     wb.log({
-                                        'lr': optimizer.param_groups[0]['lr'],
-                                        'validation_dice': val_score,
-                                        'images': wandb.Image(images[0].cpu()),
-                                        'masks': {
-                                            'true': wandb.Image(img_norm(masks_true[0].float().cpu())*255),
-                                            'pred': wandb.Image(img_norm(masks_pred[0].float().cpu())*255),    #(masks_pred.argmax(dim=1)[0]).float().cpu()),#
-                                            'nms': wandb.Image(img_norm(masks_nms[0].float().cpu())*255),
-                                        },
-                                        'val_step': val_step,
-                                        'epoch': epoch,
                                         'rmse': rmse,
                                         'precision': precision,
                                         'recall': recall,
                                         'jaccard': jaccard,
-                                        'threshold': threshold,
-                                        'avg_detected': float(masks_nms[0].float().cpu().sum()),
-                                        'pred_max': float(masks_pred[0].float().cpu().max()),
-                                        **histograms
+                                        'eval_step': eval_step, 
                                     })
+                                    eval_step += 1
                         except Exception as e:
                             print('Validation upload failed')
                             print(e)
