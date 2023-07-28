@@ -5,10 +5,15 @@ import scipy
 save_tmats = lambda tmats, name=None: np.save('t_mats.npy', tmats) if name is None else np.save(name + '.npy', tmats)
 
 
-def get_samples2points_mapping(samples, points, p=6, weights_opt=False):
+def get_samples2points_mapping(samples, points, channel_num=128, upscale_factor=4, p=6, weights_opt=False):
 
     # choose earliest arriving sample positions for each target 
     rf_pts = np.array([samples.min(1), samples.argmin(1)])
+
+    # accout for point indices outside original transducer width
+    xe_num = samples.shape[1]
+    border_index = (xe_num-channel_num*upscale_factor)//2
+    rf_pts[1, ...] -= border_index
 
     # homogenize B-mode points
     bmode_pts = np.array([*points, np.ones(points.shape[-1])])
