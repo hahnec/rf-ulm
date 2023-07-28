@@ -116,7 +116,7 @@ def train_model(
     # set up the optimizer, the loss, the learning rate scheduler and the loss scaling for AMP
     #optimizer = optim.RMSprop(model.parameters(), lr=learning_rate, weight_decay=weight_decay, momentum=momentum, foreach=True)
     optimizer = optim.AdamW(model.parameters(), lr=learning_rate, weight_decay=weight_decay, foreach=True)
-    scheduler = optim.lr_scheduler.CosineAnnealingLR(optimizer, last_epoch=cfg.epochs)
+    scheduler = optim.lr_scheduler.CosineAnnealingLR(optimizer, cfg.epochs)
     #scheduler = optim.lr_scheduler.PolynomialLR(optimizer, cfg.epochs, power=1)
     grad_scaler = torch.cuda.amp.GradScaler(enabled=amp)
     criterion = nn.MSELoss(reduction='mean')
