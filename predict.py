@@ -111,8 +111,7 @@ if __name__ == '__main__':
     cfg.wv_idcs = [1] if cfg.input_type == 'iq' else cfg.wv_idcs
     cfg.wv_idcs = [0] if cfg.input_type == 'iq' else cfg.wv_idcs
     name_ext = '_' + str(int(cfg.upscale_factor)) + '_' + str(int(cfg.rescale_factor))
-    fnames = [fname for fname in Path('.').iterdir() if str(fname).lower().__contains__('t_mats' + name_ext)]
-    t_mats = np.load(fnames[0]) if cfg.input_type == 'rf' else np.zeros((3,3,3))
+    t_mats = np.load('t_mats' + name_ext + '.npy') if cfg.input_type == 'rf' else np.zeros((3,3,3))
     # flip matrices to avoid coordinate flipping during inference
     t_mats[:, :2] = t_mats[:, :2][:, ::-1]
     t_mats[:, :2, :2] = t_mats[:, :2, :2][:, :, ::-1]
