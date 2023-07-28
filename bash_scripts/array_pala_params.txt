@@ -1,4 +1,4 @@
 edsr avid-music 15 iq
-unet divine-gorge 0.01 iq
-edsr floral-jazz 13 rf
+unet divine-gorge 0.1 iq
+edsr cosmic-dragon 13 rf
 
