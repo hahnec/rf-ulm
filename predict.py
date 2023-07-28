@@ -237,3 +237,4 @@ if cfg.logging:
     wandb.log({"sres_ulm_img": wandb.Image(sres_ulm_img)})
     wandb.log({"gtru_ulm_img": wandb.Image(gtru_ulm_img)})
     wandb.save(str(Path('.') / 'logged_errors.csv'))
+    wandb.finish()

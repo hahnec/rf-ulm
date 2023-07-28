@@ -270,6 +270,7 @@ def train_model(
         state_dict = model.state_dict()
         torch.save(state_dict, str(dir_checkpoint / (wb.name+str('_ckpt_epoch{}.pth'.format(epoch)))))
         logging.info(f'Checkpoint {epoch} saved!')
+        wandb.finish()
 
 
 if __name__ == '__main__':
