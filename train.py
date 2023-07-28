@@ -114,11 +114,10 @@ def train_model(
         ''')
 
     # set up the optimizer, the loss, the learning rate scheduler and the loss scaling for AMP
-    #optimizer = optim.RMSprop(model.parameters(), lr=learning_rate, weight_decay=weight_decay, momentum=momentum, foreach=True)
-    optimizer = optim.Adam(model.parameters(), lr=learning_rate, weight_decay=weight_decay, foreach=True)
-    scheduler = optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode='min', factor=0.02, patience=5)
+    optimizer = optim.RMSprop(model.parameters(), lr=learning_rate, weight_decay=weight_decay, momentum=momentum, foreach=True)
+    #optimizer = optim.Adam(model.parameters(), lr=learning_rate, weight_decay=weight_decay, foreach=True)
     #scheduler = optim.lr_scheduler.CosineAnnealingLR(optimizer, cfg.epochs)
-    #scheduler = optim.lr_scheduler.PolynomialLR(optimizer, cfg.epochs)
+    scheduler = optim.lr_scheduler.PolynomialLR(optimizer, cfg.epochs, power=1)
     grad_scaler = torch.cuda.amp.GradScaler(enabled=amp)
     criterion = nn.MSELoss(reduction='mean')
     l1loss = nn.L1Loss(reduction='mean')
@@ -221,7 +220,7 @@ def train_model(
                                 histograms['Gradients/' + tag] = wandb.Histogram(value.grad.data.cpu())
                         
                         val_score, pala_err_batch, masks_nms, threshold = evaluate(model, val_loader, amp, cfg)
-                        scheduler.step(val_score)
+                        scheduler.step()
 
                         logging.info('Validation Dice score: {}'.format(val_score))
                         try:
