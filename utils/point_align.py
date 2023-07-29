@@ -3,8 +3,6 @@ import numpy as np
 from datasets.pala_dataset.utils.radial_pala import radial_pala
 from datasets.pala_dataset.utils.pala_error import rmse_unique
 
-from utils.dithering import dithering
-
 
 def align_points(masks, gt_pts, t_mat, cfg, sr_img=None):
     
@@ -38,10 +36,6 @@ def align_points(masks, gt_pts, t_mat, cfg, sr_img=None):
             es_pts /= cfg.upscale_factor
             es_pts += np.array([[cfg.origin_z, cfg.origin_x]]).T
         es_pts = es_pts[:2, ...]
-
-        # dithering
-        if cfg.dither:
-            es_pts = dithering(es_pts, 10, upscale_factor=cfg.upscale_factor)
 
         es_points.append(es_pts)
 

@@ -34,6 +34,7 @@ from utils.srgb_conv import srgb_conv
 from utils.utils import plot_img_and_mask
 from utils.transform import Normalize, NormalizeVol
 from utils.point_fusion import cluster_points
+from utils.dithering import dithering
 
 
 if __name__ == '__main__':
@@ -206,8 +207,16 @@ if __name__ == '__main__':
     all_pts = [p for p in all_pts if p.size > 0]
     all_pts_gt = [p for p in all_pts_gt if p.size > 0]
 
-    sres_ulm_img, _ = tracks2img((np.vstack(all_pts))[:, ::-1]-origin, img_size=np.array([84, 134]), scale=10, mode='all_in')
-    gtru_ulm_img, _ = tracks2img((np.vstack(all_pts_gt))[:, ::-1]-origin, img_size=np.array([84, 134]), scale=10, mode='all_in')
+    # dithering
+    if cfg.dither:
+        img_shape = np.array(img.shape[-2:])[::-1] if cfg.input_type == 'rf' else np.array(img.shape[-2:])
+        y_factor, x_factor = img_shape / np.array([84, 143])
+        all_pts = dithering(np.vstack(all_pts), 10, cfg.upscale_factor, x_factor, y_factor)
+    else:
+        all_pts = np.vstack(all_pts)
+
+    sres_ulm_img, _ = tracks2img(all_pts[:, ::-1]-origin, img_size=np.array([84, 143]), scale=10, mode='all_in')
+    gtru_ulm_img, _ = tracks2img((np.vstack(all_pts_gt))[:, ::-1]-origin, img_size=np.array([84, 143]), scale=10, mode='all_in')
 
     # gamma
     sres_ulm_img **= cfg.gamma
