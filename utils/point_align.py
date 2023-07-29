@@ -9,10 +9,9 @@ def align_points(masks, gt_pts, t_mat, cfg, sr_img=None):
     # gt points alignment
     gt_points = []
     for batch_gt_pts in gt_pts:
-        pts_gt = batch_gt_pts[~(torch.isnan(batch_gt_pts.squeeze()).sum(-1) > 0)].numpy()[:, ::-1]
-        pts_gt = pts_gt.swapaxes(-2, -1)
-        pts_gt = np.fliplr(pts_gt)
-        gt_points.append(pts_gt)
+        nan_mask = torch.isnan(batch_gt_pts.squeeze()).sum(-1) > 0
+        gt_rearranged = np.array(batch_gt_pts[~nan_mask].T)[::-1, ::-1]
+        gt_points.append(gt_rearranged)
 
     # extract indices from predicted map
     es_indices = torch.nonzero(masks.squeeze(1)).double()
