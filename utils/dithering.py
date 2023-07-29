@@ -1,7 +1,7 @@
 import numpy as np
 
 
-def dithering(points, ulm_render_scale, rescale_factor, upscale_factor, sample_num=256, tx_num=128, img_size=np.array([84, 134])):
+def dithering_depr(points, ulm_render_scale, rescale_factor, upscale_factor, sample_num=256, tx_num=128, img_size=np.array([84, 134])):
 
     # get numerical resolutions
     res_target = img_size*ulm_render_scale
@@ -18,5 +18,19 @@ def dithering(points, ulm_render_scale, rescale_factor, upscale_factor, sample_n
     dither_points = dither_factors[:, None] * rand_nums
 
     points += dither_points
+
+    return points
+
+
+def dithering(points, ulm_render_scale, upscale_factor):
+        
+    # get pixel noise range (ensure noise is smaller than pixel localization)
+    half_side_pixel_noise = ulm_render_scale/upscale_factor/2
+
+    # uniform random values in [-1, +1] range
+    rand_nums = 2*np.random.rand(*points.shape)-1
+    
+    # add dither noise
+    points += half_side_pixel_noise * rand_nums
 
     return points

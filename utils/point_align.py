@@ -41,7 +41,7 @@ def align_points(masks, gt_pts, t_mat, cfg, sr_img=None):
 
         # dithering
         if cfg.dither:
-            es_pts = dithering(es_pts, 10, rescale_factor=cfg.rescale_factor, upscale_factor=cfg.upscale_factor)
+            es_pts = dithering(es_pts, 10, upscale_factor=cfg.upscale_factor)
 
         es_points.append(es_pts)
 
