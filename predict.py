@@ -207,15 +207,23 @@ if __name__ == '__main__':
     all_pts = [p for p in all_pts if p.size > 0]
     all_pts_gt = [p for p in all_pts_gt if p.size > 0]
 
-    # dithering
+    # final resolution handling
+    img_shape = np.array(img.shape[-2:])[::-1] if cfg.input_type == 'rf' else np.array([84, 143])
     if cfg.dither:
-        img_shape = np.array(img.shape[-2:])[::-1] if cfg.input_type == 'rf' else np.array([84, 143])
+        # dithering
         y_factor, x_factor = img_shape / np.array([84, 143])
         all_pts = dithering(np.vstack(all_pts), 10, cfg.upscale_factor, x_factor, y_factor)
     else:
         all_pts = np.vstack(all_pts)
 
-    sres_ulm_img, _ = tracks2img(all_pts[:, ::-1]-origin, img_size=np.array([84, 143]), scale=10, mode='all_in')
+    if cfg.upscale_factor < 10 and not cfg.dither:
+        sres_ulm_img, _ = tracks2img(all_pts[:, ::-1]-origin, img_size=np.array([84, 143]), scale=cfg.upscale_factor, mode='all_in')
+        # upscale input frame
+        if cfg.upscale_factor != 10:
+            import cv2
+            sres_ulm_img = cv2.resize(sres_ulm_img, 10*img_shape[::-1], interpolation = cv2.INTER_CUBIC) if cfg.upscale_factor != 1 else sres_ulm_img
+    else:
+        sres_ulm_img, _ = tracks2img(all_pts[:, ::-1]-origin, img_size=np.array([84, 143]), scale=10, mode='all_in')
     gtru_ulm_img, _ = tracks2img((np.vstack(all_pts_gt))[:, ::-1]-origin, img_size=np.array([84, 143]), scale=10, mode='all_in')
 
     # gamma
