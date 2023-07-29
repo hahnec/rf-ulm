@@ -209,7 +209,7 @@ if __name__ == '__main__':
 
     # dithering
     if cfg.dither:
-        img_shape = np.array(img.shape[-2:])[::-1] if cfg.input_type == 'rf' else np.array(img.shape[-2:])
+        img_shape = np.array(img.shape[-2:])[::-1] if cfg.input_type == 'rf' else np.array([84, 143])
         y_factor, x_factor = img_shape / np.array([84, 143])
         all_pts = dithering(np.vstack(all_pts), 10, cfg.upscale_factor, x_factor, y_factor)
     else:
