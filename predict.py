@@ -208,6 +208,7 @@ if __name__ == '__main__':
     all_pts_gt = [p for p in all_pts_gt if p.size > 0]
 
     # final resolution handling
+    gtru_ulm_img, _ = tracks2img((np.vstack(all_pts_gt))[:, ::-1]-origin, img_size=np.array([84, 143]), scale=10, mode='all_in')
     img_shape = np.array(img.shape[-2:])[::-1] if cfg.input_type == 'rf' else np.array([84, 143])
     if cfg.dither:
         # dithering
@@ -222,9 +223,9 @@ if __name__ == '__main__':
         if cfg.upscale_factor != 1:
             import cv2
             sres_ulm_img = cv2.resize(sres_ulm_img, 10*img_shape[::-1], interpolation=cv2.INTER_CUBIC)
+            sres_ulm_img -= sres_ulm_img.min()
     else:
         sres_ulm_img, _ = tracks2img(all_pts[:, ::-1]-origin, img_size=np.array([84, 143]), scale=10, mode='all_in')
-    gtru_ulm_img, _ = tracks2img((np.vstack(all_pts_gt))[:, ::-1]-origin, img_size=np.array([84, 143]), scale=10, mode='all_in')
 
     # gamma
     sres_ulm_img **= cfg.gamma
