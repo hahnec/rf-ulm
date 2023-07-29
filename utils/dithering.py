@@ -31,6 +31,6 @@ def dithering(points, ulm_render_scale, upscale_factor):
     rand_nums = 2*np.random.rand(*points.shape)-1
     
     # add dither noise
-    points += half_side_pixel_noise * rand_nums
+    points += (half_side_pixel_noise/ulm_render_scale) * rand_nums
 
     return points
