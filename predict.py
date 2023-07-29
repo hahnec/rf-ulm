@@ -223,7 +223,7 @@ if __name__ == '__main__':
         if cfg.upscale_factor != 1:
             import cv2
             sres_ulm_img = cv2.resize(sres_ulm_img, 10*img_shape[::-1], interpolation=cv2.INTER_CUBIC)
-            sres_ulm_img -= sres_ulm_img.min()
+            sres_ulm_img[sres_ulm_img<0] = 0
     else:
         sres_ulm_img, _ = tracks2img(all_pts[:, ::-1]-origin, img_size=np.array([84, 143]), scale=10, mode='all_in')
 
