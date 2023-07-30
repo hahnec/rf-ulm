@@ -23,7 +23,7 @@ from evaluate import evaluate, non_max_supp_torch
 from utils.gauss import matlab_style_gauss2D
 from utils.dice_score import dice_loss
 from utils.transform import Normalize, NormalizeVol
-from utils.samples_points_map import get_samples2points_mapping, save_tmats
+from utils.samples_points_map import get_inverse_mapping
 
 
 img_norm = lambda x: (x-x.min())/(x.max()-x.min()) if (x.max()-x.min()) != 0 else x
