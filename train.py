@@ -94,7 +94,7 @@ def train_model(
         wandb.define_metric('threshold', step_metric='val_step')
         wandb.define_metric('avg_detected', step_metric='val_step')
         wandb.define_metric('pred_max', step_metric='val_step')
-        wandb.define_metric('lr', step_metric='val_step')
+        wandb.define_metric('lr', step_metric='epoch')
         wandb.define_metric('validation_dice', step_metric='val_step')
         wandb.define_metric('images', step_metric='val_step')
         wandb.define_metric('masks', step_metric='val_step')
