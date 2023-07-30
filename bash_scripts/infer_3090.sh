@@ -19,4 +19,4 @@ source ~/20_sr-ulm/venv/bin/activate
 
 python3 -c "import torch; print(torch.cuda.is_available())"
 
-python3 ./predict.py data_dir=/storage/workspaces/artorg_aimi/ws_00000/chris/Rat18_2D_InVivoBrain/ logging=pala_rat
+python3 ./predict.py clutter_db=Null data_dir=/storage/workspaces/artorg_aimi/ws_00000/chris/Rat18_2D_InVivoBrain/ logging=pala_rat
