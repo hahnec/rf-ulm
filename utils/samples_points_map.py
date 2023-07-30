@@ -5,6 +5,42 @@ import scipy
 save_tmats = lambda tmats, name=None: np.save('t_mats.npy', tmats) if name is None else np.save(name + '.npy', tmats)
 
 
+def generate_pala_points_and_samples(cfg, point_num=1e3):
+
+    # generate synthetic points
+    synth_points = 2*np.random.rand(2, int(point_num))-1    # [-1, +1] range
+
+    # scale points to PALA range (slightly overshoot for better fitting)
+    synth_points[0, ...] *= 80
+    synth_points[1, ...] += 1
+    synth_points[1, ...] *= 60
+
+    # prepare PALA parameters for projection
+    from datasets.pala_dataset.pala_rf import PalaDatasetRf
+    dataset = PalaDatasetRf(
+        dataset_path=cfg.data_dir,
+        rescale_factor = cfg.rescale_factor,
+        upscale_factor = cfg.upscale_factor,
+    )
+    wavelength = dataset.get_key('wavelength')
+    
+    # project samples
+    synth_samples = dataset.project_points_toa_compound(synth_points * wavelength)
+
+    return synth_samples, synth_points
+
+
+def get_inverse_mapping(cfg, p=6, weights_opt=True, point_num=1e3):
+
+    synth_samples, synth_points = generate_pala_points_and_samples(cfg, point_num)
+
+    synth_samples = synth_samples.swapaxes(1, 2)
+
+    t_mats = get_samples2points_mapping(synth_samples, synth_points, channel_num=128, upscale_factor=cfg.upscale_factor, p=p, weights_opt=weights_opt)
+
+    return t_mats
+
+
 def get_samples2points_mapping(samples, points, channel_num=128, upscale_factor=4, p=6, weights_opt=False):
 
     # choose earliest arriving sample positions for each target 

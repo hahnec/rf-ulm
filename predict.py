@@ -111,8 +111,11 @@ if __name__ == '__main__':
     origin = np.array([cfg.origin_x, cfg.origin_z])
     cfg.wv_idcs = [1] if cfg.input_type == 'iq' else cfg.wv_idcs
     cfg.wv_idcs = [0] if cfg.input_type == 'iq' else cfg.wv_idcs
-    name_ext = '_' + str(int(cfg.upscale_factor)) + '_' + str(int(cfg.rescale_factor))
-    t_mats = np.load('t_mats' + name_ext + '.npy') if cfg.input_type == 'rf' else np.zeros((3,3,3))
+
+    # transformation
+    from utils.samples_points_map import get_inverse_mapping
+    t_mats = get_inverse_mapping(cfg, p=6, weights_opt=False, point_num=1e3)
+
     # flip matrices to avoid coordinate flipping during inference
     t_mats[:, :2] = t_mats[:, :2][:, ::-1]
     t_mats[:, :2, :2] = t_mats[:, :2, :2][:, :, ::-1]
