@@ -6,8 +6,9 @@ import numpy as np
 import torch
 import torch.nn.functional as F
 from torch.utils.data import DataLoader
-from PIL import Image
 from torchvision import transforms
+from torchinfo import summary
+from PIL import Image
 from tqdm import tqdm
 from omegaconf import OmegaConf
 import wandb
@@ -248,11 +249,12 @@ if __name__ == '__main__':
     gtru_ulm_map = img_color_map(img=normalize(gtru_ulm_img))
 
     if cfg.logging:
+        wandb.log({"sres_ulm_img": wandb.Image(sres_ulm_map)})
+        wandb.log({"gtru_ulm_img": wandb.Image(gtru_ulm_map)})
         wandb.summary['TotalRMSE'] = sres_rmse_mean
         wandb.summary['TotalRMSEstd'] = sres_rmse_std
         wandb.summary['TotalJaccard'] = torch.nanmean(errs[..., 3], axis=0)
         wandb.summary['SSIM'] = ssim(gtru_ulm_img, sres_ulm_img, data_range=sres_ulm_img.max()-sres_ulm_img.min())
-        wandb.log({"sres_ulm_img": wandb.Image(sres_ulm_map)})
-        wandb.log({"gtru_ulm_img": wandb.Image(gtru_ulm_map)})
+        wandb.summary['TotalParameters'] = int(str(summary(model)).split('\n')[-3].split(' ')[-1].replace(',',''))
         wandb.save(str(Path('.') / 'logged_errors.csv'))
         wandb.finish()

@@ -8,6 +8,7 @@ omegaconf
 natsort
 torch
 torchvision
+torchinfo
 opencv-python
 scikit-learn
 scikit-image
