@@ -31,6 +31,7 @@ from models.mspcn import MSPCN
 from models.edsr import EDSR
 from utils.nms_funs import non_max_supp, non_max_supp_torch
 from utils.point_align import align_points, get_pala_error
+from utils.samples_points_map import get_inverse_mapping
 from utils.srgb_conv import srgb_conv
 from utils.utils import plot_img_and_mask
 from utils.transform import Normalize, NormalizeVol
@@ -113,8 +114,7 @@ if __name__ == '__main__':
     cfg.wv_idcs = [0] if cfg.input_type == 'iq' else cfg.wv_idcs
 
     # transformation
-    from utils.samples_points_map import get_inverse_mapping
-    t_mats = get_inverse_mapping(cfg, p=6, weights_opt=False, point_num=1e3)
+    t_mats = get_inverse_mapping(cfg, p=6, weights_opt=False, point_num=1e4)
 
     # flip matrices to avoid coordinate flipping during inference
     t_mats[:, :2] = t_mats[:, :2][:, ::-1]
