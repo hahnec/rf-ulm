@@ -26,8 +26,9 @@ from datasets.pala_dataset.pala_rf import PalaDatasetRf
 from datasets.pala_dataset.utils.pala_error import rmse_unique
 from datasets.pala_dataset.utils.radial_pala import radial_pala
 from datasets.pala_dataset.utils.centroids import regional_mask
-from unet import UNet, SlounUNet, SlounAdaptUNet
-from mspcn.model import Net
+from models.unet import UNet, SlounUNet, SlounAdaptUNet
+from models.mspcn import MSPCN
+from models.edsr import EDSR
 from utils.nms_funs import non_max_supp, non_max_supp_torch
 from utils.point_align import align_points, get_pala_error
 from utils.srgb_conv import srgb_conv
@@ -56,10 +57,9 @@ if __name__ == '__main__':
         model = SlounAdaptUNet(n_channels=in_channels, n_classes=1, bilinear=False)
     elif cfg.model == 'mspcn':
         # mSPCN
-        model = Net(upscale_factor=cfg.upscale_factor, in_channels=in_channels)
+        model = MSPCN(upscale_factor=cfg.upscale_factor, in_channels=in_channels)
     elif cfg.model == 'edsr':
         # EDSR
-        from models.edsr import EDSR
         class Args:
             pass
         args = Args()

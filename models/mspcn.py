@@ -1,13 +1,15 @@
+# https://ieee-dataport.org/documents/us-data-vivo-rat-kidney
+
 import torch
 import torch.nn as nn
 import torch.nn.init as init
 import torch.nn.functional as F
 
 
-class Net(nn.Module):
+class MSPCN(nn.Module):
 
     def __init__(self, upscale_factor, in_channels=1):
-        super(Net, self).__init__()
+        super(MSPCN, self).__init__()
 
         self.conv1 = nn.Conv2d(in_channels, 64, (9, 9), (1, 1), (4, 4))
         
@@ -69,7 +71,3 @@ class Net(nn.Module):
         init.orthogonal(self.conv11.weight)
         init.orthogonal(self.conv12.weight)
         init.orthogonal(self.conv13.weight)
-        
-        
-        
-        

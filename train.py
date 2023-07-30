@@ -14,12 +14,13 @@ from torch.utils.data import DataLoader, random_split
 from tqdm import tqdm
 from omegaconf import OmegaConf
 
-from evaluate import evaluate, non_max_supp_torch
-from unet import UNet, SlounUNet, SlounAdaptUNet
-from mspcn.model import Net
-from mspcn.main import matlab_style_gauss2D
 from datasets.pala_dataset.pala_iq import PalaDatasetIq
 from datasets.pala_dataset.pala_rf import PalaDatasetRf
+from models.unet import UNet, SlounUNet, SlounAdaptUNet
+from models.mspcn import MSPCN
+from models.edsr import EDSR
+from evaluate import evaluate, non_max_supp_torch
+from utils.gauss import matlab_style_gauss2D
 from utils.dice_score import dice_loss
 from utils.transform import Normalize, NormalizeVol
 from utils.samples_points_map import get_samples2points_mapping, save_tmats
@@ -299,7 +300,7 @@ if __name__ == '__main__':
         model = SlounAdaptUNet(n_channels=in_channels, n_classes=1, bilinear=False)
     elif cfg.model == 'mspcn':
         # mSPCN
-        model = Net(upscale_factor=cfg.upscale_factor, in_channels=in_channels)
+        model = MSPCN(upscale_factor=cfg.upscale_factor, in_channels=in_channels)
     elif cfg.model == 'edsr':
         # EDSR
         from models.edsr import EDSR
