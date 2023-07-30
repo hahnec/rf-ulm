@@ -17,13 +17,6 @@ module load CUDA/11.8.0
 
 source ~/20_sr-ulm/venv/bin/activate
 
-#python3 -m pip install -r requirements.txt
-#python3 -m pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu118
-
-#git clone --recurse-submodules git@github.com:hahnec/simple_tracker simple_tracker_repo
-#python3 -m pip install -r simple_tracker_repo/requirements.txt
-#ln -sf ./simple_tracker_repo/simple_tracker simple_tracker
-
 python3 -c "import torch; print(torch.cuda.is_available())"
 
-python3 ./predict.py
+python3 ./predict.py data_dir=/storage/workspaces/artorg_aimi/ws_00000/chris/Rat18_2D_InVivoBrain/ logging=pala_rat
