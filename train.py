@@ -218,7 +218,7 @@ def train_model(
                             if not torch.isinf(value.grad).any() and not torch.isnan(value.grad).any():
                                 histograms['Gradients/' + tag] = wandb.Histogram(value.grad.data.cpu())
                         
-                        val_score, pala_err_batch, masks_nms, threshold = evaluate(model, val_loader, amp, cfg)
+                        val_score, pala_err_batch, masks_nms, threshold = evaluate(model, val_loader, amp, cfg, t_mats)
 
                         logging.info('Validation Dice score: {}'.format(val_score))
                         try:

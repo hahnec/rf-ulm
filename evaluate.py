@@ -11,7 +11,7 @@ from utils.threshold import estimate_threshold
 
 
 @torch.inference_mode()
-def evaluate(model, dataloader, amp, cfg):
+def evaluate(model, dataloader, amp, cfg, t_mats):
 
     model.eval()
     num_val_batches = len(dataloader)
@@ -20,17 +20,6 @@ def evaluate(model, dataloader, amp, cfg):
     if cfg.input_type == 'rf':
         from sklearn.cluster import DBSCAN
         cluster_obj = DBSCAN(eps=cfg.eps, min_samples=1)
-
-    try:
-        t_mats = np.load(cfg.tmats_name + '.npy') if cfg.input_type == 'rf' else np.zeros((3,3,3))
-    except ValueError:
-        import time
-        time.sleep(1)
-        t_mats = np.load(cfg.tmats_name + '.npy')
-
-    # flip matrices to avoid coordinate flipping during inference
-    t_mats[:, :2] = t_mats[:, :2][:, ::-1]
-    t_mats[:, :2, :2] = t_mats[:, :2, :2][:, :, ::-1]
 
     # iterate over the validation set
     with torch.autocast(cfg.device if cfg.device != 'mps' else 'cpu', enabled=amp):
