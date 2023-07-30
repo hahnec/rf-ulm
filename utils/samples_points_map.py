@@ -25,7 +25,7 @@ def generate_pala_points_and_samples(cfg, point_num=1e3):
     wavelength = dataset.get_key('wavelength')
     
     # project samples
-    synth_samples = dataset.project_points_toa_compound(synth_points * wavelength)
+    synth_samples = dataset.project_points_toa_compound(synth_points * wavelength, interpol=True, extrapol=True)
 
     return synth_samples, synth_points
 

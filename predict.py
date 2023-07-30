@@ -98,6 +98,7 @@ if __name__ == '__main__':
         sequences = list(range(1, 41)) if cfg.data_dir.lower().__contains__('rat') else cfg.sequences,
         rescale_factor = cfg.rescale_factor,
         upscale_factor = cfg.upscale_factor,
+        transducer_interp = True,
         tile_opt = False,
         scale_opt = cfg.model.lower().__contains__('unet'),
         clutter_db = cfg.clutter_db,
