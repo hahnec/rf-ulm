@@ -138,10 +138,8 @@ def train_model(
     else: 
         amplitude = cfg.lambda0
 
-    # variable init for coordinate transformation
-    gt_samples_list, gt_points_list = [], []
-    wb_name = '_' + wb.name if cfg.logging else ''
-    cfg.tmats_name = 't_mats_' + str(int(cfg.upscale_factor)) + '_' + str(cfg.rescale_factor) + wb_name
+    # transformation
+    t_mats = get_inverse_mapping(cfg, p=6, weights_opt=False, point_num=1e4)
 
     # training
     for epoch in range(1, epochs+1):
@@ -255,21 +253,6 @@ def train_model(
                             print('Validation upload failed')
                             print(e)
                         val_step += 1
-
-                # compute transformation matrix
-                if cfg.input_type == 'rf':
-                    if (len(gt_samples_list)+1) > 20:
-                        samples = torch.dstack(gt_samples_list).cpu().numpy()
-                        points = torch.hstack(gt_points_list).cpu().numpy()
-                        t_mats = get_samples2points_mapping(samples, points, p=6, weights_opt=False)
-                        save_tmats(t_mats, name=cfg.tmats_name)
-                        gt_samples_list, gt_points_list = [], []
-                    else:
-                        for j in range(cfg.batch_size):
-                            # filter nans (introduced by GT samples outside transducer width and collate_fn for dimension consistency)
-                            mask =(torch.isnan(batch[2][j]).sum((0,1)) > 0) | (torch.isnan(batch[4][j]).sum(-1) > 0)
-                            gt_samples_list.append(batch[2][j][..., ~mask])
-                            gt_points_list.append(batch[4][j][~mask, :].T)
         
         scheduler.step()
 
