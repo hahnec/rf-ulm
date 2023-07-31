@@ -23,7 +23,7 @@ def cluster_points(pts, tol=1/4, cluster_obj=None):
         fused_point = np.mean(cluster_points, axis=0)
         fused_points.append(fused_point)
 
-    return np.vstack(fused_points) if fused_points.size > 0 else np.array(fused_points)
+    return np.vstack(fused_points) if len(fused_points) > 0 else np.array(fused_points)
 
 #def spatial_distance_fusion(wv_es_points):
 #    from scipy.spatial.distance import cdist
