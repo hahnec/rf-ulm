@@ -112,7 +112,6 @@ if __name__ == '__main__':
     cfg.origin_x = float(dataset.get_key('Origin')[0])
     cfg.origin_z = float(dataset.get_key('Origin')[2])
     origin = np.array([cfg.origin_x, cfg.origin_z])
-    cfg.wv_idcs = [1] if cfg.input_type == 'iq' else cfg.wv_idcs
     cfg.wv_idcs = [0] if cfg.input_type == 'iq' else cfg.wv_idcs
 
     # transformation
