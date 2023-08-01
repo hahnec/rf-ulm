@@ -278,7 +278,7 @@ if __name__ == '__main__':
     logging.info(f'Using device {cfg.device}')
 
     # model selection
-    in_channels = 2 if cfg.input_type == 'rf' and cfg.rescale_factor == 1 else 1
+    in_channels = 1 if cfg.input_type == 'rf' and cfg.rescale_factor != 1 else 2
     if cfg.model == 'unet':
         # U-Net
         model = SlounAdaptUNet(n_channels=in_channels, n_classes=1, bilinear=False)
@@ -293,7 +293,7 @@ if __name__ == '__main__':
         args = Args()
         args.n_feats = 64
         args.n_resblocks = 16
-        args.n_colors = 2 if cfg.input_type == 'rf' and cfg.rescale_factor == 1 else 1
+        args.n_colors = in_channels
         args.rgb_range = 1
         args.scale = (cfg.upscale_factor, cfg.upscale_factor)
         args.res_scale = 1
