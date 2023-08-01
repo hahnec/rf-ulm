@@ -46,8 +46,9 @@ def evaluate(model, dataloader, amp, cfg, t_mats):
 
             # point fusion from compounded waves
             if len(cfg.wv_idcs) > 1:
-                pts = np.hstack([wv_es_points[1][0], wv_es_points[0][0], wv_es_points[2][0]]).T
-                es_points = [cluster_points(pts, cluster_obj=cluster_obj).T] if pts.size > 0 else pts
+                pts = np.hstack([wv_es_points[1][0], wv_es_points[0][0], wv_es_points[2][0]])
+                # fuse points using DBSCAN when eps > 0 and 
+                es_points = [cluster_points(pts.T, cluster_obj=cluster_obj).T] if pts.size > 0 and cfg.eps > 0 else [pts]
             else:
                 es_points = wv_es_points[0]
 
