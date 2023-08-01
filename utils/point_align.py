@@ -26,7 +26,7 @@ def align_points(masks, gt_pts, t_mat, cfg, sr_img=None):
     for i in range(cfg.batch_size):
         if cfg.input_type == 'rf':
             pts = es_indices[es_indices[:, 0]==i, :]
-            es_pts = np.vstack([pts[:, 1], pts[:, 2], np.ones(es_indices.shape[0])])
+            es_pts = np.vstack([pts[:, 1], pts[:, 2], np.ones(len(pts[:, 2]))])
             es_pts[1, :] /= cfg.upscale_factor
             es_pts = t_mat @ es_pts
         if cfg.input_type == 'iq':
