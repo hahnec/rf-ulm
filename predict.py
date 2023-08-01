@@ -224,7 +224,7 @@ if __name__ == '__main__':
         all_pts = np.vstack(all_pts)
 
     if cfg.upscale_factor < 10 and not cfg.dither:
-        sres_ulm_img, _ = tracks2img(all_pts[:, ::-1]-origin, img_size=img_size, scale=cfg.upscale_factor, mode='all_in')
+        sres_ulm_img, _ = tracks2img(all_pts[:, ::-1]-origin, img_size=img_size, scale=cfg.upscale_factor, mode='tracks' if cfg.track else 'all_in')
         # upscale input frame
         if cfg.upscale_factor != 1:
             import cv2
