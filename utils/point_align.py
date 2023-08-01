@@ -28,12 +28,12 @@ def align_points(masks, gt_pts, t_mat, cfg, sr_img=None):
             pts = es_indices[es_indices[:, 0]==i, :]
             es_pts = np.vstack([pts[:, 1], pts[:, 2], np.ones(len(pts[:, 2]))])
             es_pts[1, :] /= cfg.upscale_factor
-            es_pts = t_mat @ es_pts
+            es_pts = (t_mat @ es_pts)[:2, :]
+            es_pts -= np.array([[cfg.origin_x], [cfg.origin_z]])
         if cfg.input_type == 'iq':
             es_pts = es_indices[es_indices[:, 0]==i, 1:].T
             es_pts /= cfg.upscale_factor
-            es_pts += np.array([[cfg.origin_z, cfg.origin_x]]).T
-        es_pts = es_pts[:2, ...] - np.array([[cfg.origin_x], [cfg.origin_z]])
+            es_pts = np.flipud(es_pts)
 
         es_points.append(es_pts)
 
