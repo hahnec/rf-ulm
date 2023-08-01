@@ -142,10 +142,6 @@ def train_model(
     # transformation
     t_mats = get_inverse_mapping(cfg, p=6, weights_opt=False, point_num=1e4)
 
-    # flip matrices to avoid coordinate flipping during inference
-    t_mats[:, :2] = t_mats[:, :2][:, ::-1]
-    t_mats[:, :2, :2] = t_mats[:, :2, :2][:, :, ::-1]
-
     # training
     for epoch in range(1, epochs+1):
         model.train()

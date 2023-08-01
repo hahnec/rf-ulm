@@ -10,7 +10,7 @@ def align_points(masks, gt_pts, t_mat, cfg, sr_img=None):
     gt_points = []
     for batch_gt_pts in gt_pts:
         nan_mask = torch.isnan(batch_gt_pts.squeeze()).sum(-1) > 0
-        gt_rearranged = np.array(batch_gt_pts[~nan_mask].T)[::-1, ::-1]
+        gt_rearranged = np.array(batch_gt_pts[~nan_mask].T)[:, ::-1] - np.array([[cfg.origin_x], [cfg.origin_z]])
         gt_points.append(gt_rearranged)
 
     # extract indices from predicted map
@@ -25,16 +25,15 @@ def align_points(masks, gt_pts, t_mat, cfg, sr_img=None):
     es_points = []
     for i in range(cfg.batch_size):
         if cfg.input_type == 'rf':
-            #es_pts = np.vstack([es_indices[es_indices[:, 0]==i, :][:, 1:].T, np.ones(es_indices.shape[0])])
-            es_pts = np.fliplr(es_indices[es_indices[:, 0]==i, :]).T
-            es_pts[2] = 1
-            es_pts[0, :] /= cfg.upscale_factor
+            pts = es_indices[es_indices[:, 0]==i, :]
+            es_pts = np.vstack([pts[:, 1], pts[:, 2], np.ones(es_indices.shape[0])])
+            es_pts[1, :] /= cfg.upscale_factor
             es_pts = t_mat @ es_pts
         if cfg.input_type == 'iq':
             es_pts = es_indices[es_indices[:, 0]==i, 1:].T
             es_pts /= cfg.upscale_factor
             es_pts += np.array([[cfg.origin_z, cfg.origin_x]]).T
-        es_pts = es_pts[:2, ...]
+        es_pts = es_pts[:2, ...] - np.array([[cfg.origin_x], [cfg.origin_z]])
 
         es_points.append(es_pts)
 

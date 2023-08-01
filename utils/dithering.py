@@ -27,14 +27,15 @@ def dithering(points, ulm_render_scale, upscale_factor, x_factor=1, y_factor=1):
     # get pixel noise range (ensure noise is smaller than pixel localization)
     half_side_pixel_noise = ulm_render_scale/upscale_factor/2
 
-    # uniform random values in [-1, +1] range
-    rand_nums = 2*np.random.rand(*points.shape)-1
+    for i in range(len(points)):
+        # uniform random values in [-1, +1] range
+        rand_nums = 2*np.random.rand(*points[i].shape)-1
 
-    # scale noisy points for frames with different aspect ratio
-    rand_nums[:, 0] /= y_factor
-    rand_nums[:, 1] /= x_factor
+        # scale noisy points for frames with different aspect ratio
+        rand_nums[:, 0] /= y_factor
+        rand_nums[:, 1] /= x_factor
     
-    # add dither noise
-    points += (half_side_pixel_noise/ulm_render_scale) * rand_nums
+        # add dither noise
+        points[i] += (half_side_pixel_noise/ulm_render_scale) * rand_nums
 
     return points

@@ -116,10 +116,6 @@ if __name__ == '__main__':
 
     # transformation
     t_mats = get_inverse_mapping(cfg, p=6, weights_opt=False, point_num=1e4)
-
-    # flip matrices to avoid coordinate flipping during inference
-    t_mats[:, :2] = t_mats[:, :2][:, ::-1]
-    t_mats[:, :2, :2] = t_mats[:, :2, :2][:, :, ::-1]
     
     # data loader
     num_workers = min(4, os.cpu_count())
@@ -214,24 +210,22 @@ if __name__ == '__main__':
 
     # final resolution handling
     img_size = np.array([84, 134])
-    gtru_ulm_img, _ = tracks2img((np.vstack(all_pts_gt))[:, ::-1]-origin, img_size=img_size, scale=10, mode='all_in')
+    gtru_ulm_img, _ = tracks2img(all_pts_gt, img_size=img_size, scale=10, mode='all_in')
     img_shape = np.array(img.shape[-2:])[::-1] if cfg.input_type == 'rf' else img_size
     if cfg.dither:
         # dithering
         y_factor, x_factor = img_shape / img_size
-        all_pts = dithering(np.vstack(all_pts), 10, cfg.upscale_factor, x_factor, y_factor)
-    else:
-        all_pts = np.vstack(all_pts)
+        all_pts = dithering(all_pts, 10, cfg.upscale_factor, x_factor, y_factor)
 
     if cfg.upscale_factor < 10 and not cfg.dither:
-        sres_ulm_img, _ = tracks2img(all_pts[:, ::-1]-origin, img_size=img_size, scale=cfg.upscale_factor, mode='tracks' if cfg.track else 'all_in')
+        sres_ulm_img, _ = tracks2img(all_pts, img_size=img_size, scale=cfg.upscale_factor, mode='tracks' if cfg.track else 'all_in')
         # upscale input frame
         if cfg.upscale_factor != 1:
             import cv2
             sres_ulm_img = cv2.resize(sres_ulm_img, 10*img_size[::-1], interpolation=cv2.INTER_CUBIC)
             sres_ulm_img[sres_ulm_img<0] = 0
     else:
-        sres_ulm_img, _ = tracks2img(all_pts[:, ::-1]-origin, img_size=img_size, scale=10, mode='all_in')
+        sres_ulm_img, _ = tracks2img(all_pts, img_size=img_size, scale=10, mode='tracks' if cfg.track else 'all_in')
 
     # gamma
     sres_ulm_img **= cfg.gamma
