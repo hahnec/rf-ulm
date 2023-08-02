@@ -198,6 +198,8 @@ if __name__ == '__main__':
                     'PointsTime': pts_time,
                     'frame': int(i),
                 })
+            
+            pbar.update(cfg.batch_size)
 
     errs = torch.tensor(ac_rmse_err)
     sres_rmse_mean = torch.nanmean(errs[..., 0], axis=0)
