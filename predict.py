@@ -96,7 +96,7 @@ if __name__ == '__main__':
     dataset = DatasetClass(
         dataset_path=cfg.data_dir,
         transforms=transforms,
-        sequences = list(range(1, 41)) if cfg.data_dir.lower().__contains__('rat') else cfg.sequences,
+        sequences = list(range(1, 61)) if cfg.data_dir.lower().__contains__('rat') else cfg.sequences,
         rescale_factor = cfg.rescale_factor,
         upscale_factor = cfg.upscale_factor,
         transducer_interp = True,
@@ -104,6 +104,7 @@ if __name__ == '__main__':
         scale_opt = cfg.model.lower().__contains__('unet'),
         clutter_db = cfg.clutter_db,
         temporal_filter_opt = cfg.data_dir.lower().__contains__('rat'),
+        compound_opt = cfg.data_dir.lower().__contains__('rat'),
         pow_law_opt = cfg.pow_law_opt,
         )
 
