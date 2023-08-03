@@ -140,7 +140,7 @@ def train_model(
         amplitude = cfg.lambda0
 
     # transformation
-    t_mats = get_inverse_mapping(dataset, p=6, weights_opt=False, point_num=1e4)
+    t_mats = get_inverse_mapping(dataset, p=6, weights_opt=False, point_num=1e4) if cfg.input_type == 'rf' else np.stack([np.eye(3), np.eye(3), np.eye(3)])
 
     # training
     for epoch in range(1, epochs+1):
