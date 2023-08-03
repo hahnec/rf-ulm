@@ -96,7 +96,7 @@ if __name__ == '__main__':
     dataset = DatasetClass(
         dataset_path=cfg.data_dir,
         transforms=transforms,
-        sequences = list(range(1, 61)) if cfg.data_dir.lower().__contains__('rat') else cfg.sequences,
+        sequences = list(range(1, 2)) if cfg.data_dir.lower().__contains__('rat') else cfg.sequences,
         rescale_factor = cfg.rescale_factor,
         upscale_factor = cfg.upscale_factor,
         transducer_interp = True,
@@ -116,7 +116,7 @@ if __name__ == '__main__':
     cfg.wv_idcs = [0] if cfg.input_type == 'iq' else cfg.wv_idcs
 
     # transformation
-    t_mats = get_inverse_mapping(cfg, p=6, weights_opt=False, point_num=1e4)
+    t_mats = get_inverse_mapping(dataset, p=6, weights_opt=False, point_num=1e4)
     
     # data loader
     num_workers = min(4, os.cpu_count())
