@@ -199,7 +199,7 @@ if __name__ == '__main__':
                     'frame': int(i),
                 })
             
-            pbar.update(cfg.batch_size)
+            pbar.update(i)
 
     errs = torch.tensor(ac_rmse_err)
     sres_rmse_mean = torch.nanmean(errs[..., 0], axis=0)
