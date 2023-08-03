@@ -96,7 +96,7 @@ if __name__ == '__main__':
     dataset = DatasetClass(
         dataset_path=cfg.data_dir,
         transforms=transforms,
-        sequences = list(range(1, 2)) if cfg.data_dir.lower().__contains__('rat') else cfg.sequences,
+        sequences = list(range(1, 61)) if cfg.data_dir.lower().__contains__('rat') else cfg.sequences,
         rescale_factor = cfg.rescale_factor,
         upscale_factor = cfg.upscale_factor,
         transducer_interp = True,
