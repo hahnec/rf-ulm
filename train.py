@@ -56,7 +56,7 @@ def train_model(
         train = True,
         transforms = transforms,
         clutter_db = cfg.clutter_db,
-        sequences = [16, 17, 18, 19] if not cfg.data_dir.lower().__contains__('home') else cfg.sequences,
+        sequences = [15, 16, 17, 18, 19] if not cfg.data_dir.lower().__contains__('home') else cfg.sequences,
         rescale_factor = cfg.rescale_factor,
         upscale_factor = cfg.upscale_factor,
         transducer_interp = True,
