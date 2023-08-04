@@ -96,7 +96,7 @@ if __name__ == '__main__':
     dataset = DatasetClass(
         dataset_path=cfg.data_dir,
         transforms=transforms,
-        sequences = list(range(1, 61)) if cfg.data_dir.lower().__contains__('rat') else cfg.sequences,
+        sequences = list(range(1, 2)) if cfg.data_dir.lower().__contains__('rat') else cfg.sequences,
         rescale_factor = cfg.rescale_factor,
         upscale_factor = cfg.upscale_factor,
         transducer_interp = True,
@@ -221,14 +221,14 @@ if __name__ == '__main__':
         all_pts = dithering(all_pts, 10, cfg.upscale_factor, x_factor, y_factor)
 
     if cfg.upscale_factor < 10 and not cfg.dither:
-        sres_ulm_img, _ = tracks2img(all_pts, img_size=img_size, scale=cfg.upscale_factor, mode='tracks' if cfg.track else 'all_in')
+        sres_ulm_img, _ = tracks2img(all_pts, img_size=img_size, scale=cfg.upscale_factor, mode='tracks' if cfg.track else 'all_in', fps=dataset.frames_per_seq)
         # upscale input frame
         if cfg.upscale_factor != 1:
             import cv2
             sres_ulm_img = cv2.resize(sres_ulm_img, 10*img_size[::-1], interpolation=cv2.INTER_CUBIC)
             sres_ulm_img[sres_ulm_img<0] = 0
     else:
-        sres_ulm_img, _ = tracks2img(all_pts, img_size=img_size, scale=10, mode='tracks' if cfg.track else 'all_in')
+        sres_ulm_img, _ = tracks2img(all_pts, img_size=img_size, scale=10, mode='tracks' if cfg.track else 'all_in', fps=dataset.frames_per_seq)
 
     # gamma
     sres_ulm_img **= cfg.gamma
