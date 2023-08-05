@@ -126,7 +126,6 @@ if __name__ == '__main__':
     ac_rmse_err = []
     all_pts = []
     all_pts_gt = []
-    tic = time.process_time()
     for i, batch in enumerate(test_loader):
         with tqdm(total=len(test_loader), desc=f'Frame {i}/{len(test_loader)}', unit='img') as pbar:
 
@@ -163,7 +162,7 @@ if __name__ == '__main__':
                 wv_es_points.append(es_points)
 
             if len(cfg.wv_idcs) > 1:
-                pts = np.hstack([wv_es_points[1][0], wv_es_points[0][0], wv_es_points[2][0]])
+                pts = np.hstack([el for el in [wv_es_points[1][0], wv_es_points[0][0], wv_es_points[2][0]] if el.size > 0])
                 # fuse points using DBSCAN when eps > 0 and 
                 es_points = [cluster_points(pts[:2].T, cluster_obj=cluster_obj).T] if pts.size > 0 and cfg.eps > 0 else [pts]
             else:
