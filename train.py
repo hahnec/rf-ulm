@@ -77,6 +77,7 @@ def train_model(
     n_val = int(len(dataset) * val_percent)
     n_train = len(dataset) - n_val
     train_set, val_set = random_split(dataset, [n_train, n_val], generator=torch.Generator().manual_seed(0))
+    division_step = (n_train // (5 * batch_size))
 
     # create data loaders
     num_workers = min(4, os.cpu_count())
@@ -209,53 +210,51 @@ def train_model(
                 pbar.set_postfix(**{'loss (batch)': loss.item()})
 
                 # evaluation
-                division_step = (n_train // (5 * batch_size))
-                if division_step > 0:
-                    if train_step % division_step == 0:
-                        histograms = {}
-                        for tag, value in model.named_parameters():
-                            tag = tag.replace('/', '.')
-                            if not torch.isinf(value).any() and not torch.isnan(value).any():
-                                histograms['Weights/' + tag] = wandb.Histogram(value.data.cpu())
-                            if not torch.isinf(value.grad).any() and not torch.isnan(value.grad).any():
-                                histograms['Gradients/' + tag] = wandb.Histogram(value.grad.data.cpu())
-                        
-                        val_score, pala_err_batch, masks_nms, threshold = evaluate(model, val_loader, amp, cfg, t_mats)
+                if train_step % division_step == 0 and division_step > 0:
+                    histograms = {}
+                    for tag, value in model.named_parameters():
+                        tag = tag.replace('/', '.')
+                        if not torch.isinf(value).any() and not torch.isnan(value).any():
+                            histograms['Weights/' + tag] = wandb.Histogram(value.data.cpu())
+                        if not torch.isinf(value.grad).any() and not torch.isnan(value.grad).any():
+                            histograms['Gradients/' + tag] = wandb.Histogram(value.grad.data.cpu())
+                    
+                    val_score, pala_err_batch, masks_nms, threshold = evaluate(model, val_loader, amp, cfg, t_mats)
 
-                        logging.info('Validation Dice score: {}'.format(val_score))
-                        try:
-                            if cfg.logging:
+                    logging.info('Validation Dice score: {}'.format(val_score))
+                    try:
+                        if cfg.logging:
+                            wb.log({
+                                'lr': optimizer.param_groups[0]['lr'],
+                                'validation_dice': val_score,
+                                'images': wandb.Image(images[0].cpu()),
+                                'masks': {
+                                    'true': wandb.Image(img_norm(masks_true[0].float().cpu())*255),
+                                    'pred': wandb.Image(img_norm(masks_pred[0].float().cpu())*255),    #(masks_pred.argmax(dim=1)[0]).float().cpu()),#
+                                    'nms': wandb.Image(img_norm(masks_nms[0].float().cpu())*255),
+                                },
+                                'val_step': val_step,
+                                'epoch': epoch,
+                                'threshold': threshold,
+                                'avg_detected': float(masks_nms[0].float().cpu().sum()),
+                                'pred_max': float(masks_pred[0].float().cpu().max()),
+                                **histograms
+                            })
+                            # iterate through batch localization metrics
+                            for rmse, precision, recall, jaccard, tp_num, fp_num, fn_num in pala_err_batch:
                                 wb.log({
-                                    'lr': optimizer.param_groups[0]['lr'],
-                                    'validation_dice': val_score,
-                                    'images': wandb.Image(images[0].cpu()),
-                                    'masks': {
-                                        'true': wandb.Image(img_norm(masks_true[0].float().cpu())*255),
-                                        'pred': wandb.Image(img_norm(masks_pred[0].float().cpu())*255),    #(masks_pred.argmax(dim=1)[0]).float().cpu()),#
-                                        'nms': wandb.Image(img_norm(masks_nms[0].float().cpu())*255),
-                                    },
-                                    'val_step': val_step,
-                                    'epoch': epoch,
-                                    'threshold': threshold,
-                                    'avg_detected': float(masks_nms[0].float().cpu().sum()),
-                                    'pred_max': float(masks_pred[0].float().cpu().max()),
-                                    **histograms
+                                    'rmse': rmse,
+                                    'precision': precision,
+                                    'recall': recall,
+                                    'jaccard': jaccard,
+                                    'eval_step': eval_step, 
                                 })
-                                # iterate through batch localization metrics
-                                for rmse, precision, recall, jaccard, tp_num, fp_num, fn_num in pala_err_batch:
-                                    wb.log({
-                                        'rmse': rmse,
-                                        'precision': precision,
-                                        'recall': recall,
-                                        'jaccard': jaccard,
-                                        'eval_step': eval_step, 
-                                    })
-                                    eval_step += 1
-                        except Exception as e:
-                            print('Validation upload failed')
-                            print(e)
-                        val_step += 1
-        
+                                eval_step += 1
+                    except Exception as e:
+                        print('Validation upload failed')
+                        print(e)
+                    val_step += 1
+    
         scheduler.step()
 
     if cfg.logging:
