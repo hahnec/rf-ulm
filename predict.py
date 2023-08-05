@@ -96,7 +96,7 @@ if __name__ == '__main__':
     dataset = DatasetClass(
         dataset_path=cfg.data_dir,
         transforms=transforms,
-        sequences = list(range(1, 101)) if cfg.data_dir.lower().__contains__('rat') else cfg.sequences,
+        sequences = list(range(1, 3)) if cfg.data_dir.lower().__contains__('rat') else cfg.sequences,
         rescale_factor = cfg.rescale_factor,
         upscale_factor = cfg.upscale_factor,
         transducer_interp = True,
@@ -147,7 +147,8 @@ if __name__ == '__main__':
                 nms_start = time.process_time()
                 if cfg.nms_size is not None:
                     mask = non_max_supp_torch(output, cfg.nms_size)
-                    mask = mask > cfg.nms_threshold
+                    mask[mask < cfg.nms_threshold] = 0
+                    mask -= cfg.nms_threshold
                     mask = mask.squeeze(1)
                 else:
                     # cpu-based local maxima (time-consuming for large frames)

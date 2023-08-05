@@ -15,8 +15,9 @@ def align_points(masks, gt_pts, t_mat, cfg, sr_img=None):
         gt_points.append(gt_rearranged)
 
     # extract indices from predicted map
-    es_indices = torch.nonzero(masks.squeeze(1)).double()
-    es_indices = es_indices.cpu().numpy()
+    es_indices = torch.nonzero(masks.squeeze(1))
+    es_indices = es_indices.double().cpu().numpy()
+    confidence = masks[es_indices.T].double().cpu().numpy()[None, :]
 
     # apply radial symmetry
     if cfg.radial_sym_opt and sr_img is not None: 
@@ -35,6 +36,7 @@ def align_points(masks, gt_pts, t_mat, cfg, sr_img=None):
             es_pts = es_indices[es_indices[:, 0]==i, 1:].T
             es_pts /= cfg.upscale_factor
             es_pts = np.flipud(es_pts)
+        es_pts = np.vstack([es_pts, confidence[:, es_indices[:, 0]==i]])
 
         es_points.append(es_pts)
 
@@ -48,7 +50,7 @@ def get_pala_error(es_points: np.ndarray, gt_points: np.ndarray, tol=1/4):
         if gt_pts.size == 0:
             continue
 
-        result = rmse_unique(es_pts.T, gt_pts.T, tol=tol)
+        result = rmse_unique(es_pts[:2].T, gt_pts[:2].T, tol=tol)
         results.append(result)
 
     return results
