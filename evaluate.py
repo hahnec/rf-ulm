@@ -37,8 +37,9 @@ def evaluate(model, dataloader, amp, cfg, t_mats):
                 masks_pred = model(imgs)
 
                 # non-maximum suppression
-                imgs_nms = non_max_supp_torch(masks_pred, size=cfg.nms_size)
-                masks = imgs_nms > cfg.nms_threshold
+                masks = non_max_supp_torch(masks_pred, size=cfg.nms_size)
+                masks[masks < cfg.nms_threshold] = 0
+                masks[masks > 0] -= cfg.nms_threshold
 
                 # point alignment
                 es_points, gt_points = align_points(masks, gt_pts, t_mat=t_mats[wv_idx], cfg=cfg)
@@ -62,6 +63,7 @@ def evaluate(model, dataloader, amp, cfg, t_mats):
                 threshold = float('NaN')
             
             # compute the dice score
+            masks = masks > 0
             assert true_masks.min() >= 0 and true_masks.max() <= 1, 'True mask indices should be in [0, 1]'
             dice_score += dice_coeff(masks, true_masks, reduce_batch_first=False)
 
