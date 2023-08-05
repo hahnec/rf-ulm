@@ -17,7 +17,7 @@ def align_points(masks, gt_pts, t_mat, cfg, sr_img=None):
     # extract indices from predicted map
     es_indices = torch.nonzero(masks.squeeze(1))
     es_indices = es_indices.double().cpu().numpy()
-    confidence = masks[es_indices.T].double().cpu().numpy()[None, :] if es_indices.size > 0 else np.array([])
+    confidence = masks.squeeze(1)[es_indices.swapaxes(0, 1)].double().cpu().numpy()[None, :] if es_indices.size > 0 else np.array([])
 
     # apply radial symmetry
     if cfg.radial_sym_opt and sr_img is not None: 
