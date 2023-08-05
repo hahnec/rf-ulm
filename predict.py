@@ -148,7 +148,7 @@ if __name__ == '__main__':
                 if cfg.nms_size is not None:
                     mask = non_max_supp_torch(output, cfg.nms_size)
                     mask[mask < cfg.nms_threshold] = 0
-                    mask -= cfg.nms_threshold
+                    mask[mask > 0] -= cfg.nms_threshold
                     mask = mask.squeeze(1)
                 else:
                     # cpu-based local maxima (time-consuming for large frames)
