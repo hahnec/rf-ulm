@@ -114,6 +114,7 @@ if __name__ == '__main__':
     cfg.origin_z = float(dataset.get_key('Origin')[2])
     origin = np.array([cfg.origin_x, cfg.origin_z])
     cfg.wv_idcs = [0] if cfg.input_type == 'iq' else cfg.wv_idcs
+    img_size = np.array([84, 134])
 
     # transformation
     t_mats = get_inverse_mapping(dataset, p=6, weights_opt=False, point_num=1e4) if cfg.input_type == 'rf' else np.stack([np.eye(3), np.eye(3), np.eye(3)])
@@ -175,7 +176,7 @@ if __name__ == '__main__':
             
             # create and upload ULM frame per sequence
             if (i+1) % dataset.frames_per_seq == 0:
-                sres_ulm_img = tracks2img(all_pts, img_size=img_size, scale=10, mode='tracks' if cfg.track else 'all_in', fps=dataset.frames_per_seq)[0]
+                sres_ulm_img = tracks2img(all_pts, img_size=img_size, scale=10, mode='all_in', fps=dataset.frames_per_seq)[0]
                 sres_ulm_img **= cfg.gamma
                 normalize = lambda x: (x-x.min())/(x.max()-x.min()) if x.max()-x.min() > 0 else x-x.min()
                 sres_ulm_img = srgb_conv(normalize(sres_ulm_img))
@@ -226,7 +227,6 @@ if __name__ == '__main__':
     all_pts_gt = [p for p in all_pts_gt if p.size > 0]
 
     # final resolution handling
-    img_size = np.array([84, 134])
     gtru_ulm_img, _ = tracks2img(all_pts_gt, img_size=img_size, scale=10, mode='all_in')
     img_shape = np.array(img.shape[-2:])[::-1] if cfg.input_type == 'rf' else img_size
     if cfg.dither:
