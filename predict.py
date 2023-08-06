@@ -172,6 +172,17 @@ if __name__ == '__main__':
 
             all_pts.append(es_points[0].T)
             all_pts_gt.append(gt_points[0].T)
+            
+            # create and upload ULM frame per sequence
+            if (i+1) % dataset.frames_per_seq == 0:
+                sres_ulm_img = tracks2img(all_pts, img_size=img_size, scale=10, mode='tracks' if cfg.track else 'all_in', fps=dataset.frames_per_seq)[0]
+                sres_ulm_img **= cfg.gamma
+                normalize = lambda x: (x-x.min())/(x.max()-x.min()) if x.max()-x.min() > 0 else x-x.min()
+                sres_ulm_img = srgb_conv(normalize(sres_ulm_img))
+                cmap = 'hot' if str(cfg.data_dir).lower().__contains__('rat') else 'inferno'
+                img_color_map = lambda img, cmap=cmap: plt.get_cmap(cmap)(img)[..., :3]
+                sres_ulm_map = img_color_map(img=normalize(sres_ulm_img))
+                wandb.log({"sres_ulm_img": wandb.Image(sres_ulm_map)})
 
             frame_time = time.process_time() - tic
             
@@ -185,6 +196,7 @@ if __name__ == '__main__':
             # localization assessment
             result = get_pala_error(es_points, gt_points)[0]
             ac_rmse_err.append(result)
+
 
             if cfg.logging:
                 wandb.log({
