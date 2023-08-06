@@ -116,6 +116,8 @@ if __name__ == '__main__':
     cfg.wv_idcs = [0] if cfg.input_type == 'iq' else cfg.wv_idcs
     img_size = np.array([84, 134])
 
+    dataset.frames_per_seq = 1000 if str(dataset.dataset_path).lower().__contains__('insilico') else 800
+
     # transformation
     t_mats = get_inverse_mapping(dataset, p=6, weights_opt=False, point_num=1e4) if cfg.input_type == 'rf' else np.stack([np.eye(3), np.eye(3), np.eye(3)])
     
