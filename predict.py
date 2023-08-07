@@ -222,7 +222,7 @@ if __name__ == '__main__':
                 # create and upload ULM frame per sequence
                 if cfg.logging and (i+1) % dataset.frames_per_seq == 0:
                     sres_ulm_img = tracks2img(all_pts, img_size=img_size, scale=10, mode='all_in', fps=dataset.frames_per_seq)[0]
-                    sres_avg_img = np.nanmean(bmode_frames, axis=0)
+                    sres_avg_img = np.nanmean(np.vstack(bmode_frames), axis=0)
                     sres_ulm_img **= cfg.gamma
                     sres_avg_img **= cfg.gamma
                     sres_ulm_img = srgb_conv(normalize(sres_ulm_img))
@@ -244,7 +244,7 @@ if __name__ == '__main__':
     all_pts_gt = [p for p in all_pts_gt if p.size > 0]
 
     # final resolution handling
-    sres_avg_img = np.nanmean(bmode_frames, axis=0)
+    sres_avg_img = np.nanmean(np.vstack(bmode_frames), axis=0)
     gtru_ulm_img, _ = tracks2img(all_pts_gt, img_size=img_size, scale=10, mode='all_in')
     img_shape = np.array(img.shape[-2:])[::-1] if cfg.input_type == 'rf' else img_size
     if cfg.dither:
