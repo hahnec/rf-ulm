@@ -86,7 +86,7 @@ if __name__ == '__main__':
 
     # iterate through sequences
     sequences = list(range(121)) if str(cfg.data_dir).lower().__contains__('rat') else cfg.sequences
-    for seq in cfg.sequences:
+    for seq in sequences:
 
         if cfg.input_type == 'iq':
             DatasetClass = PalaDatasetIq
