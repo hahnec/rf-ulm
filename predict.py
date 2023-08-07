@@ -217,8 +217,7 @@ if __name__ == '__main__':
 
                 # mean from bmode
                 if cfg.input_type == 'rf':
-                    bmode_frame = batch[3]
-                    bmode_frames.append(bmode_frame)
+                    bmode_frames.append(batch[3])
 
                 # create and upload ULM frame per sequence
                 if cfg.logging and (i+1) % dataset.frames_per_seq == 0:
