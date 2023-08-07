@@ -84,6 +84,10 @@ if __name__ == '__main__':
     model.load_state_dict(state_dict)
     model.eval()
 
+    ac_rmse_err = []
+    all_pts = []
+    all_pts_gt = []
+
     # iterate through sequences
     sequences = list(range(121)) if str(cfg.data_dir).lower().__contains__('rat') else cfg.sequences
     for seq in sequences:
@@ -128,9 +132,6 @@ if __name__ == '__main__':
         loader_args = dict(batch_size=1, num_workers=num_workers, pin_memory=True)
         test_loader = DataLoader(dataset, shuffle=False, drop_last=True, **loader_args)
 
-        ac_rmse_err = []
-        all_pts = []
-        all_pts_gt = []
         for i, batch in enumerate(test_loader):
             with tqdm(total=len(test_loader), desc=f'Frame {i}/{len(test_loader)}', unit='img') as pbar:
 
@@ -202,7 +203,6 @@ if __name__ == '__main__':
                 result = get_pala_error(es_points, gt_points)[0]
                 ac_rmse_err.append(result)
 
-
                 if cfg.logging:
                     wandb.log({
                         'RMSE': result[0],
@@ -221,55 +221,55 @@ if __name__ == '__main__':
                 
                 pbar.update(i)
 
-        errs = torch.tensor(ac_rmse_err)
-        sres_rmse_mean = torch.nanmean(errs[..., 0], axis=0)
-        sres_rmse_std = torch.std(errs[..., 0][~torch.isnan(errs[..., 0])], axis=0)
-        print('Acc. Errors: %s' % str(torch.nanmean(errs, axis=0)))
+    errs = torch.tensor(ac_rmse_err)
+    sres_rmse_mean = torch.nanmean(errs[..., 0], axis=0)
+    sres_rmse_std = torch.std(errs[..., 0][~torch.isnan(errs[..., 0])], axis=0)
+    print('Acc. Errors: %s' % str(torch.nanmean(errs, axis=0)))
 
-        # remove empty arrays
-        all_pts = [p for p in all_pts if p.size > 0]
-        all_pts_gt = [p for p in all_pts_gt if p.size > 0]
+    # remove empty arrays
+    all_pts = [p for p in all_pts if p.size > 0]
+    all_pts_gt = [p for p in all_pts_gt if p.size > 0]
 
-        # final resolution handling
-        gtru_ulm_img, _ = tracks2img(all_pts_gt, img_size=img_size, scale=10, mode='all_in')
-        img_shape = np.array(img.shape[-2:])[::-1] if cfg.input_type == 'rf' else img_size
-        if cfg.dither:
-            # dithering
-            y_factor, x_factor = img_shape / img_size
-            all_pts = dithering(all_pts, 10, cfg.upscale_factor, x_factor, y_factor)
+    # final resolution handling
+    gtru_ulm_img, _ = tracks2img(all_pts_gt, img_size=img_size, scale=10, mode='all_in')
+    img_shape = np.array(img.shape[-2:])[::-1] if cfg.input_type == 'rf' else img_size
+    if cfg.dither:
+        # dithering
+        y_factor, x_factor = img_shape / img_size
+        all_pts = dithering(all_pts, 10, cfg.upscale_factor, x_factor, y_factor)
 
-        if cfg.upscale_factor < 10 and not cfg.dither:
-            sres_ulm_img, _ = tracks2img(all_pts, img_size=img_size, scale=cfg.upscale_factor, mode='tracks' if cfg.track else 'all_in', fps=dataset.frames_per_seq)
-            # upscale input frame
-            if cfg.upscale_factor != 1:
-                import cv2
-                sres_ulm_img = cv2.resize(sres_ulm_img, 10*img_size[::-1], interpolation=cv2.INTER_CUBIC)
-                sres_ulm_img[sres_ulm_img<0] = 0
-        else:
-            sres_ulm_img, _ = tracks2img(all_pts, img_size=img_size, scale=10, mode='tracks' if cfg.track else 'all_in', fps=dataset.frames_per_seq)
+    if cfg.upscale_factor < 10 and not cfg.dither:
+        sres_ulm_img, _ = tracks2img(all_pts, img_size=img_size, scale=cfg.upscale_factor, mode='tracks' if cfg.track else 'all_in', fps=dataset.frames_per_seq)
+        # upscale input frame
+        if cfg.upscale_factor != 1:
+            import cv2
+            sres_ulm_img = cv2.resize(sres_ulm_img, 10*img_size[::-1], interpolation=cv2.INTER_CUBIC)
+            sres_ulm_img[sres_ulm_img<0] = 0
+    else:
+        sres_ulm_img, _ = tracks2img(all_pts, img_size=img_size, scale=10, mode='tracks' if cfg.track else 'all_in', fps=dataset.frames_per_seq)
 
-        # gamma
-        sres_ulm_img **= cfg.gamma
-        gtru_ulm_img **= cfg.gamma
+    # gamma
+    sres_ulm_img **= cfg.gamma
+    gtru_ulm_img **= cfg.gamma
 
-        # sRGB gamma correction
-        normalize = lambda x: (x-x.min())/(x.max()-x.min()) if x.max()-x.min() > 0 else x-x.min()
-        sres_ulm_img = srgb_conv(normalize(sres_ulm_img))
-        gtru_ulm_img = srgb_conv(normalize(gtru_ulm_img))
+    # sRGB gamma correction
+    normalize = lambda x: (x-x.min())/(x.max()-x.min()) if x.max()-x.min() > 0 else x-x.min()
+    sres_ulm_img = srgb_conv(normalize(sres_ulm_img))
+    gtru_ulm_img = srgb_conv(normalize(gtru_ulm_img))
 
-        # color mapping
-        cmap = 'hot' if str(cfg.data_dir).lower().__contains__('rat') else 'inferno'
-        img_color_map = lambda img, cmap=cmap: plt.get_cmap(cmap)(img)[..., :3]
-        sres_ulm_map = img_color_map(img=normalize(sres_ulm_img))
-        gtru_ulm_map = img_color_map(img=normalize(gtru_ulm_img))
+    # color mapping
+    cmap = 'hot' if str(cfg.data_dir).lower().__contains__('rat') else 'inferno'
+    img_color_map = lambda img, cmap=cmap: plt.get_cmap(cmap)(img)[..., :3]
+    sres_ulm_map = img_color_map(img=normalize(sres_ulm_img))
+    gtru_ulm_map = img_color_map(img=normalize(gtru_ulm_img))
 
-        if cfg.logging:
-            wandb.log({"sres_ulm_img": wandb.Image(sres_ulm_map)})
-            wandb.log({"gtru_ulm_img": wandb.Image(gtru_ulm_map)})
-            wandb.summary['TotalRMSE'] = sres_rmse_mean
-            wandb.summary['TotalRMSEstd'] = sres_rmse_std
-            wandb.summary['TotalJaccard'] = torch.nanmean(errs[..., 3], axis=0)
-            wandb.summary['SSIM'] = ssim(gtru_ulm_img, sres_ulm_img, data_range=sres_ulm_img.max()-sres_ulm_img.min())
-            wandb.summary['TotalParameters'] = int(str(summary(model)).split('\n')[-3].split(' ')[-1].replace(',',''))
-            wandb.save(str(Path('.') / 'logged_errors.csv'))
-            wandb.finish()
+    if cfg.logging:
+        wandb.log({"sres_ulm_img": wandb.Image(sres_ulm_map)})
+        wandb.log({"gtru_ulm_img": wandb.Image(gtru_ulm_map)})
+        wandb.summary['TotalRMSE'] = sres_rmse_mean
+        wandb.summary['TotalRMSEstd'] = sres_rmse_std
+        wandb.summary['TotalJaccard'] = torch.nanmean(errs[..., 3], axis=0)
+        wandb.summary['SSIM'] = ssim(gtru_ulm_img, sres_ulm_img, data_range=sres_ulm_img.max()-sres_ulm_img.min())
+        wandb.summary['TotalParameters'] = int(str(summary(model)).split('\n')[-3].split(' ')[-1].replace(',',''))
+        wandb.save(str(Path('.') / 'logged_errors.csv'))
+        wandb.finish()
