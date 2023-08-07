@@ -84,6 +84,8 @@ if __name__ == '__main__':
     model.load_state_dict(state_dict)
     model.eval()
 
+    # iterate through sequences
+    sequences = list(range(121)) if str(cfg.dataset_path).lower().__contains__('rat') else cfg.sequences
     for seq in cfg.sequences:
 
         if cfg.input_type == 'iq':
