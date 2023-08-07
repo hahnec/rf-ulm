@@ -41,7 +41,7 @@ from utils.dithering import dithering
 
 
 normalize = lambda x: (x-x.min())/(x.max()-x.min()) if x.max()-x.min() > 0 else x-x.min()
-img_color_map = lambda img, cmap=cmap: plt.get_cmap(cmap)(img)[..., :3]
+img_color_map = lambda img, cmap: plt.get_cmap(cmap)(img)[..., :3]
 
 
 if __name__ == '__main__':
@@ -129,6 +129,7 @@ if __name__ == '__main__':
         origin = np.array([cfg.origin_x, cfg.origin_z])
         cfg.wv_idcs = [0] if cfg.input_type == 'iq' else cfg.wv_idcs
         img_size = np.array([84, 134])
+        cmap = 'hot' if str(cfg.data_dir).lower().__contains__('rat') else 'inferno'
 
         # transformation
         t_mats = get_inverse_mapping(dataset, p=6, weights_opt=False, point_num=1e4) if cfg.input_type == 'rf' else np.stack([np.eye(3), np.eye(3), np.eye(3)])
@@ -227,9 +228,8 @@ if __name__ == '__main__':
                     sres_avg_img **= cfg.gamma
                     sres_ulm_img = srgb_conv(normalize(sres_ulm_img))
                     sres_avg_img = srgb_conv(normalize(sres_avg_img))
-                    cmap = 'hot' if str(cfg.data_dir).lower().__contains__('rat') else 'inferno'
-                    sres_ulm_map = img_color_map(img=normalize(sres_ulm_img))
-                    sres_avg_map = img_color_map(img=normalize(sres_avg_img))
+                    sres_ulm_map = img_color_map(img=normalize(sres_ulm_img), cmap=cmap)
+                    sres_avg_map = img_color_map(img=normalize(sres_avg_img), cmap=cmap)
                     wandb.log({"sres_ulm_img": wandb.Image(sres_ulm_map)})
                     wandb.log({"sres_avg_img": wandb.Image(sres_avg_map)})
                 
@@ -275,9 +275,9 @@ if __name__ == '__main__':
 
     # color mapping
     cmap = 'hot' if str(cfg.data_dir).lower().__contains__('rat') else 'inferno'
-    sres_ulm_map = img_color_map(img=normalize(sres_ulm_img))
-    gtru_ulm_map = img_color_map(img=normalize(gtru_ulm_img))
-    sres_avg_map = img_color_map(img=normalize(sres_avg_img))
+    sres_ulm_map = img_color_map(img=normalize(sres_ulm_img), cmap=cmap)
+    gtru_ulm_map = img_color_map(img=normalize(gtru_ulm_img), cmap=cmap)
+    sres_avg_map = img_color_map(img=normalize(sres_avg_img), cmap=cmap)
 
     if cfg.logging:
         wandb.log({"sres_ulm_img": wandb.Image(sres_ulm_map)})
