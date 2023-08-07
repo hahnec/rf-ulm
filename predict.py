@@ -40,6 +40,10 @@ from utils.point_fusion import cluster_points
 from utils.dithering import dithering
 
 
+normalize = lambda x: (x-x.min())/(x.max()-x.min()) if x.max()-x.min() > 0 else x-x.min()
+img_color_map = lambda img, cmap=cmap: plt.get_cmap(cmap)(img)[..., :3]
+
+
 if __name__ == '__main__':
 
     # load configuration
@@ -87,6 +91,7 @@ if __name__ == '__main__':
     ac_rmse_err = []
     all_pts = []
     all_pts_gt = []
+    bmode_frames = []
 
     # iterate through sequences
     sequences = list(range(121)) if str(cfg.data_dir).lower().__contains__('rat') else cfg.sequences
@@ -114,6 +119,7 @@ if __name__ == '__main__':
             temporal_filter_opt = cfg.data_dir.lower().__contains__('rat'),
             compound_opt = cfg.data_dir.lower().__contains__('rat'),
             pow_law_opt = cfg.pow_law_opt,
+            skip_bmode = cfg.input_type != 'rf',
             )
 
         # data-related configuration
@@ -178,17 +184,6 @@ if __name__ == '__main__':
 
                 all_pts.append(es_points[0].T)
                 all_pts_gt.append(gt_points[0].T)
-                
-                # create and upload ULM frame per sequence
-                if cfg.logging and (i+1) % dataset.frames_per_seq == 0:
-                    sres_ulm_img = tracks2img(all_pts, img_size=img_size, scale=10, mode='all_in', fps=dataset.frames_per_seq)[0]
-                    sres_ulm_img **= cfg.gamma
-                    normalize = lambda x: (x-x.min())/(x.max()-x.min()) if x.max()-x.min() > 0 else x-x.min()
-                    sres_ulm_img = srgb_conv(normalize(sres_ulm_img))
-                    cmap = 'hot' if str(cfg.data_dir).lower().__contains__('rat') else 'inferno'
-                    img_color_map = lambda img, cmap=cmap: plt.get_cmap(cmap)(img)[..., :3]
-                    sres_ulm_map = img_color_map(img=normalize(sres_ulm_img))
-                    wandb.log({"sres_ulm_img": wandb.Image(sres_ulm_map)})
 
                 frame_time = time.process_time() - tic
                 
@@ -218,6 +213,25 @@ if __name__ == '__main__':
                         'PointsTime': pts_time,
                         'frame': int(i),
                     })
+
+                # mean from bmode
+                if cfg.input_type == 'rf':
+                    bmode_frame = batch[3]
+                    bmode_frames.append(bmode_frame)
+
+                # create and upload ULM frame per sequence
+                if cfg.logging and (i+1) % dataset.frames_per_seq == 0:
+                    sres_ulm_img = tracks2img(all_pts, img_size=img_size, scale=10, mode='all_in', fps=dataset.frames_per_seq)[0]
+                    sres_avg_img = np.nanmean(bmode_frames, axis=0)
+                    sres_ulm_img **= cfg.gamma
+                    sres_avg_img **= cfg.gamma
+                    sres_ulm_img = srgb_conv(normalize(sres_ulm_img))
+                    sres_avg_img = srgb_conv(normalize(sres_avg_img))
+                    cmap = 'hot' if str(cfg.data_dir).lower().__contains__('rat') else 'inferno'
+                    sres_ulm_map = img_color_map(img=normalize(sres_ulm_img))
+                    sres_avg_map = img_color_map(img=normalize(sres_avg_img))
+                    wandb.log({"sres_ulm_img": wandb.Image(sres_ulm_map)})
+                    wandb.log({"sres_avg_img": wandb.Image(sres_avg_map)})
                 
                 pbar.update(i)
 
@@ -231,6 +245,7 @@ if __name__ == '__main__':
     all_pts_gt = [p for p in all_pts_gt if p.size > 0]
 
     # final resolution handling
+    sres_avg_img = np.nanmean(bmode_frames, axis=0)
     gtru_ulm_img, _ = tracks2img(all_pts_gt, img_size=img_size, scale=10, mode='all_in')
     img_shape = np.array(img.shape[-2:])[::-1] if cfg.input_type == 'rf' else img_size
     if cfg.dither:
@@ -251,21 +266,23 @@ if __name__ == '__main__':
     # gamma
     sres_ulm_img **= cfg.gamma
     gtru_ulm_img **= cfg.gamma
+    sres_avg_img **= cfg.gamma
 
     # sRGB gamma correction
-    normalize = lambda x: (x-x.min())/(x.max()-x.min()) if x.max()-x.min() > 0 else x-x.min()
     sres_ulm_img = srgb_conv(normalize(sres_ulm_img))
     gtru_ulm_img = srgb_conv(normalize(gtru_ulm_img))
+    sres_avg_img = srgb_conv(normalize(sres_avg_img))
 
     # color mapping
     cmap = 'hot' if str(cfg.data_dir).lower().__contains__('rat') else 'inferno'
-    img_color_map = lambda img, cmap=cmap: plt.get_cmap(cmap)(img)[..., :3]
     sres_ulm_map = img_color_map(img=normalize(sres_ulm_img))
     gtru_ulm_map = img_color_map(img=normalize(gtru_ulm_img))
+    sres_avg_map = img_color_map(img=normalize(sres_avg_img))
 
     if cfg.logging:
         wandb.log({"sres_ulm_img": wandb.Image(sres_ulm_map)})
         wandb.log({"gtru_ulm_img": wandb.Image(gtru_ulm_map)})
+        wandb.log({"sres_avg_img": wandb.Image(sres_avg_map)})
         wandb.summary['TotalRMSE'] = sres_rmse_mean
         wandb.summary['TotalRMSEstd'] = sres_rmse_std
         wandb.summary['TotalJaccard'] = torch.nanmean(errs[..., 3], axis=0)
