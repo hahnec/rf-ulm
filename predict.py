@@ -274,7 +274,6 @@ if __name__ == '__main__':
     sres_avg_img = srgb_conv(normalize(sres_avg_img))
 
     # color mapping
-    cmap = 'hot' if str(cfg.data_dir).lower().__contains__('rat') else 'inferno'
     sres_ulm_map = img_color_map(img=normalize(sres_ulm_img), cmap=cmap)
     gtru_ulm_map = img_color_map(img=normalize(gtru_ulm_img), cmap=cmap)
     sres_avg_map = img_color_map(img=normalize(sres_avg_img), cmap=cmap)
