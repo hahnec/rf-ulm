@@ -92,6 +92,7 @@ if __name__ == '__main__':
     all_pts = []
     all_pts_gt = []
     bmode_frames = []
+    cfg.skip_bmode = not (cfg.input_type == 'rf' and cfg.data_dir.lower().__contains__('rat'))
 
     # iterate through sequences
     sequences = list(range(121)) if str(cfg.data_dir).lower().__contains__('rat') else cfg.sequences
@@ -119,7 +120,7 @@ if __name__ == '__main__':
             temporal_filter_opt = cfg.data_dir.lower().__contains__('rat'),
             compound_opt = cfg.data_dir.lower().__contains__('rat'),
             pow_law_opt = cfg.pow_law_opt,
-            skip_bmode = cfg.input_type != 'rf',
+            skip_bmode = cfg.skip_bmode,
             )
 
         # data-related configuration
@@ -216,7 +217,7 @@ if __name__ == '__main__':
                     })
 
                 # mean from bmode
-                if cfg.input_type == 'rf':
+                if not cfg.skip_bmode:
                     bmode_frames.append(batch[3])
 
                 # create and upload ULM frame per sequence
@@ -226,7 +227,7 @@ if __name__ == '__main__':
                     sres_ulm_img = srgb_conv(normalize(sres_ulm_img))
                     sres_ulm_map = img_color_map(img=normalize(sres_ulm_img), cmap=cmap)
                     wandb.log({"sres_ulm_img": wandb.Image(sres_ulm_map)})
-                    if cfg.input_type == 'rf':
+                    if not cfg.skip_bmode:
                         sres_avg_img = np.nanmean(np.vstack(bmode_frames), axis=0)
                         sres_avg_img **= cfg.gamma
                         sres_avg_img = srgb_conv(normalize(sres_avg_img))
@@ -246,7 +247,7 @@ if __name__ == '__main__':
 
     # final resolution handling
     gtru_ulm_img, _ = tracks2img(all_pts_gt, img_size=img_size, scale=10, mode='all_in')
-    sres_avg_img = np.nanmean(np.vstack(bmode_frames), axis=0) if cfg.input_type == 'rf' else np.zeros_like(gtru_ulm_img)
+    sres_avg_img = np.nanmean(np.vstack(bmode_frames), axis=0) if not cfg.skip_bmode else np.zeros_like(gtru_ulm_img)
     img_shape = np.array(img.shape[-2:])[::-1] if cfg.input_type == 'rf' else img_size
     if cfg.dither:
         # dithering
