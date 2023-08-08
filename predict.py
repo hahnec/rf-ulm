@@ -222,15 +222,16 @@ if __name__ == '__main__':
                 # create and upload ULM frame per sequence
                 if cfg.logging and (i+1) % dataset.frames_per_seq == 0:
                     sres_ulm_img = tracks2img(all_pts, img_size=img_size, scale=10, mode='all_in', fps=dataset.frames_per_seq)[0]
-                    sres_avg_img = np.nanmean(np.vstack(bmode_frames), axis=0)
                     sres_ulm_img **= cfg.gamma
-                    sres_avg_img **= cfg.gamma
                     sres_ulm_img = srgb_conv(normalize(sres_ulm_img))
-                    sres_avg_img = srgb_conv(normalize(sres_avg_img))
                     sres_ulm_map = img_color_map(img=normalize(sres_ulm_img), cmap=cmap)
-                    sres_avg_map = img_color_map(img=normalize(sres_avg_img), cmap=cmap)
                     wandb.log({"sres_ulm_img": wandb.Image(sres_ulm_map)})
-                    wandb.log({"sres_avg_img": wandb.Image(sres_avg_map)})
+                    if cfg.input_type == 'rf':
+                        sres_avg_img = np.nanmean(np.vstack(bmode_frames), axis=0)
+                        sres_avg_img **= cfg.gamma
+                        sres_avg_img = srgb_conv(normalize(sres_avg_img))
+                        sres_avg_map = img_color_map(img=normalize(sres_avg_img), cmap=cmap)
+                        wandb.log({"sres_avg_img": wandb.Image(sres_avg_map)})
                 
                 pbar.update(i)
 
@@ -244,8 +245,8 @@ if __name__ == '__main__':
     all_pts_gt = [p for p in all_pts_gt if p.size > 0]
 
     # final resolution handling
-    sres_avg_img = np.nanmean(np.vstack(bmode_frames), axis=0)
     gtru_ulm_img, _ = tracks2img(all_pts_gt, img_size=img_size, scale=10, mode='all_in')
+    sres_avg_img = np.nanmean(np.vstack(bmode_frames), axis=0) if cfg.input_type == 'rf' else np.zeros_like(gtru_ulm_img)
     img_shape = np.array(img.shape[-2:])[::-1] if cfg.input_type == 'rf' else img_size
     if cfg.dither:
         # dithering
