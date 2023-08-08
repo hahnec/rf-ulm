@@ -64,16 +64,32 @@ def get_samples2points_mapping(samples, points, channel_num=128, upscale_factor=
     else:
         weights = np.ones(points.shape[-1])
 
+    def obj_fun(x, a, b=bmode_pts, w=weights, p=p, affine=True):
+
+        if not affine:
+            x[1] = 0
+            x[3] = 0
+
+        a_mat = np.concatenate([x, np.eye(3).flatten()[p:]]).reshape(3, 3)
+
+        pts = a_mat @ a
+
+        if p > 6: pts /= pts[-1, :]
+
+        loss = (w*(pts - b)**2).sum()
+
+        return loss
+
     t_mats = []
     for wv_idx in range(3):
         # homogenize points
         sample_pts = np.array([*rf_pts[::-1, wv_idx], np.ones(rf_pts.shape[-1])])
 
-        # objective function
-        obj_fun = lambda x, a=sample_pts, b=bmode_pts, w=weights: (w*(np.concatenate([x, np.eye(3).flatten()[p:]]).reshape(3, 3) @ a - b)**2).sum()
+        # objective function with passed arguments
+        obj_fun_args = lambda x, a=sample_pts: obj_fun(x, a)
 
         # fit affine map (4) + translation (2) from 6 parameters
-        x = scipy.optimize.minimize(obj_fun, x0=np.eye(3).flatten()[:p]).x
+        x = scipy.optimize.minimize(obj_fun_args, x0=np.eye(3).flatten()[:p]).x
 
         # construct final matrix
         t_mat = np.concatenate([x, np.eye(3).flatten()[p:]]).reshape(3, 3)
