@@ -268,11 +268,16 @@ def train_model(
 
 if __name__ == '__main__':
 
+
     # load configuration
     cfg = OmegaConf.load('./config.yml')
 
     # override loaded configuration with CLI arguments
     cfg = OmegaConf.merge(cfg, OmegaConf.from_cli())
+    
+    # for reproducibility
+    torch.manual_seed(cfg.seed)
+    random.seed(cfg.seed)
 
     logging.basicConfig(level=logging.INFO, format='%(levelname)s: %(message)s')
     logging.info(f'Using device {cfg.device}')

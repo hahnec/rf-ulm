@@ -52,6 +52,10 @@ if __name__ == '__main__':
     # override loaded configuration with CLI arguments
     cfg = OmegaConf.merge(cfg, OmegaConf.from_cli())
 
+    # for reproducibility
+    torch.manual_seed(cfg.seed)
+    np.random.seed(cfg.seed)
+
     if cfg.logging:
         wb = wandb.init(project='SR-ULM-INFER', resume='allow', anonymous='must', config=cfg, group=str(cfg.logging))
         wb.config.update(cfg)
