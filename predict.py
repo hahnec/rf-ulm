@@ -53,7 +53,7 @@ if __name__ == '__main__':
     cfg = OmegaConf.merge(cfg, OmegaConf.from_cli())
 
     if cfg.logging:
-        wb = wandb.init(project='SR-ULM-INFER', resume='allow', anonymous='must', config=cfg, group=cfg.logging)
+        wb = wandb.init(project='SR-ULM-INFER', resume='allow', anonymous='must', config=cfg, group=str(cfg.logging))
         wb.config.update(cfg)
 
     # model selection
@@ -94,50 +94,52 @@ if __name__ == '__main__':
     bmode_frames = []
     cfg.skip_bmode = not (cfg.input_type == 'rf' and cfg.data_dir.lower().__contains__('rat'))
 
+    if cfg.input_type == 'iq':
+        DatasetClass = PalaDatasetIq
+        transforms = [Normalize(mean=0, std=1)]
+        from datasets.pala_dataset.utils.collate_fn_iq import collate_fn
+    elif cfg.input_type == 'rf':
+        DatasetClass = PalaDatasetRf
+        transforms = [NormalizeVol()]
+        from datasets.pala_dataset.utils.collate_fn_rf import collate_fn
+        cluster_obj = DBSCAN(eps=cfg.eps, min_samples=1) if cfg.eps > 0 else None
+    dataset = DatasetClass(
+        dataset_path=cfg.data_dir,
+        transforms=transforms,
+        sequences = None,
+        rescale_factor = cfg.rescale_factor,
+        upscale_factor = cfg.upscale_factor,
+        transducer_interp = True,
+        tile_opt = False,
+        scale_opt = cfg.model.lower().__contains__('unet'),
+        clutter_db = cfg.clutter_db,
+        temporal_filter_opt = cfg.data_dir.lower().__contains__('rat'),
+        compound_opt = cfg.data_dir.lower().__contains__('rat'),
+        pow_law_opt = cfg.pow_law_opt,
+        skip_bmode = cfg.skip_bmode,
+    )
+
+    # data-related configuration
+    cfg.wavelength = float(dataset.get_key('wavelength'))
+    cfg.origin_x = float(dataset.get_key('Origin')[0])
+    cfg.origin_z = float(dataset.get_key('Origin')[2])
+    cfg.wv_idcs = [0] if cfg.input_type == 'iq' else cfg.wv_idcs
+    origin = np.array([cfg.origin_x, cfg.origin_z])
+    img_size = np.array([84, 134])
+    cmap = 'hot' if str(cfg.data_dir).lower().__contains__('rat') else 'inferno'
+
+    # transformation
+    t_mats = get_inverse_mapping(dataset, p=6, weights_opt=False, point_num=1e4) if cfg.input_type == 'rf' else np.stack([np.eye(3), np.eye(3), np.eye(3)])
+
     # iterate through sequences
     sequences = list(range(121)) if str(cfg.data_dir).lower().__contains__('rat') else cfg.sequences
-    for seq in sequences:
+    for sequence in sequences:
 
-        if cfg.input_type == 'iq':
-            DatasetClass = PalaDatasetIq
-            transforms = [Normalize(mean=0, std=1)]
-            from datasets.pala_dataset.utils.collate_fn_iq import collate_fn
-        elif cfg.input_type == 'rf':
-            DatasetClass = PalaDatasetRf
-            transforms = [NormalizeVol()]
-            from datasets.pala_dataset.utils.collate_fn_rf import collate_fn
-            cluster_obj = DBSCAN(eps=cfg.eps, min_samples=1) if cfg.eps > 0 else None
-        dataset = DatasetClass(
-            dataset_path=cfg.data_dir,
-            transforms=transforms,
-            sequences = [seq],
-            rescale_factor = cfg.rescale_factor,
-            upscale_factor = cfg.upscale_factor,
-            transducer_interp = True,
-            tile_opt = False,
-            scale_opt = cfg.model.lower().__contains__('unet'),
-            clutter_db = cfg.clutter_db,
-            temporal_filter_opt = cfg.data_dir.lower().__contains__('rat'),
-            compound_opt = cfg.data_dir.lower().__contains__('rat'),
-            pow_law_opt = cfg.pow_law_opt,
-            skip_bmode = cfg.skip_bmode,
-            )
+        # load next sequence
+        dataset.read_sequence(sequence)
 
-        # data-related configuration
-        cfg.wavelength = float(dataset.get_key('wavelength'))
-        cfg.origin_x = float(dataset.get_key('Origin')[0])
-        cfg.origin_z = float(dataset.get_key('Origin')[2])
-        origin = np.array([cfg.origin_x, cfg.origin_z])
-        cfg.wv_idcs = [0] if cfg.input_type == 'iq' else cfg.wv_idcs
-        img_size = np.array([84, 134])
-        cmap = 'hot' if str(cfg.data_dir).lower().__contains__('rat') else 'inferno'
-
-        # transformation
-        t_mats = get_inverse_mapping(dataset, p=6, weights_opt=False, point_num=1e4) if cfg.input_type == 'rf' else np.stack([np.eye(3), np.eye(3), np.eye(3)])
-        
         # data loader
-        num_workers = min(1, os.cpu_count())
-        loader_args = dict(batch_size=1, num_workers=num_workers, pin_memory=True)
+        loader_args = dict(batch_size=1, num_workers=1, pin_memory=True)
         test_loader = DataLoader(dataset, shuffle=False, drop_last=True, **loader_args)
 
         for i, batch in enumerate(test_loader):
@@ -213,7 +215,7 @@ if __name__ == '__main__':
                         'InferTime': infer_time,
                         'NMS_Time': nms_time,
                         'PointsTime': pts_time,
-                        'frame': int(i),
+                        'frame': int(i) + sequence * dataset.frames_per_seq,
                     })
 
                 # mean from bmode
