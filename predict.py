@@ -92,8 +92,9 @@ if __name__ == '__main__':
     all_pts = []
     all_pts_gt = []
     bmode_frames = []
-    cfg.skip_bmode = not (cfg.input_type == 'rf' and cfg.data_dir.lower().__contains__('rat'))
 
+    # dataset init
+    cfg.skip_bmode = not (cfg.input_type == 'rf' and cfg.data_dir.lower().__contains__('rat'))
     if cfg.input_type == 'iq':
         DatasetClass = PalaDatasetIq
         transforms = [Normalize(mean=0, std=1)]
