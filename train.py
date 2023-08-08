@@ -3,6 +3,7 @@ import os
 import random
 import sys
 import wandb
+import numpy as np
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
@@ -278,6 +279,7 @@ if __name__ == '__main__':
     # for reproducibility
     torch.manual_seed(cfg.seed)
     random.seed(cfg.seed)
+    np.random.seed(cfg.seed)
 
     logging.basicConfig(level=logging.INFO, format='%(levelname)s: %(message)s')
     logging.info(f'Using device {cfg.device}')
