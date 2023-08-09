@@ -1,5 +1,5 @@
 mspcn happy-cosmos 20 iq
-unet gallant-deluge 0.88 iq
-mspcn distinctive-sea 31 rf
+unet gallant-deluge 0.8 iq
+mspcn distinctive-sea 30 rf
 edsr worldly-snowball 50 iq
 edsr expert-sun 51.5 rf
