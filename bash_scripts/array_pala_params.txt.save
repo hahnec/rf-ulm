@@ -1,0 +1,5 @@
+mspcn dry-tree 40 iq
+unet zany-grass 0.85 iq
+mspcn clean-spaceship 1.9 rf
+edsr ethereal-leaf 64 iq
+edsr rose-smoke 63 rf

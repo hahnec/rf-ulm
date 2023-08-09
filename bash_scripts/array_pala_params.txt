@@ -1,4 +1,5 @@
-edsr avid-music 15 iq
-unet divine-gorge 0.1 iq
-edsr cosmic-dragon 13 rf
-
+mspcn happy-cosmos 20 iq
+unet gallant-deluge 0.88 iq
+mspcn distinctive-sea 31 rf
+edsr worldly-snowball 50 iq
+edsr expert-sun 51.5 rf
