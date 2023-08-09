@@ -1,0 +1,3 @@
+[submodule "datasets/pala_dataset"]
+	path = datasets/pala_dataset
+	url = https://github.com/hahnec/pala_dataset
