@@ -1,26 +1,26 @@
 # general
-device: 'cuda'
+device: cuda
 logging: True
+seed: 3008
 
 # model
-model: 'mspcn'  #'unet' #
-upscale_factor: 4 #2 #10 #
-rescale_factor: 10 #10 #20
-input_type: 'rf' #'iq' #
-model_path: 'checkpoints/checkpoint_epoch1_mspcn_rf.pth' #'checkpoints/ckpt_epoch86_mspcn_4x.pth' #
+model: mspcn
+upscale_factor: 4
+rescale_factor: 1
+input_type: rf
+model_file: distinctive-sea
 
 # training
-batch_size: 1
+batch_size: 4
 lr: 0.001
-epochs: 100
-clutter_db: Null #-40
+epochs: 40
+clutter_db: -50
 fine_tune: False
+angle_threshold: Null
 
 # loss
-lambda0: 50
+lambda0: 120
 lambda1: 1
-nms_threshold: 15 #13 #20 #0.075  #0.2
-avg_weight_opt: False
 radial_sym_opt: False
 
 # paths
@@ -29,9 +29,15 @@ ubx_dir: /storage/workspaces/artorg_aimi/ws_00000/chris/${data_path}
 map_dir: /home/chris/LocalDatasets/03_PALA/${data_path}
 ubx_rat_dir: /storage/workspaces/artorg_aimi/ws_00000/chris/Rat18_2D_InVivoBrain/
 map_rat_dir: /home/chris/UbelixWorkspaces/artorg_aimi/ws_00000/chris/Rat18_2D_InVivoBrain/
-data_dir: ${map_dir} #${map_rat_dir} #
-sequences: [1]
+data_dir: ${ubx_dir} #${map_rat_dir} #
+sequences: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14]
 
 # inference config
+nms_size: 3
+nms_threshold: 31
 gamma: 0.9
-dither: False
+dither: True
+eps: .5
+pow_law_opt: False
+wv_idcs: [0,1,2]
+track: False
