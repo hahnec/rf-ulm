@@ -1,3 +1,6 @@
 [submodule "datasets/pala_dataset"]
 	path = datasets/pala_dataset
 	url = https://github.com/hahnec/pala_dataset
+[submodule "simple_tracker"]
+	path = simple_tracker
+	url = https://github.com/hahnec/simple_tracker
