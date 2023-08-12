@@ -239,7 +239,7 @@ if __name__ == '__main__':
                     wandb.log({"sres_ulm_img": wandb.Image(sres_ulm_map)})
                     if not cfg.skip_bmode and cfg.input_type == 'rf':
                         sres_avg_img = np.nanmean(np.vstack(bmode_frames), axis=0)
-                        sres_avg_img = sres_avg_img.sum(0) if len(sres_avg_img.shape) == 4 else sres_avg_img 
+                        sres_avg_img = sres_avg_img.sum(0) if len(sres_avg_img.shape) == 3 else sres_avg_img 
                         sres_avg_img **= cfg.gamma
                         sres_avg_img = srgb_conv(normalize(sres_avg_img))
                         sres_avg_map = img_color_map(img=normalize(sres_avg_img), cmap=cmap)
@@ -274,7 +274,7 @@ if __name__ == '__main__':
             sres_ulm_img[sres_ulm_img<0] = 0
     else:
         sres_ulm_img, _ = tracks2img(all_pts, img_size=img_size, scale=10, mode='tracks' if cfg.track else 'all_in', fps=dataset.frames_per_seq)
-    sres_avg_img = sres_avg_img.sum(0) if len(sres_avg_img.shape) == 4 else sres_avg_img 
+    sres_avg_img = sres_avg_img.sum(0) if len(sres_avg_img.shape) == 3 else sres_avg_img 
 
     # gamma
     sres_ulm_img **= cfg.gamma
