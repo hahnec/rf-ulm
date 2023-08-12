@@ -274,6 +274,7 @@ if __name__ == '__main__':
             sres_ulm_img[sres_ulm_img<0] = 0
     else:
         sres_ulm_img, _ = tracks2img(all_pts, img_size=img_size, scale=10, mode='tracks' if cfg.track else 'all_in', fps=dataset.frames_per_seq)
+    sres_avg_img = sres_avg_img.sum(0) if len(sres_avg_img.shape) == 4 else sres_avg_img 
 
     # gamma
     sres_ulm_img **= cfg.gamma
