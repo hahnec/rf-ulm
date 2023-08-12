@@ -1,6 +1,6 @@
 # general
 device: cuda
-logging: True
+logging: False
 seed: 3008
 
 # model
@@ -8,10 +8,12 @@ model: mspcn
 upscale_factor: 4
 rescale_factor: 1
 input_type: rf
+skip_bmode: True
+das_b4_temporal: False
 model_file: distinctive-sea
 
 # training
-batch_size: 4
+batch_size: 1
 lr: 0.001
 epochs: 40
 clutter_db: -50
@@ -26,10 +28,10 @@ radial_sym_opt: False
 # paths
 data_path: PALA_data_InSilicoFlow/
 ubx_dir: /storage/workspaces/artorg_aimi/ws_00000/chris/${data_path}
-map_dir: /home/chris/LocalDatasets/03_PALA/${data_path}
+loc_dir: /home/chris/LocalDatasets/03_PALA/${data_path}
 ubx_rat_dir: /storage/workspaces/artorg_aimi/ws_00000/chris/Rat18_2D_InVivoBrain/
 map_rat_dir: /home/chris/UbelixWorkspaces/artorg_aimi/ws_00000/chris/Rat18_2D_InVivoBrain/
-data_dir: ${ubx_dir} #${map_rat_dir} #
+data_dir: ${loc_dir} #${ubx_dir} #${map_rat_dir} #
 sequences: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14]
 
 # inference config
