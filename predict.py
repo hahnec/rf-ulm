@@ -98,7 +98,6 @@ if __name__ == '__main__':
     bmode_frames = []
 
     # dataset init
-    cfg.skip_bmode = not (cfg.input_type == 'rf' and cfg.data_dir.lower().__contains__('rat'))
     if cfg.input_type == 'iq':
         DatasetClass = PalaDatasetIq
         transforms = [Normalize(mean=0, std=1)]
@@ -119,9 +118,10 @@ if __name__ == '__main__':
         scale_opt = cfg.model.lower().__contains__('unet'),
         clutter_db = cfg.clutter_db,
         temporal_filter_opt = cfg.data_dir.lower().__contains__('rat'),
-        compound_opt = cfg.data_dir.lower().__contains__('rat'),
+        compound_opt = True,
         pow_law_opt = cfg.pow_law_opt,
         skip_bmode = cfg.skip_bmode,
+        das_b4_temporal = cfg.das_b4_temporal,
     )
 
     # data-related configuration
@@ -155,6 +155,9 @@ if __name__ == '__main__':
                 wv_es_points = []
                 for wv_idx in cfg.wv_idcs:
                     img, true_mask, gt_pts = batch[:3] if cfg.input_type == 'iq' else (batch[0][:, wv_idx], batch[1][:, wv_idx], batch[4])
+
+                    # use DAS-beamformed radio-frequency data
+                    if not cfg.skip_bmode and cfg.input_type == 'rf': img = batch[3]
 
                     img = img.to(device=cfg.device, dtype=torch.float32)
 
