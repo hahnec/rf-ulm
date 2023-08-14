@@ -227,7 +227,7 @@ if __name__ == '__main__':
                     })
 
                 # mean from bmode
-                if not cfg.skip_bmode:
+                if not cfg.skip_bmode and cfg.input_type == 'rf':
                     bmode_frames.append(batch[3])
 
                 # create and upload ULM frame per sequence
