@@ -232,7 +232,8 @@ if __name__ == '__main__':
 
                 # create and upload ULM frame per sequence
                 if cfg.logging and (i+1) % dataset.frames_per_seq == 0:
-                    sres_ulm_img = tracks2img(all_pts, img_size=img_size, scale=10, mode='all_in', fps=dataset.frames_per_seq)[0]
+                    valid_pts = [p for p in all_pts if p.size > 0]
+                    sres_ulm_img = tracks2img(valid_pts, img_size=img_size, scale=10, mode='all_in', fps=dataset.frames_per_seq)[0]
                     sres_ulm_img **= cfg.gamma
                     sres_ulm_img = srgb_conv(normalize(sres_ulm_img))
                     sres_ulm_map = img_color_map(img=normalize(sres_ulm_img), cmap=cmap)
