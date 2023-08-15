@@ -11,7 +11,7 @@ def align_points(masks, gt_pts, t_mat, cfg, sr_img=None):
     for batch_gt_pts in gt_pts:
         nan_mask = torch.isnan(batch_gt_pts.squeeze()).sum(-1) > 0
         gt_rearranged = batch_gt_pts[~nan_mask].T if nan_mask.numel() > 1 else batch_gt_pts[nan_mask].T.squeeze(1)
-        gt_rearranged = np.array(gt_rearranged)[:, ::-1] - np.array([[cfg.origin_x], [cfg.origin_z]]) if gt_rearranged.size > 0 else gt_rearranged
+        gt_rearranged = np.array(gt_rearranged)[:, ::-1] - np.array([[cfg.origin_x], [cfg.origin_z]]) if len(gt_rearranged) > 0 else gt_rearranged
         gt_points.append(gt_rearranged)
 
     # extract indices from predicted map
