@@ -20,7 +20,8 @@ from datasets.pala_dataset.pala_rf import PalaDatasetRf
 from models.unet import UNet, SlounUNet, SlounAdaptUNet
 from models.mspcn import MSPCN
 from models.edsr import EDSR
-from evaluate import evaluate, non_max_supp_torch
+from evaluate import evaluate
+from utils.nms_funs import non_max_supp_torch
 from utils.gauss import matlab_style_gauss2D
 from utils.dice_score import dice_loss
 from utils.transform import Normalize, NormalizeVol

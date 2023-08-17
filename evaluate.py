@@ -4,7 +4,7 @@ from tqdm import tqdm
 import numpy as np
 
 from utils.dice_score import dice_coeff
-from utils.nms_funs import non_max_supp, non_max_supp_torch
+from utils.nms_funs import non_max_supp_torch
 from utils.point_align import align_points, get_pala_error
 from utils.point_fusion import cluster_points
 from utils.threshold import estimate_threshold
