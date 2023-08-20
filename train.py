@@ -64,8 +64,8 @@ def train_model(
         upscale_factor = cfg.upscale_factor,
         transducer_interp = True,
         temporal_filter_opt = cfg.data_dir.lower().__contains__('rat'),
-        tile_opt = cfg.model in ('unet', 'svm'),
-        scale_opt = cfg.model in ('unet', 'svm'),
+        tile_opt = cfg.model in ('unet', 'smv'),
+        scale_opt = cfg.model in ('unet', 'smv'),
         angle_threshold = cfg.angle_threshold,
         )
 
@@ -85,7 +85,7 @@ def train_model(
     # create data loaders
     num_workers = min(4, os.cpu_count())
     loader_args = dict(batch_size=batch_size, num_workers=num_workers, pin_memory=True)
-    train_loader = DataLoader(train_set, collate_fn=collate_fn, shuffle=False if cfg.model == 'svm' else True, **loader_args)
+    train_loader = DataLoader(train_set, collate_fn=collate_fn, shuffle=False if cfg.model == 'smv' else True, **loader_args)
     val_loader = DataLoader(val_set, collate_fn=collate_fn, shuffle=False, drop_last=True, **loader_args)
 
     # instantiate logging
@@ -139,7 +139,7 @@ def train_model(
     gfilter = gfilter.to(cfg.device)
     if cfg.model.__contains__('mspcn') and cfg.input_type == 'iq':
         amplitude = 50
-    elif cfg.model.__contains__('unet') and cfg.input_type == 'iq':
+    elif cfg.model in ('unet', 'smv') and cfg.input_type == 'iq':
         amplitude = 1
     else: 
         amplitude = cfg.lambda0
@@ -165,7 +165,7 @@ def train_model(
                 with torch.autocast(cfg.device if cfg.device != 'mps' else 'cpu', enabled=amp):
                     
                     # use batch size (without shuffling) for temporal stacking with new batch size 1
-                    if cfg.model == 'svm': 
+                    if cfg.model == 'smv': 
                         imgs = imgs.unsqueeze(0)
                         true_masks = true_masks.sum(0, keepdim=True)
 
@@ -312,7 +312,7 @@ if __name__ == '__main__':
         args.scale = (cfg.upscale_factor, cfg.upscale_factor)
         args.res_scale = 1
         model = EDSR(args)
-    elif cfg.model == 'svm':
+    elif cfg.model == 'smv':
         model = UNet_ConvLSTM(n_channels=in_channels, n_classes=1, use_LSTM=True, parallel_encoder=False, lstm_layers=1)
     else:
         raise Exception('Model name not recognized')

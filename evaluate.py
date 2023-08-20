@@ -34,7 +34,7 @@ def evaluate(model, dataloader, amp, cfg, t_mats):
                 true_masks = true_masks.to(device=cfg.device, dtype=torch.long)
 
                 # use batch size (without shuffling) for temporal stacking with new batch size 1
-                if cfg.model == 'svm': 
+                if cfg.model == 'smv': 
                     imgs = imgs.unsqueeze(0)
                     true_masks = true_masks.sum(0, keepdim=True)
 
