@@ -153,33 +153,33 @@ def train_model(
         epoch_loss = 0
         with tqdm(total=n_train, desc=f'Epoch {epoch}/{epochs}', unit='img') as pbar:
             for batch in train_loader:
-                images, masks_true = batch[:2] if cfg.input_type == 'iq' else (batch[0].flatten(0, 1), batch[1].flatten(0, 1))
+                imgs, true_masks = batch[:2] if cfg.input_type == 'iq' else (batch[0].flatten(0, 1), batch[1].flatten(0, 1))
 
                 # skip blank frames (avoid learning from false frames)
-                if torch.any(images.view(images.shape[0], -1).sum() == 0) or torch.any(masks_true.view(masks_true.shape[0], -1).sum() == 0):
+                if torch.any(imgs.view(imgs.shape[0], -1).sum() == 0) or torch.any(true_masks.view(true_masks.shape[0], -1).sum() == 0):
                     continue
 
-                images = images.to(device=cfg.device, dtype=torch.float32, memory_format=torch.channels_last)
-                masks_true = masks_true.to(device=cfg.device).float()#, dtype=torch.long)
+                imgs = imgs.to(device=cfg.device, dtype=torch.float32, memory_format=torch.channels_last)
+                true_masks = true_masks.to(device=cfg.device).float()#, dtype=torch.long)
 
                 with torch.autocast(cfg.device if cfg.device != 'mps' else 'cpu', enabled=amp):
                     
                     # use batch size (without shuffling) for temporal stacking with new batch size 1
                     if cfg.model == 'svm': 
-                        images = images.unsqueeze(0)
-                        masks_true = masks_true.sum(0, keepdim=True)
+                        imgs = imgs.unsqueeze(0)
+                        true_masks = true_masks.sum(0, keepdim=True)
 
-                    masks_pred = model(images)
+                    pred_masks = model(imgs)
 
                     # mask blurring
-                    masks_true = F.conv2d(masks_true, gfilter, padding=gfilter.shape[-1]//2)
-                    masks_true /= masks_true.max()
-                    masks_true *= amplitude
+                    true_masks = F.conv2d(true_masks, gfilter, padding=gfilter.shape[-1]//2)
+                    true_masks /= true_masks.max()
+                    true_masks *= amplitude
                     if cfg.model == 'mspcn' and cfg.input_type == 'iq':
-                        masks_pred = F.conv2d(masks_pred, gfilter, padding=gfilter.shape[-1]//2)
+                        pred_masks = F.conv2d(pred_masks, gfilter, padding=gfilter.shape[-1]//2)
                         
-                    loss = criterion(masks_pred.squeeze(1), masks_true.squeeze(1).float())
-                    loss += l1loss(masks_pred.squeeze(1), torch.zeros_like(masks_pred.squeeze(1))) * lambda_value
+                    loss = criterion(pred_masks.squeeze(1), true_masks.squeeze(1).float())
+                    loss += l1loss(pred_masks.squeeze(1), torch.zeros_like(pred_masks.squeeze(1))) * lambda_value
 
                 #mask = masks_true[0, 0, ::cfg.upscale_factor, ::cfg.upscale_factor] * amplitude
                 #img = images[0, 0].clone()
@@ -207,7 +207,7 @@ def train_model(
                 grad_scaler.step(optimizer)
                 grad_scaler.update()
 
-                pbar.update(images.shape[0])
+                pbar.update(imgs.shape[0])
                 train_step += 1
                 epoch_loss += loss.item()
                 if cfg.logging:
@@ -236,17 +236,17 @@ def train_model(
                             wb.log({
                                 'lr': optimizer.param_groups[0]['lr'],
                                 'validation_dice': val_score,
-                                'images': wandb.Image(images[0].cpu()),
+                                'images': wandb.Image(imgs[0].cpu()),
                                 'masks': {
-                                    'true': wandb.Image(img_norm(masks_true[0].float().cpu())*255),
-                                    'pred': wandb.Image(img_norm(masks_pred[0].float().cpu())*255),    #(masks_pred.argmax(dim=1)[0]).float().cpu()),#
+                                    'true': wandb.Image(img_norm(true_masks[0].float().cpu())*255),
+                                    'pred': wandb.Image(img_norm(pred_masks[0].float().cpu())*255),    #(masks_pred.argmax(dim=1)[0]).float().cpu()),#
                                     'nms': wandb.Image(img_norm(masks_nms[0].float().cpu())*255),
                                 },
                                 'val_step': val_step,
                                 'epoch': epoch,
                                 'threshold': threshold,
                                 'avg_detected': float(masks_nms[0].float().cpu().sum()),
-                                'pred_max': float(masks_pred[0].float().cpu().max()),
+                                'pred_max': float(pred_masks[0].float().cpu().max()),
                                 **histograms
                             })
                             # iterate through batch localization metrics

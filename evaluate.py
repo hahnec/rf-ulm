@@ -39,10 +39,10 @@ def evaluate(model, dataloader, amp, cfg, t_mats):
                     true_masks = true_masks.sum(0, keepdim=True)
 
                 # predict the mask
-                masks_pred = model(imgs)
+                pred_masks = model(imgs)
 
                 # non-maximum suppression
-                masks = non_max_supp_torch(masks_pred, size=cfg.nms_size)
+                masks = non_max_supp_torch(pred_masks, size=cfg.nms_size)
                 masks[masks < cfg.nms_threshold] = 0
                 masks[masks > 0] -= cfg.nms_threshold
 
@@ -64,8 +64,8 @@ def evaluate(model, dataloader, amp, cfg, t_mats):
             pala_err_batch = get_pala_error(es_points, gt_points)
 
             # threshold analysis
-            if true_masks[0].sum() > 0 and torch.any(~torch.isnan(masks_pred)):
-                threshold = estimate_threshold(true_masks, masks_pred)
+            if true_masks[0].sum() > 0 and torch.any(~torch.isnan(pred_masks)):
+                threshold = estimate_threshold(true_masks, pred_masks)
             else:
                 threshold = float('NaN')
             
