@@ -20,6 +20,7 @@ from datasets.pala_dataset.pala_rf import PalaDatasetRf
 from models.unet import UNet, SlounUNet, SlounAdaptUNet
 from models.mspcn import MSPCN
 from models.edsr import EDSR
+from models.smv.lstm_unet import UNet_ConvLSTM
 from evaluate import evaluate
 from utils.nms_funs import non_max_supp_torch
 from utils.gauss import matlab_style_gauss2D
@@ -63,8 +64,8 @@ def train_model(
         upscale_factor = cfg.upscale_factor,
         transducer_interp = True,
         temporal_filter_opt = cfg.data_dir.lower().__contains__('rat'),
-        tile_opt = cfg.model.__contains__('unet'),
-        scale_opt = cfg.model.lower().__contains__('unet'),
+        tile_opt = cfg.model in ('unet', 'svm'),
+        scale_opt = cfg.model in ('unet', 'svm'),
         angle_threshold = cfg.angle_threshold,
         )
 
@@ -84,7 +85,7 @@ def train_model(
     # create data loaders
     num_workers = min(4, os.cpu_count())
     loader_args = dict(batch_size=batch_size, num_workers=num_workers, pin_memory=True)
-    train_loader = DataLoader(train_set, collate_fn=collate_fn, shuffle=True, **loader_args)
+    train_loader = DataLoader(train_set, collate_fn=collate_fn, shuffle=False if cfg.model == 'svm' else True, **loader_args)
     val_loader = DataLoader(val_set, collate_fn=collate_fn, shuffle=False, drop_last=True, **loader_args)
 
     # instantiate logging
@@ -162,6 +163,12 @@ def train_model(
                 masks_true = masks_true.to(device=cfg.device).float()#, dtype=torch.long)
 
                 with torch.autocast(cfg.device if cfg.device != 'mps' else 'cpu', enabled=amp):
+                    
+                    # use batch size (without shuffling) for temporal stacking with new batch size 1
+                    if cfg.model == 'svm': 
+                        images = images.unsqueeze(0)
+                        masks_true = masks_true.sum(0, keepdim=True)
+
                     masks_pred = model(images)
 
                     # mask blurring
@@ -305,6 +312,8 @@ if __name__ == '__main__':
         args.scale = (cfg.upscale_factor, cfg.upscale_factor)
         args.res_scale = 1
         model = EDSR(args)
+    elif cfg.model == 'svm':
+        model = UNet_ConvLSTM(n_channels=in_channels, n_classes=1, use_LSTM=True, parallel_encoder=False, lstm_layers=1)
     else:
         raise Exception('Model name not recognized')
 
