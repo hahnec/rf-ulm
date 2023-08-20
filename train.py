@@ -295,7 +295,6 @@ if __name__ == '__main__':
         model = MSPCN(upscale_factor=cfg.upscale_factor, in_channels=in_channels)
     elif cfg.model == 'edsr':
         # EDSR
-        from models.edsr import EDSR
         class Args:
             pass
         args = Args()
