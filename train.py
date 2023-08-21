@@ -127,7 +127,7 @@ def train_model(
     grad_scaler = torch.cuda.amp.GradScaler(enabled=amp)
     criterion = nn.MSELoss(reduction='mean')
     l1loss = nn.L1Loss(reduction='mean')
-    lambda_value = 0.01 if cfg.model.__contains__('unet') and cfg.input_type == 'iq' else cfg.lambda1
+    lambda_value = 0.01 if cfg.model in ('unet', 'smv') and cfg.input_type == 'iq' else cfg.lambda1
     train_step = 0
     val_step = 0
     eval_step = 0
