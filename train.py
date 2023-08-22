@@ -202,10 +202,14 @@ def train_model(
                 #masks_nms = imgs_nms > cfg.nms_threshold
 
                 optimizer.zero_grad(set_to_none=True)
-                grad_scaler.scale(loss).backward()
-                torch.nn.utils.clip_grad_norm_(model.parameters(), gradient_clipping)
-                grad_scaler.step(optimizer)
+                scale = grad_scaler.get_scale()
                 grad_scaler.update()
+                skip_lr_schedule = scale > grad_scaler.get_scale()
+
+                if not skip_lr_schedule:
+                    grad_scaler.scale(loss).backward()
+                    torch.nn.utils.clip_grad_norm_(model.parameters(), gradient_clipping)
+                    grad_scaler.step(optimizer)
 
                 pbar.update(imgs.shape[0])
                 train_step += 1
@@ -219,7 +223,7 @@ def train_model(
                 pbar.set_postfix(**{'loss (batch)': loss.item()})
 
                 # evaluation
-                if train_step % division_step == 0 and division_step > 0:
+                if train_step % division_step == 0 and division_step > 0 and not skip_lr_schedule:
                     histograms = {}
                     for tag, value in model.named_parameters():
                         tag = tag.replace('/', '.')
