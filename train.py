@@ -25,7 +25,7 @@ from evaluate import evaluate
 from utils.nms_funs import non_max_supp_torch
 from utils.gauss import matlab_style_gauss2D
 from utils.dice_score import dice_loss
-from utils.transform import Normalize, NormalizeVol
+from utils.transform import Normalize, NormalizeVol, RandomHorizontalFlip, RandomVerticalFlip, RandomCrop
 from utils.samples_points_map import get_inverse_mapping
 
 
@@ -48,11 +48,11 @@ def train_model(
     # create dataset
     if cfg.input_type == 'iq':
         DatasetClass = PalaDatasetIq
-        transforms = [Normalize(mean=0, std=1)]
+        transforms = [RandomHorizontalFlip(), RandomVerticalFlip(), RandomCrop(upscale_factor=cfg.upscale_factor), NormalizeVol()] 
         from datasets.pala_dataset.utils.collate_fn_iq import collate_fn
     elif cfg.input_type == 'rf':
         DatasetClass = PalaDatasetRf
-        transforms = [NormalizeVol()]
+        transforms = [RandomHorizontalFlip(), RandomVerticalFlip(), RandomCrop(upscale_factor=cfg.upscale_factor), NormalizeVol()]
         from datasets.pala_dataset.utils.collate_fn_rf import collate_fn
     dataset = DatasetClass(
         dataset_path = cfg.data_dir,
@@ -103,10 +103,6 @@ def train_model(
         wandb.define_metric('validation_dice', step_metric='val_step')
         wandb.define_metric('images', step_metric='val_step')
         wandb.define_metric('masks', step_metric='val_step')
-        wandb.define_metric('rmse', step_metric='eval_step')
-        wandb.define_metric('jaccard', step_metric='eval_step')
-        wandb.define_metric('recall', step_metric='eval_step')
-        wandb.define_metric('precision', step_metric='eval_step')
 
         logging.info(f'''Starting training:
             Epochs:          {epochs}
@@ -130,7 +126,6 @@ def train_model(
     lambda_value = 0.01 if cfg.model in ('unet', 'smv') and cfg.input_type == 'iq' else cfg.lambda1
     train_step = 0
     val_step = 0
-    eval_step = 0
     
     # mSPCN Gaussian
     g_len = 3+cfg.upscale_factor//2*2
@@ -253,16 +248,6 @@ def train_model(
                                 'pred_max': float(pred_masks[0].float().cpu().max()),
                                 **histograms
                             })
-                            # iterate through batch localization metrics
-                            for rmse, precision, recall, jaccard, tp_num, fp_num, fn_num in pala_err_batch:
-                                wb.log({
-                                    'rmse': rmse,
-                                    'precision': precision,
-                                    'recall': recall,
-                                    'jaccard': jaccard,
-                                    'eval_step': eval_step, 
-                                })
-                                eval_step += 1
                     except Exception as e:
                         print('Validation upload failed')
                         print(e)
