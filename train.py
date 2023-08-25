@@ -46,13 +46,14 @@ def train_model(
         cfg = None,
 ):
     # create dataset
+    scale_factor = 1 if cfg.model in ('unet') else cfg.upscale_factor
     if cfg.input_type == 'iq':
         DatasetClass = PalaDatasetIq
-        transforms = [RandomHorizontalFlip(), RandomVerticalFlip(), RandomCrop(upscale_factor=cfg.upscale_factor), NormalizeVol()] 
+        transforms = [RandomHorizontalFlip(), RandomVerticalFlip(), RandomCrop(upscale_factor=scale_factor), NormalizeVol()] 
         from datasets.pala_dataset.utils.collate_fn_iq import collate_fn
     elif cfg.input_type == 'rf':
         DatasetClass = PalaDatasetRf
-        transforms = [RandomHorizontalFlip(), RandomVerticalFlip(), RandomCrop(upscale_factor=cfg.upscale_factor), NormalizeVol()]
+        transforms = [RandomHorizontalFlip(), RandomVerticalFlip(), RandomCrop(upscale_factor=scale_factor), NormalizeVol()]
         from datasets.pala_dataset.utils.collate_fn_rf import collate_fn
     dataset = DatasetClass(
         dataset_path = cfg.data_dir,
