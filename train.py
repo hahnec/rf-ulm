@@ -160,7 +160,7 @@ def train_model(
                     continue
 
                 imgs = imgs.to(device=cfg.device, dtype=torch.float32, memory_format=torch.channels_last)
-                true_masks = true_masks.to(device=cfg.device).float()#, dtype=torch.long)
+                true_masks = true_masks.to(device=cfg.device, dtype=torch.float32)
 
                 with torch.autocast(cfg.device if cfg.device != 'mps' else 'cpu', enabled=amp):
                     
