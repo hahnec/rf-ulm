@@ -129,22 +129,12 @@ class RandomCropScale(object):
 
     def __call__(self, img, gt):
 
-        # convert back to PIL image
-        #pil_img = (np.dstack([img[0], img[1], img[0]]))/img.max() * 255
-        #pil_img = Image.fromarray(pil_img.astype('uint8'), 'RGB')
-        #pil_gt = gt[0]/gt.max()*255 if gt.max() != 0 else gt[0]
-        #pil_gt = Image.fromarray(pil_gt.astype('uint8'))
-
         # get crop coordinates
         i, j, h, w = T.RandomCrop.get_params(img, output_size=self.size)
 
         # crop
         img = T.functional.crop(img, i, j, h, w)
         gt = T.functional.crop(gt, i*self.upscale_factor, j*self.upscale_factor, h*self.upscale_factor, w*self.upscale_factor)
-
-        # convert back to numpy
-        #img = np.array(pil_img)[..., :2].swapaxes(2, 1).swapaxes(1, 0)
-        #gt = np.array(pil_gt)[None, ...] / np.array(pil_gt).max() if np.array(pil_gt).max() != 0 else np.array(pil_gt)[None, ...]
 
         return img, gt
 
