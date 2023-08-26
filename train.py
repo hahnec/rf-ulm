@@ -47,15 +47,16 @@ def train_model(
 ):
     # create dataset
     scale_factor = 1 if cfg.model in ('unet') else cfg.upscale_factor
-    crop_size = 64 * cfg.upscale_factor if cfg.model in ('unet') else 64
+    crop_size = 128 if cfg.input_type == 'rf' else 64
+    crop_size = crop_size * cfg.upscale_factor if cfg.model in ('unet') else crop_size
     if cfg.input_type == 'iq':
         DatasetClass = PalaDatasetIq
-        rand_augment = RandomApply([RandomHorizontalFlip(), RandomVerticalFlip(), GaussianBlur(7), RandomRotation(10)])
+        rand_augment = RandomApply([RandomHorizontalFlip(), RandomVerticalFlip(), GaussianBlur(7, (1.3, 0.7)), RandomRotation(5)])
         transforms = [ArgsToTensor(), rand_augment, RandomCropScale(crop_size, scale_factor), NormalizeVol()] 
         from datasets.pala_dataset.utils.collate_fn_iq import collate_fn
     elif cfg.input_type == 'rf':
         DatasetClass = PalaDatasetRf
-        rand_augment = RandomApply([RandomHorizontalFlip(), RandomVerticalFlip(), GaussianBlur(7), RandomRotation(10)])
+        rand_augment = RandomApply([RandomVerticalFlip(), GaussianBlur(7, (1.3, 0.7)), RandomRotation(5)])
         transforms = [ArgsToTensor(), rand_augment, RandomCropScale(crop_size, scale_factor), NormalizeVol()]
         from datasets.pala_dataset.utils.collate_fn_rf import collate_fn
     dataset = DatasetClass(
