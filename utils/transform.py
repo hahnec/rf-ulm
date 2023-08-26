@@ -87,8 +87,8 @@ class RandomHorizontalFlip(object):
 
     def __call__(self, image, target):
         if random.random() < self.flip_prob:
-            image = np.ascontiguousarray(image[::-1])
-            target = np.ascontiguousarray(target[::-1])
+            image = F.hflip(image)
+            target = F.hflip(target)
         
         return image, target
 
@@ -98,13 +98,13 @@ class RandomVerticalFlip(object):
 
     def __call__(self, image, target):
         if random.random() < self.flip_prob:
-            image = np.ascontiguousarray(image[::-1])
-            target = np.ascontiguousarray(target[::-1])
+            image = F.vflip(image)
+            target = F.vflip(target)
 
         return image, target
 
 
-class RandomCropTorch(object):
+class RandomCrop(object):
     def __init__(self, size):
         self.size = size
 
@@ -122,7 +122,7 @@ class RandomCropTorch(object):
         mask = mask[:, i:i + self.size[0], j:j + self.size[1]]
         return image, mask
 
-class RandomCrop(object):
+class RandomCropScale(object):
     def __init__(self, size=None, upscale_factor=1):
         self.size = size if size is not None else (64, 64)
         self.upscale_factor = upscale_factor
@@ -130,21 +130,21 @@ class RandomCrop(object):
     def __call__(self, img, gt):
 
         # convert back to PIL image
-        pil_img = (np.dstack([img[0], img[1], img[0]]))/img.max() * 255
-        pil_img = Image.fromarray(pil_img.astype('uint8'), 'RGB')
-        pil_gt = gt[0]/gt.max()*255 if gt.max() != 0 else gt[0]
-        pil_gt = Image.fromarray(pil_gt.astype('uint8'))
+        #pil_img = (np.dstack([img[0], img[1], img[0]]))/img.max() * 255
+        #pil_img = Image.fromarray(pil_img.astype('uint8'), 'RGB')
+        #pil_gt = gt[0]/gt.max()*255 if gt.max() != 0 else gt[0]
+        #pil_gt = Image.fromarray(pil_gt.astype('uint8'))
 
         # get crop coordinates
-        i, j, h, w = T.RandomCrop.get_params(pil_img, output_size=self.size)
+        i, j, h, w = T.RandomCrop.get_params(img, output_size=self.size)
 
         # crop
-        pil_img = T.functional.crop(pil_img, i, j, h, w)
-        pil_gt = T.functional.crop(pil_gt, i*self.upscale_factor, j*self.upscale_factor, h*self.upscale_factor, w*self.upscale_factor)
+        img = T.functional.crop(img, i, j, h, w)
+        gt = T.functional.crop(gt, i*self.upscale_factor, j*self.upscale_factor, h*self.upscale_factor, w*self.upscale_factor)
 
         # convert back to numpy
-        img = np.array(pil_img)[..., :2].swapaxes(2, 1).swapaxes(1, 0)
-        gt = np.array(pil_gt)[None, ...] / np.array(pil_gt).max() if np.array(pil_gt).max() != 0 else np.array(pil_gt)[None, ...]
+        #img = np.array(pil_img)[..., :2].swapaxes(2, 1).swapaxes(1, 0)
+        #gt = np.array(pil_gt)[None, ...] / np.array(pil_gt).max() if np.array(pil_gt).max() != 0 else np.array(pil_gt)[None, ...]
 
         return img, gt
 
@@ -159,12 +159,9 @@ class CenterCrop(object):
         return image, target
 
 
-class ToTensor(object):
+class TwoArgsToTensor(object):
     def __call__(self, image, target):
-        image = F.to_tensor(image)
-        target = F.to_tensor(target.astype(float)).long()
-        # target = torch.as_tensor(np.array(target), dtype=torch.long)
-        return image, target
+        return torch.tensor(image), torch.tensor(target).long()
 
 
 class Normalize(object):
@@ -311,7 +308,13 @@ class ResizeBmode(object):
         return output, *args, *kwargs
 
 
+class ArgsToTensor(object):
+    def __call__(self, *args):
+        return [torch.tensor(arg) for arg in args]
+
+
 if __name__ == '__main__':
+
     a = torch.rand((1, 3, 512, 512))
     # RandomRotate(20)(a, a)
     t = Compose([RandomApply([RandomRotate(30), GaussianNoise()]), ColorJitter(brightness=1)])

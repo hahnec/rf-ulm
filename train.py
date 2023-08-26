@@ -7,7 +7,7 @@ import numpy as np
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-import torchvision.transforms as transforms
+import torchvision.transforms as T
 import torchvision.transforms.functional as TF
 from pathlib import Path
 from torch import optim
@@ -25,7 +25,7 @@ from evaluate import evaluate
 from utils.nms_funs import non_max_supp_torch
 from utils.gauss import matlab_style_gauss2D
 from utils.dice_score import dice_loss
-from utils.transform import Normalize, NormalizeVol, RandomHorizontalFlip, RandomVerticalFlip, RandomCrop
+from utils.transform import ArgsToTensor, Normalize, NormalizeVol, RandomHorizontalFlip, RandomVerticalFlip, RandomCropScale
 from utils.samples_points_map import get_inverse_mapping
 
 
@@ -49,11 +49,11 @@ def train_model(
     scale_factor = 1 if cfg.model in ('unet') else cfg.upscale_factor
     if cfg.input_type == 'iq':
         DatasetClass = PalaDatasetIq
-        transforms = [RandomHorizontalFlip(), RandomVerticalFlip(), RandomCrop(upscale_factor=scale_factor), NormalizeVol()] 
+        transforms = [ArgsToTensor(), RandomHorizontalFlip(), RandomVerticalFlip(), RandomCropScale(upscale_factor=scale_factor), NormalizeVol()] 
         from datasets.pala_dataset.utils.collate_fn_iq import collate_fn
     elif cfg.input_type == 'rf':
         DatasetClass = PalaDatasetRf
-        transforms = [RandomHorizontalFlip(), RandomVerticalFlip(), RandomCrop(upscale_factor=scale_factor), NormalizeVol()]
+        transforms = [ArgsToTensor(), RandomHorizontalFlip(), RandomVerticalFlip(), RandomCropScale(upscale_factor=scale_factor), NormalizeVol()]
         from datasets.pala_dataset.utils.collate_fn_rf import collate_fn
     dataset = DatasetClass(
         dataset_path = cfg.data_dir,
