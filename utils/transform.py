@@ -123,8 +123,11 @@ class RandomCrop(object):
         return image, mask
 
 class RandomCropScale(object):
-    def __init__(self, size=None, upscale_factor=1):
-        self.size = size if size is not None else (64, 64)
+    def __init__(self, size=64, upscale_factor=1):
+        if isinstance(size, tuple):
+            self.size = size
+        else:
+            self.size = (size, size)
         self.upscale_factor = upscale_factor
 
     def __call__(self, img, gt):
