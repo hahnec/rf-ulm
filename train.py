@@ -133,7 +133,7 @@ def train_model(
     val_step = 0
     
     # mSPCN Gaussian
-    g_len = 5+cfg.upscale_factor//2*2
+    g_len = 7+cfg.upscale_factor//2*2
     psf_heatmap = torch.from_numpy(matlab_style_gauss2D(shape=(g_len,g_len), sigma=cfg.upscale_factor/4 if cfg.input_type == 'iq' else cfg.upscale_factor/2))
     gfilter = torch.reshape(psf_heatmap, [1, 1, g_len, g_len])
     gfilter = gfilter.to(cfg.device)
