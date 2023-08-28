@@ -11,7 +11,7 @@
 #SBATCH --qos=job_gpu_sznitman
 #SBATCH --partition=gpu-invest
 #SBATCH --gres=gpu:rtx3090:1
-#SBATCH --array=1-5%5
+#SBATCH --array=1-6%6
 
 module load Python/3.9.5-GCCcore-10.3.0
 module load CUDA/11.8.0
