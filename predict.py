@@ -130,7 +130,7 @@ if __name__ == '__main__':
     cfg.origin_z = float(dataset.get_key('Origin')[2])
     cfg.wv_idcs = [0] if cfg.input_type == 'iq' else cfg.wv_idcs
     origin = np.array([cfg.origin_x, cfg.origin_z])
-    img_size = dataset.img_size
+    img_size = np.array([84, 143]) if cfg.input_type == 'rf' else dataset.img_size
     cmap = 'hot' if str(cfg.data_dir).lower().__contains__('rat') else 'inferno'
 
     # transformation
