@@ -10,10 +10,10 @@ def generate_pala_points(cfg, point_num=1e3):
     # generate synthetic points
     synth_points = 2*np.random.rand(2, int(point_num))-1    # [-1, +1] range
 
-    # scale points to PALA range (slightly overshoot for better fitting)
-    synth_points[0, ...] *= 80
+    # scale points to PALA range
+    synth_points[0, ...] *= 40
     synth_points[1, ...] += 1
-    synth_points[1, ...] *= 60
+    synth_points[1, ...] *= 40
 
     return synth_points
 
@@ -38,19 +38,19 @@ def get_inverse_mapping(dataset=None, p=6, weights_opt=False, point_num=1e3):
     synth_samples = dataset.project_points_toa_compound(synth_points * wavelength, interpol=True, extrapol=True)
     synth_samples = synth_samples.swapaxes(1, 2)
 
-    t_mats = get_samples2points_mapping(synth_samples, synth_points, channel_num=128, upscale_factor=dataset.upscale_factor, p=p, weights_opt=weights_opt)
+    t_mats = get_samples2points_mapping(synth_samples, synth_points, channel_num=128*dataset.upscale_factor, p=p, weights_opt=weights_opt)
 
     return t_mats
 
 
-def get_samples2points_mapping(samples, points, channel_num=128, upscale_factor=4, p=6, weights_opt=False):
+def get_samples2points_mapping(samples, points, channel_num=128, p=6, weights_opt=False):
 
     # choose earliest arriving sample positions for each target 
     rf_pts = np.array([samples.min(1), samples.argmin(1)])
 
     # accout for point indices outside original transducer width
     xe_num = samples.shape[1]
-    border_index = (xe_num-channel_num*upscale_factor)//2
+    border_index = (xe_num-channel_num)//2
     rf_pts[1, ...] -= border_index
 
     # homogenize B-mode points
