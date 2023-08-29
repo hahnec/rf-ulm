@@ -292,6 +292,11 @@ if __name__ == '__main__':
     gtru_ulm_map = img_color_map(img=normalize(gtru_ulm_img), cmap=cmap)
     sres_avg_map = img_color_map(img=normalize(sres_avg_img), cmap=cmap)
 
+    # safe area
+    sres_ulm_map = sres_ulm_map[:, 2*cfg.upscale_factor:-2*cfg.upscale_factor]
+    gtru_ulm_map = gtru_ulm_map[:, 2*cfg.upscale_factor:-2*cfg.upscale_factor]
+    sres_avg_map = sres_avg_map[:, 2*cfg.upscale_factor:-2*cfg.upscale_factor]
+
     if cfg.logging:
         wandb.log({"sres_ulm_img": wandb.Image(sres_ulm_map)})
         wandb.log({"gtru_ulm_img": wandb.Image(gtru_ulm_map)})
