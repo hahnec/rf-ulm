@@ -18,7 +18,7 @@ def generate_pala_points(cfg, point_num=1e3):
     return synth_points
 
 
-def get_inverse_mapping(dataset=None, p=6, weights_opt=True, point_num=1e3):
+def get_inverse_mapping(dataset=None, p=6, weights_opt=False, point_num=1e3):
 
     synth_points = generate_pala_points(point_num)
     
