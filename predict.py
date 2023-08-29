@@ -35,7 +35,7 @@ from utils.point_align import align_points, get_pala_error
 from utils.samples_points_map import get_inverse_mapping
 from utils.srgb_conv import srgb_conv
 from utils.utils import plot_img_and_mask
-from utils.transform import ArgsToTensor, NormalizeVol
+from utils.transform import ArgsToTensor, NormalizeImage, NormalizeVol
 from utils.point_fusion import cluster_points
 from utils.dithering import dithering
 
@@ -100,7 +100,7 @@ if __name__ == '__main__':
     # dataset init
     if cfg.input_type == 'iq':
         DatasetClass = PalaDatasetIq
-        transforms = [ArgsToTensor(), NormalizeVol()]
+        transforms = [ArgsToTensor(), NormalizeImage()]
         from datasets.pala_dataset.utils.collate_fn_iq import collate_fn
     elif cfg.input_type == 'rf':
         DatasetClass = PalaDatasetRf

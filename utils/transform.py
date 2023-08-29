@@ -167,6 +167,15 @@ class Normalize(object):
         return image, target
 
 
+class NormalizeImage(object):
+    def __init__(self):
+        pass
+    
+    def __call__(self, image, target):
+        norm = (image-image.min())/(image.max()-image.min()) if (image.max()-image.min()) != 0 else image
+        return norm, target
+
+
 class RemoveWhitelines(object):
     def __call__(self, image, target):
         target = torch.where(target == 255, 0, target)

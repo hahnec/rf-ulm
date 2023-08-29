@@ -25,7 +25,7 @@ from evaluate import evaluate
 from utils.nms_funs import non_max_supp_torch
 from utils.gauss import matlab_style_gauss2D
 from utils.dice_score import dice_loss
-from utils.transform import ArgsToTensor, NormalizeVol, RandomHorizontalFlip, RandomVerticalFlip, RandomCropScale, GaussianBlur, RandomRotation, RandomApply
+from utils.transform import ArgsToTensor, NormalizeImage, NormalizeVol, RandomHorizontalFlip, RandomVerticalFlip, RandomCropScale, GaussianBlur, RandomRotation, RandomApply
 from utils.samples_points_map import get_inverse_mapping
 
 
@@ -52,7 +52,7 @@ def train_model(
     if cfg.input_type == 'iq':
         DatasetClass = PalaDatasetIq
         rand_augment = RandomApply([RandomHorizontalFlip(), RandomVerticalFlip(), GaussianBlur(7, (1.3, 0.7)), RandomRotation(5)])
-        transforms = [ArgsToTensor(), rand_augment, RandomCropScale(crop_size, scale_factor), NormalizeVol()] 
+        transforms = [ArgsToTensor(), rand_augment, RandomCropScale(crop_size, scale_factor), NormalizeImage()] 
         from datasets.pala_dataset.utils.collate_fn_iq import collate_fn
     elif cfg.input_type == 'rf':
         DatasetClass = PalaDatasetRf
