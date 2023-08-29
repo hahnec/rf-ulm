@@ -292,11 +292,6 @@ if __name__ == '__main__':
     gtru_ulm_map = img_color_map(img=normalize(gtru_ulm_img), cmap=cmap)
     sres_avg_map = img_color_map(img=normalize(sres_avg_img), cmap=cmap)
 
-    # safe area
-    sres_ulm_map = sres_ulm_map[:, 2*cfg.upscale_factor:-2*cfg.upscale_factor]
-    gtru_ulm_map = gtru_ulm_map[:, 2*cfg.upscale_factor:-2*cfg.upscale_factor]
-    sres_avg_map = sres_avg_map[:, 2*cfg.upscale_factor:-2*cfg.upscale_factor]
-
     if cfg.logging:
         wandb.log({"sres_ulm_img": wandb.Image(sres_ulm_map)})
         wandb.log({"gtru_ulm_img": wandb.Image(gtru_ulm_map)})
@@ -304,7 +299,7 @@ if __name__ == '__main__':
         wandb.summary['TotalRMSE'] = sres_rmse_mean
         wandb.summary['TotalRMSEstd'] = sres_rmse_std
         wandb.summary['TotalJaccard'] = torch.nanmean(errs[..., 3], axis=0)
-        wandb.summary['SSIM'] = ssim(gtru_ulm_img, sres_ulm_img, data_range=sres_ulm_img.max()-sres_ulm_img.min())
+        wandb.summary['SSIM'] = ssim(gtru_ulm_img[:, 2*cfg.upscale_factor:-2*cfg.upscale_factor], sres_ulm_img[:, 2*cfg.upscale_factor:-2*cfg.upscale_factor], data_range=sres_ulm_img.max()-sres_ulm_img.min())
         wandb.summary['TotalParameters'] = int(str(summary(model)).split('\n')[-3].split(' ')[-1].replace(',',''))
         wandb.save(str(Path('.') / 'logged_errors.csv'))
         wandb.finish()
