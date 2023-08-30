@@ -155,7 +155,7 @@ def train_model(
                 imgs, true_masks = batch[:2] if cfg.input_type == 'iq' else (batch[0].flatten(0, 1), batch[1].flatten(0, 1))
 
                 # skip blank frames (avoid learning from false frames)
-                if torch.any(imgs.view(imgs.shape[0], -1).sum() == 0) or torch.any(true_masks.view(true_masks.shape[0], -1).sum() == 0):
+                if torch.any(imgs.view(imgs.shape[0], -1).sum() == 0) and torch.any(true_masks.view(true_masks.shape[0], -1).sum() > 0):
                     continue
 
                 imgs = imgs.to(device=cfg.device, dtype=torch.float32, memory_format=torch.channels_last)
