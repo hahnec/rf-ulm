@@ -8,11 +8,12 @@ import torch.nn.functional as F
 
 class MSPCN(nn.Module):
 
-    def __init__(self, upscale_factor, in_channels=1):
+    def __init__(self, upscale_factor, in_channels=1, semi_global_scale=1):
         super(MSPCN, self).__init__()
 
         self.conv1 = nn.Conv2d(in_channels, 64, (9, 9), (1, 1), (4, 4))
-        
+        self.semi_global_block = SemiGlobalBlock(64, 64, semi_global_scale) if semi_global_scale != 1 else None
+
         self.conv2 = nn.Conv2d(64, 64, (3, 3), (1, 1), (1, 1))
         self.conv3 = nn.Conv2d(64, 64, (3, 3), (1, 1), (1, 1))
         self.conv4 = nn.Conv2d(64, 64, (3, 3), (1, 1), (1, 1))
@@ -30,6 +31,7 @@ class MSPCN(nn.Module):
         
     def forward(self, x):
         x = F.relu(self.conv1(x))
+        x = self.semi_global_block(x) if self.semi_global_block is not None else x
         res1=x
         x = F.relu(self.conv2(x))
         x = self.conv3(x)
@@ -71,3 +73,42 @@ class MSPCN(nn.Module):
         init.orthogonal(self.conv11.weight)
         init.orthogonal(self.conv12.weight)
         init.orthogonal(self.conv13.weight)
+
+
+class SemiGlobalBlock2D(nn.Module):
+    def __init__(self, in_channels, out_channels, sample_scale=2, kernel_size=5):
+        super(SemiGlobalBlock2D, self).__init__()
+
+        self.sample_scale = sample_scale
+        self.feat_scale = max(1, sample_scale // 10)
+
+        # Contracting path
+        self.contract_conv = nn.Conv2d(in_channels, self.feat_scale * out_channels, kernel_size=kernel_size, stride=1, padding=kernel_size // 2)
+        self.contract_relu = nn.LeakyReLU()
+        self.contract_pool = nn.MaxPool2d(kernel_size=sample_scale, stride=sample_scale)
+
+        # Expanding path
+        self.expand_conv = nn.Conv2d(self.feat_scale * out_channels, out_channels, kernel_size=kernel_size, stride=1, padding=kernel_size // 2)
+        self.expand_relu = nn.LeakyReLU()
+        self.expand_upsample = nn.Upsample(scale_factor=sample_scale, mode='nearest')
+
+    def forward(self, x):
+        # Contracting path
+        x_scale = self.contract_conv(x)
+        x_scale = self.contract_relu(x_scale)
+        x_scale = self.contract_pool(x_scale)
+
+        # Expanding path
+        x_scale = self.expand_conv(x_scale)
+        x_scale = self.expand_relu(x_scale)
+        x_scale = self.expand_upsample(x_scale)
+
+        # Adjust padding for correct output size
+        padding_h = max(0, x.size(-2) - x_scale.size(-2))
+        padding_w = max(0, x.size(-1) - x_scale.size(-1))
+        x_scale = F.pad(x_scale, (padding_w // 2, padding_w // 2, padding_h // 2, padding_h // 2))
+
+        # Skip connection via addition
+        x = torch.add(x, x_scale)
+
+        return x
