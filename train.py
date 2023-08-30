@@ -178,26 +178,6 @@ def train_model(
                         
                     loss = criterion(pred_masks.squeeze(1), true_masks.squeeze(1).float())
 
-                #mask = masks_true[0, 0, ::cfg.upscale_factor, ::cfg.upscale_factor] * amplitude
-                #img = images[0, 0].clone()
-                #img[img<0] = 0
-                #img = img/img.max()
-                #mask = mask/mask.max()
-                #mask_review_img = torch.dstack([mask, img, mask]).cpu().numpy()
-                #import matplotlib.pyplot as plt
-                #fig, axs = plt.subplots(nrows=1,ncols=1, figsize=(15,9))
-                ##axs[0].imshow(images[0, 0].cpu().numpy())
-                ##axs[1].imshow(masks_true[0].cpu().numpy())
-                #axs.imshow(mask_review_img)
-                #import imageio
-                #imageio.imsave('rf_label_frame.png', mask_review_img)
-                #plt.show()
-
-                # activation followed by non-maximum suppression
-                #masks_pred = torch.sigmoid(masks_pred)
-                #imgs_nms = non_max_supp_torch(masks_pred)
-                #masks_nms = imgs_nms > cfg.nms_threshold
-
                 optimizer.zero_grad(set_to_none=True)
                 scale = grad_scaler.get_scale()
                 grad_scaler.update()
@@ -292,6 +272,7 @@ if __name__ == '__main__':
         raise Exception('Model name not recognized')
 
     model = model.to(memory_format=torch.channels_last)
+    model.to(device=cfg.device)
 
     if cfg.fine_tune:
         ckpt_paths = [fn for fn in Path('./ckpts').iterdir() if fn.name.startswith(cfg.model_file.split('_')[0])]
@@ -299,7 +280,6 @@ if __name__ == '__main__':
         model.load_state_dict(state_dict)
         logging.info(f'Model loaded from {cfg.model_file}')
 
-    model.to(device=cfg.device)
     train_model(
         model=model,
         epochs=cfg.epochs,
