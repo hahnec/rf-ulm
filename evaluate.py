@@ -85,9 +85,9 @@ def evaluate(model, dataloader, epoch, val_step, criterion, amp, cfg, wb, t_mats
 
             if cfg.logging:
                 wb.log({
-                    'val_step': val_step,
                     'val_loss': loss.item(),
                     'threshold': threshold,
+                    'val_step': val_step,
                     })
             val_step += 1
 

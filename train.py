@@ -188,16 +188,15 @@ def train_model(
                     torch.nn.utils.clip_grad_norm_(model.parameters(), gradient_clipping)
                     grad_scaler.step(optimizer)
 
-                pbar.update(imgs.shape[0])
-                train_step += 1
-                epoch_loss += loss.item()
                 if cfg.logging:
                     wb.log({
                         'train loss': loss.item(),
                         'train_step': train_step,
-                        'epoch': epoch
                     })
+                train_step += 1
+                epoch_loss += loss.item()
                 pbar.set_postfix(**{'loss (batch)': loss.item()})
+                pbar.update(imgs.shape[0])
 
                 # evaluation
                 if train_step % division_step == 0 and division_step > 0 and not skip_lr_schedule:
