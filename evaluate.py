@@ -16,7 +16,7 @@ img_norm = lambda x: (x-x.min())/(x.max()-x.min()) if (x.max()-x.min()) != 0 els
 
 
 @torch.inference_mode()
-def evaluate(model, dataloader, epoch, val_step, criterion, amp, cfg, wb, t_mats):
+def evaluate(model, dataloader, epoch, val_step, criterion, amp, cfg, wb, t_mats, gfilter):
 
     model.eval()
     num_val_batches = len(dataloader)
@@ -37,18 +37,25 @@ def evaluate(model, dataloader, epoch, val_step, criterion, amp, cfg, wb, t_mats
                 
                 # move images and labels to correct device and type
                 imgs = imgs.to(device=cfg.device, dtype=torch.float32, memory_format=torch.channels_last)
-                true_masks = true_masks.to(device=cfg.device, dtype=torch.long)
+                true_masks = true_masks.to(device=cfg.device, dtype=torch.float32)
 
                 # use batch size (without shuffling) for temporal stacking with new batch size 1
-                if cfg.model == 'smv': 
+                if cfg.model == 'smv':
                     imgs = imgs.unsqueeze(0)
                     true_masks = true_masks.sum(0, keepdim=True)
 
                 # predict the mask
                 pred_masks = model(imgs)
 
+                # mask blurring
+                blur_masks = F.conv2d(true_masks.float(), gfilter, padding=gfilter.shape[-1]//2)
+                blur_masks /= blur_masks.max()
+                blur_masks *= cfg.amplitude
+                if cfg.model == 'mspcn' and cfg.input_type == 'iq':
+                    pred_masks = F.conv2d(pred_masks, gfilter, padding=gfilter.shape[-1]//2)
+
                 # get loss
-                loss += criterion(pred_masks.squeeze(1), true_masks.squeeze(1).float())
+                loss += criterion(pred_masks.squeeze(1), blur_masks.squeeze(1).float())
 
                 # non-maximum suppression
                 masks_nms = non_max_supp_torch(pred_masks, size=cfg.nms_size)
@@ -73,7 +80,7 @@ def evaluate(model, dataloader, epoch, val_step, criterion, amp, cfg, wb, t_mats
             pala_err_batch = get_pala_error(es_points, gt_points)
 
             # threshold analysis
-            if true_masks[0].sum() > 0 and torch.any(~torch.isnan(pred_masks)):
+            if blur_masks[0].sum() > 0 and torch.any(~torch.isnan(pred_masks)):
                 threshold = estimate_threshold(true_masks[0], pred_masks[0])
             else:
                 threshold = float('NaN')
@@ -81,7 +88,7 @@ def evaluate(model, dataloader, epoch, val_step, criterion, amp, cfg, wb, t_mats
             # compute the dice score
             masks_nms = masks_nms > 0
             assert true_masks.min() >= 0 and true_masks.max() <= 1, 'True mask indices should be in [0, 1]'
-            dice_score += dice_coeff(masks_nms, true_masks, reduce_batch_first=False)
+            dice_score += dice_coeff(masks_nms, blur_masks, reduce_batch_first=False)
 
             if cfg.logging:
                 wb.log({
@@ -101,7 +108,7 @@ def evaluate(model, dataloader, epoch, val_step, criterion, amp, cfg, wb, t_mats
             'avg_detected': float(masks_nms[0].float().cpu().sum()),
             'pred_max': float(pred_masks[0].float().cpu().max()),
             'masks': {
-                'true': wandb.Image(img_norm(true_masks[0].float().cpu())*255),
+                'true': wandb.Image(img_norm(blur_masks[0].float().cpu())*255),
                 'pred': wandb.Image(img_norm(pred_masks[0].float().cpu())*255),
                 'nms': wandb.Image(img_norm(masks_nms[0].float().cpu())*255),
                 },

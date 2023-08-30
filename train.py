@@ -136,11 +136,11 @@ def train_model(
     gfilter = torch.reshape(psf_heatmap, [1, 1, g_len, g_len])
     gfilter = gfilter.to(cfg.device)
     if cfg.model.__contains__('mspcn') and cfg.input_type == 'iq':
-        amplitude = 50
+        cfg.amplitude = 50
     elif cfg.model in ('unet', 'smv') and cfg.input_type == 'iq':
-        amplitude = 1
+        cfg.amplitude = 1
     else: 
-        amplitude = cfg.lambda0
+        cfg.amplitude = cfg.lambda0
 
     # transformation
     t_mats = get_inverse_mapping(dataset, p=6, weights_opt=False, point_num=1e4) if cfg.input_type == 'rf' else [[],[],[]]
@@ -158,7 +158,7 @@ def train_model(
                     continue
 
                 imgs = imgs.to(device=cfg.device, dtype=torch.float32, memory_format=torch.channels_last)
-                true_masks = true_masks.to(device=cfg.device, dtype=torch.float32)
+                true_masks = true_masks.to(device=cfg.device, dtype=torch.long)
 
                 with torch.autocast(cfg.device if cfg.device != 'mps' else 'cpu', enabled=amp):
                     
@@ -170,13 +170,13 @@ def train_model(
                     pred_masks = model(imgs)
 
                     # mask blurring
-                    true_masks = F.conv2d(true_masks, gfilter, padding=gfilter.shape[-1]//2)
-                    true_masks /= true_masks.max()
-                    true_masks *= amplitude
+                    blur_masks = F.conv2d(true_masks.float(), gfilter, padding=gfilter.shape[-1]//2)
+                    blur_masks /= blur_masks.max()
+                    blur_masks *= cfg.amplitude
                     if cfg.model == 'mspcn' and cfg.input_type == 'iq':
                         pred_masks = F.conv2d(pred_masks, gfilter, padding=gfilter.shape[-1]//2)
                         
-                    loss = criterion(pred_masks.squeeze(1), true_masks.squeeze(1).float())
+                    loss = criterion(pred_masks.squeeze(1), blur_masks.squeeze(1).float())
 
                 optimizer.zero_grad(set_to_none=True)
                 scale = grad_scaler.get_scale()
@@ -215,7 +215,7 @@ def train_model(
                         })
                     
                     # validation
-                    val_step = evaluate(model, val_loader, epoch, val_step, criterion, amp, cfg, wb, t_mats)
+                    val_step = evaluate(model, val_loader, epoch, val_step, criterion, amp, cfg, wb, t_mats, gfilter)
     
         scheduler.step()
 
