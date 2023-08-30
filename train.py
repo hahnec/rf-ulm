@@ -47,7 +47,7 @@ def train_model(
 ):
     # create dataset
     scale_factor = 1 if cfg.model in ('unet') else cfg.upscale_factor
-    crop_size = 128 if cfg.input_type == 'rf' else 64
+    crop_size = 128 if cfg.input_type == 'rf' and not (cfg.model in ('unet')) else 64
     crop_size = crop_size * cfg.upscale_factor if cfg.model in ('unet') else crop_size
     if cfg.input_type == 'iq':
         DatasetClass = PalaDatasetIq
@@ -240,7 +240,7 @@ def train_model(
                             wb.log({
                                 'lr': optimizer.param_groups[0]['lr'],
                                 'validation_dice': val_score,
-                                'images': wandb.Image(imgs[0].cpu() if len(imgs[0]) == 2 else imgs[0].sum(0).cpu()),
+                                'images': wandb.Image(imgs[0].cpu() if len(imgs[0].shape) == 2 else imgs[0].sum(0).cpu()),
                                 'masks': {
                                     'true': wandb.Image(img_norm(true_masks[0].float().cpu())*255),
                                     'pred': wandb.Image(img_norm(pred_masks[0].float().cpu())*255),    #(masks_pred.argmax(dim=1)[0]).float().cpu()),#
