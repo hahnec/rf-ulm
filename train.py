@@ -80,7 +80,7 @@ def train_model(
     # split into train and validation partitions
     n_val = int(len(dataset) * val_percent)
     n_train = len(dataset) - n_val
-    train_set, val_set = random_split(dataset, [n_train, n_val], generator=torch.Generator().manual_seed(0))
+    train_set, val_set = random_split(dataset, [n_train, n_val], generator=torch.Generator().manual_seed(cfg.seed))
     division_step = (n_train // (5 * batch_size))
 
     # create data loaders
