@@ -26,5 +26,6 @@ model=$(cat $param_store | awk -v var=$SLURM_ARRAY_TASK_ID 'NR==var {print $1}')
 model_file=$(cat $param_store | awk -v var=$SLURM_ARRAY_TASK_ID 'NR==var {print $2}')
 threshold=$(cat $param_store | awk -v var=$SLURM_ARRAY_TASK_ID 'NR==var {print $3}')
 type=$(cat $param_store | awk -v var=$SLURM_ARRAY_TASK_ID 'NR==var {print $4}')
+batch_size=$(cat $param_store | awk -v var=$SLURM_ARRAY_TASK_ID 'NR==var {print $5}')
 
-python3 ./train.py model=${model} model_file=${model_file} nms_threshold=${threshold} input_type=${type} pow_law_opt=False clutter_db=-50 sequences=[16,17,18,19,20] data_dir=/storage/workspaces/artorg_aimi/ws_00000/chris/PALA_data_InSilicoFlow/
+python3 ./train.py model=${model} model_file=${model_file} nms_threshold=${threshold} input_type=${type} batch_size=${batch_size} pow_law_opt=False clutter_db=-50 sequences=[16,17,18,19,20] data_dir=/storage/workspaces/artorg_aimi/ws_00000/chris/PALA_data_InSilicoFlow/
