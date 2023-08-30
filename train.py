@@ -29,9 +29,6 @@ from utils.transform import ArgsToTensor, NormalizeImage, NormalizeVol, RandomHo
 from utils.samples_points_map import get_inverse_mapping
 
 
-img_norm = lambda x: (x-x.min())/(x.max()-x.min()) if (x.max()-x.min()) != 0 else x
-
-
 def train_model(
         model,
         epochs: int = 5,
@@ -100,6 +97,7 @@ def train_model(
         )
         wandb.define_metric('epoch', step_metric='epoch')
         wandb.define_metric('train_loss', step_metric='train_step')
+        wandb.define_metric('val_loss', step_metric='val_step')
         wandb.define_metric('threshold', step_metric='val_step')
         wandb.define_metric('avg_detected', step_metric='val_step')
         wandb.define_metric('pred_max', step_metric='val_step')
@@ -125,9 +123,10 @@ def train_model(
     scheduler = optim.lr_scheduler.CosineAnnealingLR(optimizer, cfg.epochs)
     #scheduler = optim.lr_scheduler.PolynomialLR(optimizer, cfg.epochs, power=1)
     grad_scaler = torch.cuda.amp.GradScaler(enabled=amp)
-    criterion = nn.MSELoss(reduction='mean')
-    l1loss = nn.L1Loss(reduction='mean')
+    mse_loss = nn.MSELoss(reduction='mean')
+    l1_loss = nn.L1Loss(reduction='mean')
     lambda_value = 0.01 if cfg.model in ('unet', 'smv') and cfg.input_type == 'iq' else cfg.lambda1
+    criterion = lambda x, y: mse_loss(x, y) + l1_loss(x, torch.zeros_like(y)) * lambda_value
     train_step = 0
     val_step = 0
     
@@ -178,7 +177,6 @@ def train_model(
                         pred_masks = F.conv2d(pred_masks, gfilter, padding=gfilter.shape[-1]//2)
                         
                     loss = criterion(pred_masks.squeeze(1), true_masks.squeeze(1).float())
-                    loss += l1loss(pred_masks.squeeze(1), torch.zeros_like(pred_masks.squeeze(1))) * lambda_value
 
                 #mask = masks_true[0, 0, ::cfg.upscale_factor, ::cfg.upscale_factor] * amplitude
                 #img = images[0, 0].clone()
@@ -230,32 +228,15 @@ def train_model(
                             histograms['Weights/' + tag] = wandb.Histogram(value.data.cpu())
                         if not torch.isinf(value.grad).any() and not torch.isnan(value.grad).any():
                             histograms['Gradients/' + tag] = wandb.Histogram(value.grad.data.cpu())
+                    if cfg.logging:
+                        wb.log({
+                            **histograms,
+                            'lr': optimizer.param_groups[0]['lr'],
+                            'epoch': epoch,
+                        })
                     
-                    val_score, pala_err_batch, masks_nms, threshold = evaluate(model, val_loader, amp, cfg, t_mats)
-
-                    logging.info('Validation Dice score: {}'.format(val_score))
-                    try:
-                        if cfg.logging:
-                            wb.log({
-                                'lr': optimizer.param_groups[0]['lr'],
-                                'validation_dice': val_score,
-                                'images': wandb.Image(imgs[0].cpu() if len(imgs[0].shape) == 2 else imgs[0].sum(0).cpu()),
-                                'masks': {
-                                    'true': wandb.Image(img_norm(true_masks[0].float().cpu())*255),
-                                    'pred': wandb.Image(img_norm(pred_masks[0].float().cpu())*255),    #(masks_pred.argmax(dim=1)[0]).float().cpu()),#
-                                    'nms': wandb.Image(img_norm(masks_nms[0].float().cpu())*255),
-                                },
-                                'val_step': val_step,
-                                'epoch': epoch,
-                                'threshold': threshold,
-                                'avg_detected': float(masks_nms[0].float().cpu().sum()),
-                                'pred_max': float(pred_masks[0].float().cpu().max()),
-                                **histograms
-                            })
-                    except Exception as e:
-                        print('Validation upload failed')
-                        print(e)
-                    val_step += 1
+                    # validation
+                    val_step = evaluate(model, val_loader, val_step, criterion, amp, cfg, wb, t_mats)
     
         scheduler.step()
 
