@@ -12,7 +12,7 @@ class MSPCN(nn.Module):
         super(MSPCN, self).__init__()
 
         self.conv1 = nn.Conv2d(in_channels, 64, (9, 9), (1, 1), (4, 4))
-        self.semi_global_block = SemiGlobalBlock(64, 64, semi_global_scale) if semi_global_scale != 1 else None
+        self.semi_global_block = SemiGlobalBlock2D(64, 64, semi_global_scale) if semi_global_scale != 1 else None
 
         self.conv2 = nn.Conv2d(64, 64, (3, 3), (1, 1), (1, 1))
         self.conv3 = nn.Conv2d(64, 64, (3, 3), (1, 1), (1, 1))
