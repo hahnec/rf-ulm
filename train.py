@@ -25,7 +25,7 @@ from evaluate import evaluate
 from utils.nms_funs import non_max_supp_torch
 from utils.gauss import matlab_style_gauss2D
 from utils.dice_score import dice_loss
-from utils.transform import ArgsToTensor, NormalizeImage, NormalizeVol, RandomHorizontalFlip, RandomVerticalFlip, RandomCropScale, RandomRotation, RandomApply
+from utils.transform import ArgsToTensor, NormalizeImage, NormalizeVol, RandomHorizontalFlip, RandomVerticalFlip, RandomCropScale, GaussianBlur, RandomRotation, RandomApply
 from utils.samples_points_map import get_inverse_mapping
 
 
@@ -51,12 +51,12 @@ def train_model(
     crop_size = crop_size * cfg.upscale_factor if cfg.model in ('unet') else crop_size
     if cfg.input_type == 'iq':
         DatasetClass = PalaDatasetIq
-        rand_augment = RandomApply([RandomHorizontalFlip(), RandomVerticalFlip(), RandomRotation(5)])
+        rand_augment = RandomApply([RandomHorizontalFlip(), RandomVerticalFlip(), GaussianBlur(7, (1.3, 0.7)), RandomRotation(5)])
         transforms = [ArgsToTensor(), rand_augment, RandomCropScale(crop_size, scale_factor), NormalizeImage()] 
         from datasets.pala_dataset.utils.collate_fn_iq import collate_fn
     elif cfg.input_type == 'rf':
         DatasetClass = PalaDatasetRf
-        rand_augment = RandomApply([RandomVerticalFlip(), RandomRotation(5)])
+        rand_augment = RandomApply([RandomVerticalFlip(), GaussianBlur(7, (1.3, 0.7)), RandomRotation(5)])
         transforms = [ArgsToTensor(), rand_augment, RandomCropScale(crop_size, scale_factor), NormalizeVol()]
         from datasets.pala_dataset.utils.collate_fn_rf import collate_fn
     dataset = DatasetClass(
@@ -240,7 +240,11 @@ def train_model(
                             wb.log({
                                 'lr': optimizer.param_groups[0]['lr'],
                                 'validation_dice': val_score,
+<<<<<<< HEAD
                                 'images': wandb.Image(imgs[0].cpu() if len(imgs[0].shape) == 2 else imgs[0].sum(0).cpu()),
+=======
+                                'images': wandb.Image(imgs[0].cpu()),
+>>>>>>> parent of bf03965... fix(augment): remove gaussian blur
                                 'masks': {
                                     'true': wandb.Image(img_norm(true_masks[0].float().cpu())*255),
                                     'pred': wandb.Image(img_norm(pred_masks[0].float().cpu())*255),    #(masks_pred.argmax(dim=1)[0]).float().cpu()),#
