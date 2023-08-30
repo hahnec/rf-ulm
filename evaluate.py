@@ -16,7 +16,7 @@ img_norm = lambda x: (x-x.min())/(x.max()-x.min()) if (x.max()-x.min()) != 0 els
 
 
 @torch.inference_mode()
-def evaluate(model, dataloader, val_step, criterion, amp, cfg, wb, t_mats):
+def evaluate(model, dataloader, epoch, val_step, criterion, amp, cfg, wb, t_mats):
 
     model.eval()
     num_val_batches = len(dataloader)
@@ -74,7 +74,7 @@ def evaluate(model, dataloader, val_step, criterion, amp, cfg, wb, t_mats):
 
             # threshold analysis
             if true_masks[0].sum() > 0 and torch.any(~torch.isnan(pred_masks)):
-                threshold = estimate_threshold(true_masks, pred_masks)
+                threshold = estimate_threshold(true_masks[0], pred_masks[0])
             else:
                 threshold = float('NaN')
             
@@ -95,16 +95,16 @@ def evaluate(model, dataloader, val_step, criterion, amp, cfg, wb, t_mats):
     logging.info('Validation Dice score: {}'.format(val_score))
     if cfg.logging:
         wb.log({
+            'epoch': epoch,
             'validation_dice': val_score,
             'images': wandb.Image(imgs[0].cpu() if len(imgs[0].shape) == 2 else imgs[0].sum(0).cpu()),
+            'avg_detected': float(masks_nms[0].float().cpu().sum()),
+            'pred_max': float(pred_masks[0].float().cpu().max()),
             'masks': {
                 'true': wandb.Image(img_norm(true_masks[0].float().cpu())*255),
                 'pred': wandb.Image(img_norm(pred_masks[0].float().cpu())*255),
                 'nms': wandb.Image(img_norm(masks_nms[0].float().cpu())*255),
-            },
-            'val_step': val_step,
-            'avg_detected': float(masks_nms[0].float().cpu().sum()),
-            'pred_max': float(pred_masks[0].float().cpu().max()),
+                },
             })
 
     model.train()

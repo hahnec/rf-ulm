@@ -99,12 +99,12 @@ def train_model(
         wandb.define_metric('train_loss', step_metric='train_step')
         wandb.define_metric('val_loss', step_metric='val_step')
         wandb.define_metric('threshold', step_metric='val_step')
-        wandb.define_metric('avg_detected', step_metric='val_step')
-        wandb.define_metric('pred_max', step_metric='val_step')
+        wandb.define_metric('avg_detected', step_metric='epoch')
+        wandb.define_metric('pred_max', step_metric='epoch')
         wandb.define_metric('lr', step_metric='epoch')
-        wandb.define_metric('validation_dice', step_metric='val_step')
-        wandb.define_metric('images', step_metric='val_step')
-        wandb.define_metric('masks', step_metric='val_step')
+        wandb.define_metric('validation_dice', step_metric='epoch')
+        wandb.define_metric('images', step_metric='epoch')
+        wandb.define_metric('masks', step_metric='epoch')
 
         logging.info(f'''Starting training:
             Epochs:          {epochs}
@@ -216,7 +216,7 @@ def train_model(
                         })
                     
                     # validation
-                    val_step = evaluate(model, val_loader, val_step, criterion, amp, cfg, wb, t_mats)
+                    val_step = evaluate(model, val_loader, epoch, val_step, criterion, amp, cfg, wb, t_mats)
     
         scheduler.step()
 
