@@ -1,6 +1,6 @@
-mspcn major-aardvark 8 iq 16
-mspcn leafy-tree 5.45 rf 16
+mspcn major-aardvark 8 iq 32
+mspcn leafy-tree 5.45 rf 32
 edsr fine-elevator 26 iq 16
 edsr different-sponge 22.5 rf 16
-unet confused-lake 0.29 iq 16
+unet confused-lake 0.29 iq 4
 unet Null 1 rf 4
