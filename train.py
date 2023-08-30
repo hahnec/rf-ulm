@@ -239,11 +239,7 @@ def train_model(
                             wb.log({
                                 'lr': optimizer.param_groups[0]['lr'],
                                 'validation_dice': val_score,
-<<<<<<< HEAD
                                 'images': wandb.Image(imgs[0].cpu() if len(imgs[0].shape) == 2 else imgs[0].sum(0).cpu()),
-=======
-                                'images': wandb.Image(imgs[0].cpu()),
->>>>>>> parent of bf03965... fix(augment): remove gaussian blur
                                 'masks': {
                                     'true': wandb.Image(img_norm(true_masks[0].float().cpu())*255),
                                     'pred': wandb.Image(img_norm(pred_masks[0].float().cpu())*255),    #(masks_pred.argmax(dim=1)[0]).float().cpu()),#
