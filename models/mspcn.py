@@ -106,7 +106,7 @@ class SemiGlobalBlock2D(nn.Module):
         # Adjust padding for correct output size
         padding_h = max(0, x.size(-2) - x_scale.size(-2))
         padding_w = max(0, x.size(-1) - x_scale.size(-1))
-        x_scale = F.pad(x_scale, (padding_w // 2, padding_w // 2, padding_h // 2, padding_h // 2))
+        x_scale = F.pad(x_scale, (padding_w//2, padding_w//2 + padding_w % (padding_w//2), padding_h//2, padding_h//2 + padding_h % (padding_h//2)))
 
         # Skip connection via addition
         x = torch.add(x, x_scale)
