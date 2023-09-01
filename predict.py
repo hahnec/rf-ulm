@@ -303,6 +303,7 @@ if __name__ == '__main__':
         wandb.summary['TotalRMSEstd'] = sres_rmse_std
         wandb.summary['TotalJaccard'] = torch.nanmean(errs[..., 3], axis=0)
         wandb.summary['SSIM'] = ssim(gtru_ulm_img[:, 2*cfg.upscale_factor:-2*cfg.upscale_factor], sres_ulm_img[:, 2*cfg.upscale_factor:-2*cfg.upscale_factor], data_range=sres_ulm_img.max()-sres_ulm_img.min())
+        wandb.summary['Type'] = str(cfg.input_type)
         wandb.summary['TotalParameters'] = int(str(summary(model)).split('\n')[-3].split(' ')[-1].replace(',',''))
         wandb.save(str(Path('.') / 'logged_errors.csv'))
         wandb.finish()
