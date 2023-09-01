@@ -254,8 +254,8 @@ if __name__ == '__main__':
     elif cfg.model == 'mspcn':
         # mSPCN
         model = MSPCN(upscale_factor=cfg.upscale_factor, in_channels=in_channels)
-    elif cfg.model == 'rfspcn':
-        # rfSPCN
+    elif cfg.model == 'sgspcn':
+        # SG-SPCN
         model = MSPCN(upscale_factor=cfg.upscale_factor, in_channels=in_channels, semi_global_scale=16)
     elif cfg.model == 'edsr':
         # EDSR
