@@ -213,6 +213,12 @@ if __name__ == '__main__':
                 result = get_pala_error(es_points, gt_points)[0]
                 ac_rmse_err.append(result)
 
+                # threshold analysis
+                if true_mask.sum() > 0 and torch.any(~torch.isnan(output)):
+                    threshold = estimate_threshold(true_mask, output)
+                else:
+                    threshold = float('NaN')
+
                 if cfg.logging:
                     wandb.log({
                         'RMSE': result[0],
@@ -226,6 +232,7 @@ if __name__ == '__main__':
                         'InferTime': infer_time,
                         'NMS_Time': nms_time,
                         'PointsTime': pts_time,
+                        'threshold': threshold,
                         'frame': int(i) + sequence * dataset.frames_per_seq,
                     })
 
