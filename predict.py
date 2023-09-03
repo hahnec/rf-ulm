@@ -167,27 +167,23 @@ if __name__ == '__main__':
                     outputs = model(imgs)
                     infer_time = time.process_time() - infer_start
 
+                # non-maximum suppression
+                nms_start = time.process_time()
+                if cfg.nms_size is not None:
+                    masks = non_max_supp_torch(outputs, cfg.nms_size)
+                    masks[masks < cfg.nms_threshold] = 0
+                    masks[masks > 0] -= cfg.nms_threshold
+                else:
+                    # cpu-based local maxima (time-consuming for large frames)
+                    masks = regional_mask(outputs.squeeze().cpu().numpy(), th=cfg.nms_threshold)
+                    masks = torch.tensor(masks, device=cfg.device)[None, ...]
+                nms_time = time.process_time() - nms_start
+
                 wv_es_points = []
                 for wv_idx in cfg.wv_idcs:
 
-                    output = outputs[wv_idx]
-                    true_mask = true_masks[:, wv_idx]
-
-                    # non-maximum suppression
-                    nms_start = time.process_time()
-                    if cfg.nms_size is not None:
-                        mask = non_max_supp_torch(output, cfg.nms_size)
-                        mask[mask < cfg.nms_threshold] = 0
-                        mask[mask > 0] -= cfg.nms_threshold
-                        mask = mask.squeeze(1)
-                    else:
-                        # cpu-based local maxima (time-consuming for large frames)
-                        mask = regional_mask(output.squeeze().cpu().numpy(), th=cfg.nms_threshold)
-                        mask = torch.tensor(mask, device=cfg.device)[None, ...]
-                    nms_time = time.process_time() - nms_start
-
                     pts_start = time.process_time()
-                    es_points, gt_points = align_points(mask, gt_pts, t_mat=t_mats[wv_idx], cfg=cfg, sr_img=output)
+                    es_points, gt_points = align_points(masks[wv_idx], gt_pts, t_mat=t_mats[wv_idx], cfg=cfg, sr_img=outputs[wv_idx])
                     pts_time = time.process_time() - pts_start
                     
                     wv_es_points.append(es_points)
