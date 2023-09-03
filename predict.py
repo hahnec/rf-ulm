@@ -155,19 +155,23 @@ if __name__ == '__main__':
 
                 tic = time.process_time()
 
+                imgs, true_masks, gt_pts = batch[:3] if cfg.input_type == 'iq' else (batch[0], batch[1], batch[4])
+
+                # use DAS-beamformed radio-frequency data
+                if not cfg.skip_bmode and cfg.input_type == 'rf': imgs = batch[3]
+
+                imgs = imgs.squeeze(0).to(device=cfg.device, dtype=torch.float32)
+
+                with torch.no_grad():
+                    infer_start = time.process_time()
+                    outputs = model(imgs)
+                    infer_time = time.process_time() - infer_start
+
                 wv_es_points = []
                 for wv_idx in cfg.wv_idcs:
-                    img, true_mask, gt_pts = batch[:3] if cfg.input_type == 'iq' else (batch[0][:, wv_idx], batch[1][:, wv_idx], batch[4])
 
-                    # use DAS-beamformed radio-frequency data
-                    if not cfg.skip_bmode and cfg.input_type == 'rf': img = batch[3]
-
-                    img = img.to(device=cfg.device, dtype=torch.float32)
-
-                    with torch.no_grad():
-                        infer_start = time.process_time()
-                        output = model(img)
-                        infer_time = time.process_time() - infer_start
+                    output = outputs[wv_idx]
+                    true_mask = true_masks[:, wv_idx]
 
                     # non-maximum suppression
                     nms_start = time.process_time()
