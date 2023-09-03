@@ -9,7 +9,6 @@ from utils.dice_score import dice_coeff
 from utils.nms_funs import non_max_supp_torch
 from utils.point_align import align_points, get_pala_error
 from utils.point_fusion import cluster_points
-from utils.threshold import estimate_threshold
 
 
 img_norm = lambda x: (x-x.min())/(x.max()-x.min()) if (x.max()-x.min()) != 0 else x
@@ -78,12 +77,6 @@ def evaluate(model, dataloader, epoch, val_step, criterion, amp, cfg, wb, t_mats
 
             # evaluation metrics
             pala_err_batch = get_pala_error(es_points, gt_points)
-
-            # threshold analysis
-            if blur_masks[0].sum() > 0 and torch.any(~torch.isnan(pred_masks)):
-                threshold = estimate_threshold(true_masks[0], pred_masks[0])
-            else:
-                threshold = float('NaN')
             
             # compute the dice score
             masks_nms = masks_nms > 0
@@ -93,7 +86,6 @@ def evaluate(model, dataloader, epoch, val_step, criterion, amp, cfg, wb, t_mats
             if cfg.logging:
                 wb.log({
                     'val_loss': loss.item(),
-                    'threshold': threshold,
                     'val_step': val_step,
                     })
             val_step += 1

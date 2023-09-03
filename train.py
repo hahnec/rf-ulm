@@ -27,6 +27,7 @@ from utils.gauss import matlab_style_gauss2D
 from utils.dice_score import dice_loss
 from utils.transform import ArgsToTensor, NormalizeImage, NormalizeVol, RandomHorizontalFlip, RandomVerticalFlip, RandomCropScale, GaussianBlur, RandomRotation, RandomApply
 from utils.samples_points_map import get_inverse_mapping
+from utils.threshold import estimate_threshold
 
 
 def train_model(
@@ -220,12 +221,34 @@ def train_model(
     
         scheduler.step()
 
+    # ideal threshold estimation from full frame examples
+    val_loader.transforms = [ArgsToTensor(), NormalizeImage()] if cfg.input_type == 'iq' else [ArgsToTensor(), NormalizeVol()]
+    threshold_list = []
+    for batch in val_loader:
+    
+        imgs, true_masks = batch[:2] if cfg.input_type == 'iq' else (batch[0], batch[1])
+        
+        # move images and labels to correct device and type
+        imgs = imgs.to(device=cfg.device, dtype=torch.float32)
+        true_masks = true_masks.to(device=cfg.device, dtype=torch.float32)
+
+        # predict the mask
+        pred_mask = model(imgs[0]).detach()
+
+        if true_masks[0].sum() > 0 and torch.any(~torch.isnan(pred_mask)):
+            roc_threshold = estimate_threshold(true_masks[0], pred_mask)
+        else:
+            roc_threshold = float('NaN')
+        threshold_list.append(roc_threshold)
+    roc_threshold = np.nanmean(threshold_list)
+
     if cfg.logging:
         dir_checkpoint = Path('./ckpts/')
         dir_checkpoint.mkdir(parents=True, exist_ok=True)
         state_dict = model.state_dict()
         torch.save(state_dict, str(dir_checkpoint / (wb.name+str('_ckpt_epoch{}.pth'.format(epoch)))))
         logging.info(f'Checkpoint {epoch} saved!')
+        wb.log({'mean_ROC_threshold': roc_threshold})
         wandb.finish()
 
 
