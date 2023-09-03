@@ -179,14 +179,13 @@ if __name__ == '__main__':
                     masks = torch.tensor(masks, device=cfg.device)[None, ...]
                 nms_time = time.process_time() - nms_start
 
+                pts_start = time.process_time()
                 wv_es_points = []
                 for wv_idx in cfg.wv_idcs:
-
-                    pts_start = time.process_time()
-                    es_points, gt_points = align_points(masks[wv_idx], gt_pts, t_mat=t_mats[wv_idx], cfg=cfg, sr_img=outputs[wv_idx])
-                    pts_time = time.process_time() - pts_start
-                    
+                    mask, output = (masks[wv_idx], outputs[wv_idx]) if len(cfg.wv_idcs) > 1 else (masks, outputs)
+                    es_points, gt_points = align_points(mask, gt_pts, t_mat=t_mats[wv_idx], cfg=cfg, sr_img=output)                    
                     wv_es_points.append(es_points)
+                pts_time = time.process_time() - pts_start
 
                 if len(cfg.wv_idcs) > 1:
                     wv_list = [el for el in [wv_es_points[1][0], wv_es_points[0][0], wv_es_points[2][0]] if el.size > 0]
