@@ -226,17 +226,17 @@ def train_model(
     threshold_list = []
     for batch in val_loader:
     
-        imgs, true_masks = batch[:2] if cfg.input_type == 'iq' else (batch[0], batch[1])
+        imgs, true_masks = batch[:2] if cfg.input_type == 'iq' else (batch[0, 1], batch[1])
         
         # move images and labels to correct device and type
         imgs = imgs.to(device=cfg.device, dtype=torch.float32)
         true_masks = true_masks.to(device=cfg.device, dtype=torch.float32)
 
         # predict the mask
-        pred_mask = model(imgs[0]).detach()
+        pred_masks = model(imgs).detach()
 
-        if true_masks[0].sum() > 0 and torch.any(~torch.isnan(pred_mask)):
-            roc_threshold = estimate_threshold(true_masks[0], pred_mask)
+        if true_masks[0].sum() > 0 and torch.any(~torch.isnan(pred_masks)):
+            roc_threshold = estimate_threshold(true_masks[0], pred_masks[0])
         else:
             roc_threshold = float('NaN')
         threshold_list.append(roc_threshold)
