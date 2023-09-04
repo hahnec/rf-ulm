@@ -92,6 +92,7 @@ def train_model(
     val_loader = DataLoader(val_set, collate_fn=collate_fn, shuffle=False, drop_last=True, **loader_args)
 
     # instantiate logging
+    wb = None
     if cfg.logging:
         wb = wandb.init(project='SR-ULM-TRAIN', resume='allow', anonymous='must', config=cfg, group='train')
         wb.config.update(
