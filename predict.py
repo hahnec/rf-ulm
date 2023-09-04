@@ -160,7 +160,7 @@ if __name__ == '__main__':
                 # use DAS-beamformed radio-frequency data
                 if not cfg.skip_bmode and cfg.input_type == 'rf': imgs = batch[3]
 
-                imgs = imgs.squeeze(0).to(device=cfg.device, dtype=torch.float32)
+                imgs = imgs.to(device=cfg.device, dtype=torch.float32)
 
                 with torch.no_grad():
                     infer_start = time.process_time()
