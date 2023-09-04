@@ -257,10 +257,15 @@ if __name__ == '__main__':
 
     # remove empty arrays
     all_pts = [p for p in all_pts if p.size > 0]
-    all_pts_gt = [p for p in all_pts_gt if p.size > 0]
 
-    # final resolution handling
-    gtru_ulm_img, _ = tracks2img(all_pts_gt, img_size=img_size, scale=10, mode='all_in')
+    # ground truth image
+    if cfg.data_dir.lower().__contains__('insilico'):
+        all_pts_gt = [p for p in all_pts_gt if p.size > 0]
+        gtru_ulm_img, _ = tracks2img(all_pts_gt, img_size=img_size, scale=10, mode='all_in')
+    else:
+        gtru_ulm_img = np.zeros(img_size)
+
+    # ULM rendering
     sres_avg_img = np.nanmean(np.vstack(bmode_frames), axis=0) if not cfg.skip_bmode and cfg.input_type == 'rf' else np.zeros_like(gtru_ulm_img)
     img_shape = np.array(imgs[0].shape[-2:])[::-1] if cfg.input_type == 'rf' else img_size
     if cfg.dither:
