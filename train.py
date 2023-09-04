@@ -274,7 +274,7 @@ if __name__ == '__main__':
     in_channels = 1 if cfg.input_type == 'rf' and cfg.rescale_factor != 1 else 2
     if cfg.model == 'unet':
         # U-Net
-        model = SlounAdaptUNet(n_channels=in_channels, n_classes=1, bilinear=False)
+        model = SlounAdaptUNet(n_channels=in_channels, n_classes=1)
     elif cfg.model == 'mspcn':
         # mSPCN
         model = MSPCN(upscale_factor=cfg.upscale_factor, in_channels=in_channels)

@@ -5,7 +5,7 @@ from .sloun_parts import *
 
 
 class SlounAdaptUNet(nn.Module):
-    def __init__(self, n_channels, n_classes, bilinear=False):
+    def __init__(self, n_channels, n_classes, bilinear=True):
         super(SlounAdaptUNet, self).__init__()
         self.n_channels = n_channels
         self.n_classes = n_classes
@@ -17,7 +17,7 @@ class SlounAdaptUNet(nn.Module):
         self.down3 = (Down(256, 512))
         self.latent_conv = (SlounLatent(512, 512))
         factor = 2 if bilinear else 1
-        self.up1 = (Up(512, 256 // factor, bilinear))
+        self.up1 = (Up(512//2*3, 256 // factor, bilinear))
         self.up2 = (Up(256, 128 // factor, bilinear))
         self.up3 = (Up(128, 64, bilinear))
         self.outc = (OutConv(64, n_classes))
