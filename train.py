@@ -227,7 +227,7 @@ def train_model(
     threshold_list = []
     for batch in val_loader:
     
-        imgs, true_masks = batch[:2] if cfg.input_type == 'iq' else (batch[0, 1], batch[1])
+        imgs, true_masks = batch[:2] if cfg.input_type == 'iq' else (batch[0][1], batch[1])
         
         # move images and labels to correct device and type
         imgs = imgs.to(device=cfg.device, dtype=torch.float32)
