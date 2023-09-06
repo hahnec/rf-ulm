@@ -204,8 +204,8 @@ if __name__ == '__main__':
                 if False:
                     import matplotlib.pyplot as plt
                     plt.figure()
-                    plt.plot(*gt_points[0], 'rx')
-                    plt.plot(*es_points[0], 'b+')
+                    plt.plot(*gt_points[0]*10, 'rx')
+                    plt.plot(*es_points[0]*10, 'b+')
                     plt.show()
 
                 # localization assessment
@@ -229,24 +229,32 @@ if __name__ == '__main__':
                     })
 
                 # mean from bmode
-                if not cfg.skip_bmode and cfg.input_type == 'rf':
-                    bmode_frames.append(batch[3])
+                if not cfg.skip_bmode:
+                    bmode = batch[3] if cfg.input_type == 'rf' else batch[0]
+                    bmode_frames.append(bmode)
 
                 # create and upload ULM frame per sequence
-                if cfg.logging and (i+1) % dataset.frames_per_seq == 0:
-                    valid_pts = [p for p in all_pts if p.size > 0]
-                    sres_ulm_img = tracks2img(valid_pts, img_size=img_size, scale=cfg.upscale_factor, mode='all_in', fps=dataset.frames_per_seq)[0]
-                    sres_ulm_img **= cfg.gamma
-                    sres_ulm_img = srgb_conv(normalize(sres_ulm_img))
-                    sres_ulm_map = img_color_map(img=normalize(sres_ulm_img), cmap=cmap)
-                    wandb.log({"sres_ulm_img": wandb.Image(sres_ulm_map)})
-                    if not cfg.skip_bmode and cfg.input_type == 'rf':
-                        sres_avg_img = np.nanmean(np.vstack(bmode_frames), axis=0)
-                        sres_avg_img = sres_avg_img.sum(0) if len(sres_avg_img.shape) == 3 else sres_avg_img 
-                        sres_avg_img **= cfg.gamma
-                        sres_avg_img = srgb_conv(normalize(sres_avg_img))
-                        sres_avg_map = img_color_map(img=normalize(sres_avg_img), cmap=cmap)
-                        wandb.log({"sres_avg_img": wandb.Image(sres_avg_map)})
+                if (i+1) % dataset.frames_per_seq == 0:
+                    if cfg.logging:
+                        valid_pts = [p for p in all_pts if p.size > 0]
+                        sres_ulm_img = tracks2img(valid_pts, img_size=img_size, scale=cfg.upscale_factor, mode=cfg.track, fps=dataset.frames_per_seq)[0]
+                        sres_ulm_img **= cfg.gamma
+                        sres_ulm_img = srgb_conv(normalize(sres_ulm_img))
+                        sres_ulm_map = img_color_map(img=normalize(sres_ulm_img), cmap=cmap)
+                        wandb.log({"sres_ulm_img": wandb.Image(sres_ulm_map)})
+                        if not cfg.skip_bmode and cfg.input_type == 'rf':
+                            # averaging B-mode frames
+                            sres_avg_img = np.nanmean(np.vstack(bmode_frames), axis=0)
+                            sres_avg_img = sres_avg_img.sum(0) if len(sres_avg_img.shape) == 3 else sres_avg_img 
+                            sres_avg_img **= cfg.gamma
+                            sres_avg_img = srgb_conv(normalize(sres_avg_img))
+                            sres_avg_map = img_color_map(img=normalize(sres_avg_img), cmap=cmap)
+                            wandb.log({"sres_avg_img": wandb.Image(sres_avg_map)})
+                        if False:
+                            # save b-mode frames as gif (for analysis purposes)
+                            from utils.video_write import imageio_write_gif
+                            frames = np.vstack(bmode_frames)[:, 0]
+                            ret = imageio_write_gif(frames)
                 
                 pbar.update(i)
 
