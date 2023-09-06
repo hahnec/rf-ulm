@@ -101,13 +101,13 @@ if __name__ == '__main__':
     bmode_frames = []
 
     # dataset init
-    if cfg.input_type == 'iq' or (cfg.input_type == 'rf' and not cfg.skip_bmode):
+    if cfg.input_type == 'iq':
         DatasetClass = PalaDatasetIq
         transforms = [ArgsToTensor(), NormalizeImage()]
         from datasets.pala_dataset.utils.collate_fn_iq import collate_fn
     elif cfg.input_type == 'rf':
         DatasetClass = PalaDatasetRf
-        transforms = [ArgsToTensor(), NormalizeVol()]
+        transforms = [ArgsToTensor(), NormalizeVol()] if cfg.skip_bmode else [ArgsToTensor(), NormalizeImage()]
         from datasets.pala_dataset.utils.collate_fn_rf import collate_fn
         cluster_obj = DBSCAN(eps=cfg.eps, min_samples=1) if cfg.eps > 0 else None
     dataset = DatasetClass(
