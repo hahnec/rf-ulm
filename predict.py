@@ -245,7 +245,7 @@ if __name__ == '__main__':
                         sres_ulm_img **= cfg.gamma
                         sres_ulm_img = srgb_conv(normalize(sres_ulm_img))
                         sres_ulm_map = img_color_map(img=normalize(sres_ulm_img), cmap=cmap)
-                        wandb.log({"input_img": wandb.Image(imgs[0])})
+                        wandb.log({"magnitude_img": wandb.Image(imgs[0][0])})
                         wandb.log({"sres_ulm_img": wandb.Image(sres_ulm_map)})
                         if not cfg.skip_bmode and cfg.input_type == 'rf':
                             # averaging B-mode frames
