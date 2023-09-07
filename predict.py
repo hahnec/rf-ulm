@@ -118,7 +118,7 @@ if __name__ == '__main__':
         upscale_factor = cfg.upscale_factor,
         transducer_interp = True,
         tile_opt = False,
-        scale_opt = False,
+        scale_opt = cfg.model.lower().__contains__('unet'),
         clutter_db = cfg.clutter_db,
         temporal_filter_opt = cfg.data_dir.lower().__contains__('rat'),
         compound_opt = True,
@@ -162,9 +162,6 @@ if __name__ == '__main__':
                 
                 # move to desired device (GPU)
                 imgs = imgs.to(device=cfg.device, dtype=torch.float32)
-
-                # upscale U-Net frames
-                if cfg.model.lower().__contains__('unet'): imgs = F.interpolate(imgs, size=(imgs.shape[-2]*cfg.upscale_factor, imgs.shape[-1]*cfg.upscale_factor), mode='bicubic', align_corners=False)
 
                 with torch.no_grad():
                     infer_start = time.process_time()
