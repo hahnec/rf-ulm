@@ -118,7 +118,7 @@ if __name__ == '__main__':
         upscale_factor = cfg.upscale_factor,
         transducer_interp = True,
         tile_opt = False,
-        scale_opt = cfg.model.lower().__contains__('unet'),
+        scale_opt = False,
         clutter_db = cfg.clutter_db,
         temporal_filter_opt = cfg.data_dir.lower().__contains__('rat'),
         compound_opt = True,
@@ -161,6 +161,9 @@ if __name__ == '__main__':
                 if not cfg.skip_bmode and cfg.input_type == 'rf': imgs = batch[3]
 
                 imgs = imgs.to(device=cfg.device, dtype=torch.float32)
+
+                # upscale U-Net frames
+                if cfg.model.lower().__contains__('unet'): imgs = F.interpolate(imgs, size=(imgs.shape[-2]*cfg.upscale_factor, imgs.shape[-1]*cfg.upscale_factor), mode='bicubic', align_corners=False)
 
                 with torch.no_grad():
                     infer_start = time.process_time()
@@ -241,6 +244,7 @@ if __name__ == '__main__':
                         sres_ulm_img **= cfg.gamma
                         sres_ulm_img = srgb_conv(normalize(sres_ulm_img))
                         sres_ulm_map = img_color_map(img=normalize(sres_ulm_img), cmap=cmap)
+                        wandb.log({"input_img": wandb.Image(imgs[0])})
                         wandb.log({"sres_ulm_img": wandb.Image(sres_ulm_map)})
                         if not cfg.skip_bmode and cfg.input_type == 'rf':
                             # averaging B-mode frames
