@@ -125,6 +125,7 @@ if __name__ == '__main__':
         pow_law_opt = cfg.pow_law_opt,
         skip_bmode = cfg.skip_bmode,
         das_b4_temporal = cfg.das_b4_temporal,
+        synth_gt = cfg.synth_gt,
     )
 
     # data-related configuration
@@ -244,6 +245,13 @@ if __name__ == '__main__':
                         sres_ulm_img = srgb_conv(normalize(sres_ulm_img))
                         sres_ulm_map = img_color_map(img=normalize(sres_ulm_img), cmap=cmap)
                         wandb.log({"sres_ulm_img": wandb.Image(sres_ulm_map)})
+                        if cfg.synth_gt:
+                            valid_pts = [p for p in all_pts_gt if p.size > 0]
+                            sres_ulm_img = tracks2img(valid_pts, img_size=img_size, scale=cfg.upscale_factor, mode=cfg.track, fps=dataset.frames_per_seq)[0]
+                            sres_ulm_img **= cfg.gamma
+                            sres_ulm_img = srgb_conv(normalize(sres_ulm_img))
+                            sres_ulm_map = img_color_map(img=normalize(sres_ulm_img), cmap=cmap)
+                            wandb.log({"synth_ulm_img": wandb.Image(sres_ulm_map)})
                         if not cfg.skip_bmode and cfg.input_type == 'rf':
                             # averaging B-mode frames
                             sres_avg_img = np.nanmean(np.vstack(bmode_frames), axis=0)
