@@ -237,12 +237,12 @@ if __name__ == '__main__':
                 # create and upload ULM frame per sequence
                 if (i+1) % dataset.frames_per_seq == 0:
                     if cfg.logging:
+                        wandb.log({"magnitude_img": wandb.Image(imgs[0][0])})
                         valid_pts = [p for p in all_pts if p.size > 0]
                         sres_ulm_img = tracks2img(valid_pts, img_size=img_size, scale=cfg.upscale_factor, mode=cfg.track, fps=dataset.frames_per_seq)[0]
                         sres_ulm_img **= cfg.gamma
                         sres_ulm_img = srgb_conv(normalize(sres_ulm_img))
                         sres_ulm_map = img_color_map(img=normalize(sres_ulm_img), cmap=cmap)
-                        wandb.log({"magnitude_img": wandb.Image(imgs[0][0])})
                         wandb.log({"sres_ulm_img": wandb.Image(sres_ulm_map)})
                         if not cfg.skip_bmode and cfg.input_type == 'rf':
                             # averaging B-mode frames
