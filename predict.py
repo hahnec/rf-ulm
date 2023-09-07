@@ -157,9 +157,10 @@ if __name__ == '__main__':
 
                 imgs, true_masks, gt_pts = batch[:3] if cfg.input_type == 'iq' else (batch[0].squeeze(0), batch[1], batch[4])
 
-                # use DAS-beamformed radio-frequency data
+                # use RF-based bmode frame
                 if not cfg.skip_bmode and cfg.input_type == 'rf': imgs = batch[3]
-
+                
+                # move to desired device (GPU)
                 imgs = imgs.to(device=cfg.device, dtype=torch.float32)
 
                 # upscale U-Net frames
