@@ -42,6 +42,30 @@ from utils.dithering import dithering
 
 normalize = lambda x: (x-x.min())/(x.max()-x.min()) if x.max()-x.min() > 0 else x-x.min()
 img_color_map = lambda img, cmap: plt.get_cmap(cmap)(img)[..., :3]
+ulm_align = lambda img, gamma, cmap: img_color_map(img=srgb_conv(normalize(img**gamma)), cmap=cmap)
+
+
+def render_ulm_frame(all_pts, imgs, img_size, cfg, fps, scale=None):
+    
+    scale = cfg.upscale_factor if scale is None else scale
+
+    if cfg.dither:
+        # dithering
+        img_shape = np.array(imgs[0].shape[-2:])[::-1] if cfg.input_type == 'rf' else img_size
+        y_factor, x_factor = img_shape / img_size
+        all_pts = dithering(all_pts, cfg.upscale_factor, cfg.upscale_factor, x_factor, y_factor)
+
+    if cfg.upscale_factor < scale and not cfg.dither:
+        sres_ulm_img, _ = tracks2img(all_pts, img_size=img_size, scale=cfg.upscale_factor, mode=cfg.track, fps=fps)
+        # upscale input frame
+        if cfg.upscale_factor != 1:
+            import cv2
+            sres_ulm_img = cv2.resize(sres_ulm_img, scale*img_size[::-1], interpolation=cv2.INTER_CUBIC)
+            sres_ulm_img[sres_ulm_img<0] = 0
+    else:
+        sres_ulm_img, _ = tracks2img(all_pts, img_size=img_size, scale=scale, mode=cfg.track, fps=fps)
+
+    return sres_ulm_img
 
 
 if __name__ == '__main__':
@@ -239,11 +263,8 @@ if __name__ == '__main__':
                 if (i+1) % dataset.frames_per_seq == 0:
                     if cfg.logging:
                         wandb.log({"magnitude_img": wandb.Image(imgs[0][0])})
-                        valid_pts = [p for p in all_pts if p.size > 0]
-                        sres_ulm_img = tracks2img(valid_pts, img_size=img_size, scale=cfg.upscale_factor, mode=cfg.track, fps=dataset.frames_per_seq)[0]
-                        sres_ulm_img **= cfg.gamma
-                        sres_ulm_img = srgb_conv(normalize(sres_ulm_img))
-                        sres_ulm_map = img_color_map(img=normalize(sres_ulm_img), cmap=cmap)
+                        sres_ulm_img = render_ulm_frame(all_pts, imgs, img_size, cfg, dataset.frames_per_seq, scale=cfg.upscale_factor)
+                        sres_ulm_map = ulm_align(sres_ulm_img, gamma=cfg.gamma, cmap=cmap)
                         wandb.log({"sres_ulm_img": wandb.Image(sres_ulm_map)})
                         if cfg.synth_gt:
                             valid_pts = [p for p in all_pts_gt if p.size > 0]
@@ -282,40 +303,18 @@ if __name__ == '__main__':
         gtru_ulm_img, _ = tracks2img(all_pts_gt, img_size=img_size, scale=10, mode='all_in')
     else:
         gtru_ulm_img = np.zeros(img_size)
-
-    # ULM rendering
+    
+    # mean image
     sres_avg_img = np.nanmean(np.vstack(bmode_frames), axis=0) if not cfg.skip_bmode and cfg.input_type == 'rf' else np.zeros_like(gtru_ulm_img)
-    img_shape = np.array(imgs[0].shape[-2:])[::-1] if cfg.input_type == 'rf' else img_size
-    if cfg.dither:
-        # dithering
-        y_factor, x_factor = img_shape / img_size
-        all_pts = dithering(all_pts, 10, cfg.upscale_factor, x_factor, y_factor)
-
-    if cfg.upscale_factor < 8 and not cfg.dither:
-        sres_ulm_img, _ = tracks2img(all_pts, img_size=img_size, scale=cfg.upscale_factor, mode=cfg.track, fps=dataset.frames_per_seq)
-        # upscale input frame
-        if cfg.upscale_factor != 1:
-            import cv2
-            sres_ulm_img = cv2.resize(sres_ulm_img, 10*img_size[::-1], interpolation=cv2.INTER_CUBIC)
-            sres_ulm_img[sres_ulm_img<0] = 0
-    else:
-        sres_ulm_img, _ = tracks2img(all_pts, img_size=img_size, scale=10, mode=cfg.track, fps=dataset.frames_per_seq)
     sres_avg_img = sres_avg_img.sum(0) if len(sres_avg_img.shape) == 3 else sres_avg_img 
 
-    # gamma
-    sres_ulm_img **= cfg.gamma
-    gtru_ulm_img **= cfg.gamma
-    sres_avg_img **= cfg.gamma
+    # ULM frame
+    sres_ulm_img = render_ulm_frame(all_pts, imgs, img_size, cfg, dataset.frames_per_seq, scale=cfg.upscale_factor)
 
-    # sRGB gamma correction
-    sres_ulm_img = srgb_conv(normalize(sres_ulm_img))
-    gtru_ulm_img = srgb_conv(normalize(gtru_ulm_img))
-    sres_avg_img = srgb_conv(normalize(sres_avg_img))
-
-    # color mapping
-    sres_ulm_map = img_color_map(img=normalize(sres_ulm_img), cmap=cmap)
-    gtru_ulm_map = img_color_map(img=normalize(gtru_ulm_img), cmap=cmap)
-    sres_avg_map = img_color_map(img=normalize(sres_avg_img), cmap=cmap)
+    # gamma, sRGB gamma correction and color mapping
+    sres_ulm_map = ulm_align(sres_ulm_img, gamma=cfg.gamma, cmap=cmap)
+    gtru_ulm_map = ulm_align(gtru_ulm_img, gamma=cfg.gamma, cmap=cmap)
+    sres_avg_map = ulm_align(sres_avg_img, gamma=cfg.gamma, cmap=cmap)
 
     if cfg.logging:
         wandb.log({"sres_ulm_img": wandb.Image(sres_ulm_map)})
