@@ -49,6 +49,9 @@ def render_ulm_frame(all_pts, imgs, img_size, cfg, fps, scale=None):
     
     scale = cfg.upscale_factor if scale is None else scale
 
+    # for point dimension consistency
+    all_pts = [p[:, :2] for p in all_pts if p.size > 0]
+
     if cfg.dither:
         # dithering
         img_shape = np.array(imgs[0].shape[-2:])[::-1] if cfg.input_type == 'rf' else img_size
