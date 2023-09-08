@@ -291,7 +291,7 @@ if __name__ == '__main__':
         y_factor, x_factor = img_shape / img_size
         all_pts = dithering(all_pts, 10, cfg.upscale_factor, x_factor, y_factor)
 
-    if cfg.upscale_factor < 10 and not cfg.dither:
+    if cfg.upscale_factor < 8 and not cfg.dither:
         sres_ulm_img, _ = tracks2img(all_pts, img_size=img_size, scale=cfg.upscale_factor, mode=cfg.track, fps=dataset.frames_per_seq)
         # upscale input frame
         if cfg.upscale_factor != 1:
