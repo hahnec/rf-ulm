@@ -135,7 +135,6 @@ if __name__ == '__main__':
     cfg.wv_idcs = [0] if cfg.input_type == 'iq' or (cfg.input_type == 'rf' and not cfg.skip_bmode) else cfg.wv_idcs
     origin = np.array([cfg.origin_x, cfg.origin_z])
     img_size = np.array([84, 143]) if cfg.input_type == 'rf' else dataset.img_size
-    if cfg.data_dir.lower().__contains__('rat'): img_size = np.array([84, 128])     # prevent gaps in wavefront localization due to 128
     cmap = 'hot' if str(cfg.data_dir).lower().__contains__('rat') else 'inferno'
 
     # transformation
