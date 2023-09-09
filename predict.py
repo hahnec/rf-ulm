@@ -18,7 +18,7 @@ import matplotlib.pyplot as plt
 from sklearn.metrics import roc_curve
 from sklearn.metrics import precision_recall_curve
 from sklearn.cluster import DBSCAN
-from skimage.transform import rescale
+from skimage.transform import resize
 from skimage.metrics import structural_similarity as ssim
 from simple_tracker.tracks2img import tracks2img
 
@@ -52,6 +52,13 @@ def render_ulm_frame(all_pts, imgs, img_size, cfg, fps, scale=None):
     # for point dimension consistency
     all_pts = [p[:, :2] for p in all_pts if p.size > 0]
 
+    # consider 
+    if cfg.model == 'sgspcn' and cfg.skip_bmode:
+        s = 128/143
+        all_pts = [p[:, 0]/s for p in all_pts if p.size > 0]
+        old_size = img_size
+        img_size[1] = 128
+
     if cfg.dither:
         # dithering
         img_shape = np.array(imgs[0].shape[-2:])[::-1] if cfg.input_type == 'rf' else img_size
@@ -60,13 +67,15 @@ def render_ulm_frame(all_pts, imgs, img_size, cfg, fps, scale=None):
 
     if cfg.upscale_factor < scale and not cfg.dither:
         sres_ulm_img, _ = tracks2img(all_pts, img_size=img_size, scale=cfg.upscale_factor, mode=cfg.track, fps=fps)
-        # upscale input frame
         if cfg.upscale_factor != 1:
             import cv2
             sres_ulm_img = cv2.resize(sres_ulm_img, scale*img_size[::-1], interpolation=cv2.INTER_CUBIC)
             sres_ulm_img[sres_ulm_img<0] = 0
     else:
         sres_ulm_img, _ = tracks2img(all_pts, img_size=img_size, scale=scale, mode=cfg.track, fps=fps)
+
+    if img_size[1] == 128:
+        sres_ulm_img = resize(sres_ulm_img, (sres_ulm_img.shape[0], old_size[1]*cfg.upscale_factor), anti_aliasing=False)
 
     return sres_ulm_img
 
