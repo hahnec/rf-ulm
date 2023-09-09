@@ -51,33 +51,35 @@ def render_ulm_frame(all_pts, imgs, img_size, cfg, fps, scale=None):
 
     # for point dimension consistency
     all_pts = [p[:, :2] for p in all_pts if p.size > 0]
+    
+    # keep original variable
+    ref_size = img_size.copy()
 
     # consider 
     if cfg.model == 'sgspcn' and cfg.skip_bmode:
-        s = 128/img_size[1]
-        d = 128-img_size[1] / 2
+        s = 128/ref_size[1]
+        d = 128-ref_size[1] / 2
         all_pts = [np.array([p[:, 0]*s, p[:, 1]]).T for p in all_pts if p.size > 0]
-        old_size = img_size.copy()
-        img_size[1] = 128
+        old_size = ref_size.copy()
+        ref_size[1] = 128
 
     if cfg.dither:
         # dithering
-        img_shape = np.array(imgs[0].shape[-2:])[::-1] if cfg.input_type == 'rf' else img_size
-        y_factor, x_factor = img_shape / img_size
+        img_shape = np.array(imgs[0].shape[-2:])[::-1] if cfg.input_type == 'rf' else ref_size
+        y_factor, x_factor = img_shape / ref_size
         all_pts = dithering(all_pts, cfg.upscale_factor, cfg.upscale_factor, x_factor, y_factor)
 
     if cfg.upscale_factor < scale and not cfg.dither:
-        sres_ulm_img, _ = tracks2img(all_pts, img_size=img_size, scale=cfg.upscale_factor, mode=cfg.track, fps=fps)
+        sres_ulm_img, _ = tracks2img(all_pts, img_size=ref_size, scale=cfg.upscale_factor, mode=cfg.track, fps=fps)
         if cfg.upscale_factor != 1:
             import cv2
-            sres_ulm_img = cv2.resize(sres_ulm_img, scale*img_size[::-1], interpolation=cv2.INTER_CUBIC)
+            sres_ulm_img = cv2.resize(sres_ulm_img, scale*ref_size[::-1], interpolation=cv2.INTER_CUBIC)
             sres_ulm_img[sres_ulm_img<0] = 0
     else:
-        sres_ulm_img, _ = tracks2img(all_pts, img_size=img_size, scale=scale, mode=cfg.track, fps=fps)
+        sres_ulm_img, _ = tracks2img(all_pts, img_size=ref_size, scale=scale, mode=cfg.track, fps=fps)
 
-    if img_size[1] == 128:
+    if ref_size[1] == 128:
         sres_ulm_img = resize(sres_ulm_img, (sres_ulm_img.shape[0], old_size[1]*cfg.upscale_factor), anti_aliasing=False)
-        img_size = old_size.copy()
 
     return sres_ulm_img
 
@@ -277,7 +279,7 @@ if __name__ == '__main__':
                 if (i+1) % dataset.frames_per_seq == 0:
                     if cfg.logging:
                         wandb.log({"magnitude_img": wandb.Image(imgs[0][0])})
-                        sres_ulm_img = render_ulm_frame(all_pts, imgs, img_size.copy(), cfg, dataset.frames_per_seq, scale=cfg.upscale_factor)
+                        sres_ulm_img = render_ulm_frame(all_pts, imgs, img_size, cfg, dataset.frames_per_seq, scale=cfg.upscale_factor)
                         sres_ulm_map = ulm_align(sres_ulm_img, gamma=cfg.gamma, cmap=cmap)
                         wandb.log({"sres_ulm_img": wandb.Image(sres_ulm_map)})
                         if cfg.synth_gt:
@@ -323,7 +325,7 @@ if __name__ == '__main__':
     sres_avg_img = sres_avg_img.sum(0) if len(sres_avg_img.shape) == 3 else sres_avg_img 
 
     # ULM frame
-    sres_ulm_img = render_ulm_frame(all_pts, imgs, img_size.copy(), cfg, dataset.frames_per_seq, scale=cfg.upscale_factor)
+    sres_ulm_img = render_ulm_frame(all_pts, imgs, img_size, cfg, dataset.frames_per_seq, scale=cfg.upscale_factor)
 
     # gamma, sRGB gamma correction and color mapping
     sres_ulm_map = ulm_align(sres_ulm_img, gamma=cfg.gamma, cmap=cmap)
