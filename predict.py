@@ -58,7 +58,6 @@ def render_ulm_frame(all_pts, imgs, img_size, cfg, fps, scale=None):
         d = 128-img_size[1] / 2
         all_pts = [np.array([p[:, 0]*s, p[:, 1]]).T for p in all_pts if p.size > 0]
         old_size = img_size.copy()
-        img_size = img_size.copy()
         img_size[1] = 128
 
     if cfg.dither:
@@ -78,6 +77,7 @@ def render_ulm_frame(all_pts, imgs, img_size, cfg, fps, scale=None):
 
     if img_size[1] == 128:
         sres_ulm_img = resize(sres_ulm_img, (sres_ulm_img.shape[0], old_size[1]*cfg.upscale_factor), anti_aliasing=False)
+        img_size = old_size.copy()
 
     return sres_ulm_img
 
