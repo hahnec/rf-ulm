@@ -54,8 +54,9 @@ def render_ulm_frame(all_pts, imgs, img_size, cfg, fps, scale=None):
 
     # consider 
     if cfg.model == 'sgspcn' and cfg.skip_bmode:
-        s = 128/143
-        all_pts = [np.array([p[:, 0]*s, p[:, 1]]).T for p in all_pts if p.size > 0]
+        s = 128/img_size[1]
+        d = 128-img_size[1] / 2
+        all_pts = [np.array([p[:, 0]*s+d, p[:, 1]]).T for p in all_pts if p.size > 0]
         old_size = img_size
         img_size[1] = 128
 
