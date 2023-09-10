@@ -290,6 +290,9 @@ if __name__ == '__main__':
                         if cfg.synth_gt:
                             valid_pts = [p for p in all_pts_gt if p.size > 0]
                             sres_ulm_img = tracks2img(valid_pts, img_size=img_size, scale=cfg.upscale_factor, mode=cfg.track, fps=dataset.frames_per_seq)[0]
+                            # rectify peak outliers
+                            bidx = 83*cfg.upscale_factor-1
+                            sres_ulm_img[bidx:, ...][sres_ulm_img[bidx:, ...] > np.quantile(sres_ulm_img[bidx:, ...], .95)] = sres_ulm_img[:bidx+1, ...].max()
                             sres_ulm_map = ulm_align(sres_ulm_img, gamma=cfg.gamma, cmap=cmap)
                             wandb.log({"synth_ulm_img": wandb.Image(sres_ulm_map)})
                         if not cfg.skip_bmode and cfg.input_type == 'rf':
