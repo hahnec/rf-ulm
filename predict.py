@@ -290,17 +290,13 @@ if __name__ == '__main__':
                         if cfg.synth_gt:
                             valid_pts = [p for p in all_pts_gt if p.size > 0]
                             sres_ulm_img = tracks2img(valid_pts, img_size=img_size, scale=cfg.upscale_factor, mode=cfg.track, fps=dataset.frames_per_seq)[0]
-                            sres_ulm_img **= cfg.gamma
-                            sres_ulm_img = srgb_conv(normalize(sres_ulm_img))
-                            sres_ulm_map = img_color_map(img=normalize(sres_ulm_img), cmap=cmap)
+                            sres_ulm_map = ulm_align(sres_ulm_img, gamma=cfg.gamma, cmap=cmap)
                             wandb.log({"synth_ulm_img": wandb.Image(sres_ulm_map)})
                         if not cfg.skip_bmode and cfg.input_type == 'rf':
                             # averaging B-mode frames
                             sres_avg_img = np.nanmean(np.vstack(bmode_frames), axis=0)
                             sres_avg_img = sres_avg_img.sum(0) if len(sres_avg_img.shape) == 3 else sres_avg_img 
-                            sres_avg_img **= cfg.gamma
-                            sres_avg_img = srgb_conv(normalize(sres_avg_img))
-                            sres_avg_map = img_color_map(img=normalize(sres_avg_img), cmap=cmap)
+                            sres_avg_map = ulm_align(sres_avg_img, gamma=cfg.gamma, cmap=cmap)
                             wandb.log({"sres_avg_img": wandb.Image(sres_avg_map)})
                         if False:
                             # save b-mode frames as gif (for analysis purposes)
