@@ -52,8 +52,8 @@ for i, borders in enumerate(all_borders):
     axs2[i].set_ylim(0, line.max()*1.05)
     axs2[i].set_xlim(0, len(line))
     axs2[i].axis('off')
-    axs2[i].annotate('', xy=(0.0, 1.0), xycoords='axes fraction', xytext=(0.0, 0.0), textcoords='axes fraction', arrowprops=dict(headwidth=8*4, headlength=8*4, color='k', width=2.5*3, shrink=1.1))
-    axs2[i].annotate('', xy=(1.0, 0.0), xycoords='axes fraction', xytext=(0.0, 0.0), textcoords='axes fraction', arrowprops=dict(headwidth=8*4, headlength=8*4, color='k', width=2.5*3, shrink=1.1))
+    axs2[i].annotate('', xy=(0.0, 1.0), xycoords='axes fraction', xytext=(0.0, 0.0), textcoords='axes fraction', arrowprops=dict(headwidth=8*4, headlength=8*4, color='k', width=2.5*4, shrink=1.1))
+    axs2[i].annotate('', xy=(1.0, 0.0), xycoords='axes fraction', xytext=(0.0, 0.0), textcoords='axes fraction', arrowprops=dict(headwidth=8*4, headlength=8*4, color='k', width=2.5*4, shrink=1.1))
     #axs2[i].text(-.07, 0.45, 'Counts [a.u.]', fontsize=12, transform=axs2[i, 1].transAxes, rotation='vertical', va='center', ha='left')
     #axs2[i].text(0.4, -.125, 'Spatial axis [px]', fontsize=12, transform=axs2[i, 1].transAxes, rotation='horizontal', va='center', ha='left')
 
@@ -62,11 +62,12 @@ legend.get_frame().set_alpha(1)  # Set the alpha value as needed
 legend.set_bbox_to_anchor((1.05, 1.15))
 
 # Save each subplot as an SVG file
+fig2.set_facecolor('none')
 for i in range(4):
     filename_cross = f'cross-section_{i+1}.pdf'
     extent = axs2[i].get_window_extent().transformed(fig2.dpi_scale_trans.inverted())
     # Pad the saved area by 10% in the x-direction and 20% in the y-direction
-    fig2.savefig(filename_cross, bbox_inches=extent.expanded(1.1, 1.2))
+    fig2.savefig(filename_cross, bbox_inches=extent.expanded(1.1, 1.2), transparent=True)
 
 plt.tight_layout()
 fig2.savefig('cross-section.pdf')
