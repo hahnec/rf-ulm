@@ -77,7 +77,7 @@ def render_ulm_frame(all_pts, imgs, img_size, cfg, fps, scale=None):
         sres_ulm_img, _ = tracks2img(all_pts, img_size=ref_size, scale=cfg.upscale_factor, mode=cfg.track, fps=fps)
         if cfg.upscale_factor != 1:
             sres_ulm_img = cv2.resize(sres_ulm_img, scale*ref_size[::-1], interpolation=cv2.INTER_CUBIC)
-            sres_ulm_img[sres_ulm_img<0] = 0
+            sres_ulm_img -= sres_ulm_img.min()
     else:
         sres_ulm_img, _ = tracks2img(all_pts, img_size=ref_size, scale=scale, mode=cfg.track, fps=fps)
 
@@ -85,6 +85,7 @@ def render_ulm_frame(all_pts, imgs, img_size, cfg, fps, scale=None):
         if ref_size[0] == 256:
             # 2-D interpolation
             sres_ulm_img = cv2.resize(sres_ulm_img, scale*old_size[::-1], interpolation=cv2.INTER_CUBIC)
+            sres_ulm_img -= sres_ulm_img.min()
         else:
             # horizontal interpolation only
             x = np.arange(sres_ulm_img.shape[1])
