@@ -42,7 +42,7 @@ from utils.dithering import dithering
 
 normalize = lambda x: (x-x.min())/(x.max()-x.min()) if x.max()-x.min() > 0 else x-x.min()
 img_color_map = lambda img, cmap: plt.get_cmap(cmap)(img)[..., :3]
-truncate_outliers = lambda x, q=.005: np.where(x < np.quantile(x, q), np.quantile(x, q), np.where(x > np.quantile(x, 1-q), np.quantile(x, 1-q), x))
+truncate_outliers = lambda x, q=.001: np.where(x < np.quantile(x, q), np.quantile(x, q), np.where(x > np.quantile(x, 1-q), np.quantile(x, 1-q), x))
 ulm_align = lambda img, gamma, cmap: img_color_map(img=srgb_conv(normalize(truncate_outliers(img)**gamma)), cmap=cmap)
 
 
