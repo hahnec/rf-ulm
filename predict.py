@@ -50,7 +50,7 @@ ulm_align = lambda img, gamma, cmap: img_color_map(img=srgb_conv(normalize(trunc
 
 def render_ulm_frame(all_pts, imgs, img_size, cfg, fps, scale=None):
     
-    scale = cfg.upscale_factor if scale is None else scale
+    scale = 10 if scale is None else scale
 
     # for point dimension consistency
     all_pts = [p[:, :2] for p in all_pts if p.size > 0]
@@ -59,7 +59,7 @@ def render_ulm_frame(all_pts, imgs, img_size, cfg, fps, scale=None):
     ref_size = img_size.copy()
 
     # consider RF-based point density
-    if cfg.model == 'sgspcn' and cfg.skip_bmode and not cfg.dither:
+    if cfg.model == 'sgspcn' and cfg.skip_bmode and not cfg.dither and cfg.rescale_factor < 12:
         s = 128/ref_size[1]
         t = 256/ref_size[0]
         all_pts = [np.array([p[:, 0]*s, p[:, 1]*t]).T for p in all_pts if p.size > 0]
