@@ -48,7 +48,7 @@ truncate_outliers = lambda x, q=1e-4: np.where(x < np.quantile(x, q), np.quantil
 ulm_align = lambda img, gamma, cmap: img_color_map(img=srgb_conv(normalize(truncate_outliers(img)**gamma)), cmap=cmap)
 
 
-def render_ulm_frame(all_pts, imgs, img_size, cfg, fps, scale=None, interpol_method=1):
+def render_ulm_frame(all_pts, imgs, img_size, cfg, fps, scale=None, interpol_method=0):
     
     scale = 10 if scale is None else scale
 
@@ -291,12 +291,12 @@ if __name__ == '__main__':
                 if (i+1) % dataset.frames_per_seq == 0:
                     if cfg.logging:
                         wandb.log({"magnitude_img": wandb.Image(imgs[0][0])})
-                        sres_ulm_img = render_ulm_frame(all_pts, imgs, img_size, cfg, dataset.frames_per_seq, scale=10)
+                        sres_ulm_img = render_ulm_frame(all_pts, imgs, img_size, cfg, dataset.frames_per_seq, scale=cfg.upscale_factor)
                         sres_ulm_map = ulm_align(sres_ulm_img, gamma=cfg.gamma, cmap=cmap)
                         wandb.log({"sres_ulm_img": wandb.Image(sres_ulm_map)})
                         if cfg.synth_gt:
                             valid_pts = [p for p in all_pts_gt if p.size > 0]
-                            sres_ulm_img = tracks2img(valid_pts, img_size=img_size, scale=10, mode=cfg.track, fps=dataset.frames_per_seq)[0]
+                            sres_ulm_img = tracks2img(valid_pts, img_size=img_size, scale=cfg.upscale_factor, mode=cfg.track, fps=dataset.frames_per_seq)[0]
                             sres_ulm_map = ulm_align(sres_ulm_img, gamma=cfg.gamma, cmap=cmap)
                             wandb.log({"synth_ulm_img": wandb.Image(sres_ulm_map)})
                         if not cfg.skip_bmode and cfg.input_type == 'rf':
@@ -333,7 +333,7 @@ if __name__ == '__main__':
     sres_avg_img = sres_avg_img.sum(0) if len(sres_avg_img.shape) == 3 else sres_avg_img 
 
     # ULM frame
-    sres_ulm_img = render_ulm_frame(all_pts, imgs, img_size, cfg, dataset.frames_per_seq, scale=10)
+    sres_ulm_img = render_ulm_frame(all_pts, imgs, img_size, cfg, dataset.frames_per_seq, scale=cfg.upscale_factor)
 
     # gamma, sRGB gamma correction and color mapping
     sres_ulm_map = ulm_align(sres_ulm_img, gamma=cfg.gamma, cmap=cmap)

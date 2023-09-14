@@ -38,7 +38,7 @@ def get_inverse_mapping(dataset=None, p=6, weights_opt=False, point_num=1e3):
     synth_samples = dataset.project_points_toa_compound(synth_points * wavelength, interpol=True, extrapol=True)
     synth_samples = synth_samples.swapaxes(1, 2) * dataset.upscale_factor
 
-    t_mats = get_samples2points_mapping(synth_samples, synth_points, channel_num=128*dataset.upscale_factor, p=p, weights_opt=weights_opt)
+    t_mats = get_samples2points_mapping(synth_samples, synth_points, channel_num=143*dataset.upscale_factor, p=p, weights_opt=weights_opt)
 
     return t_mats
 
