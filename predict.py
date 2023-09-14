@@ -48,7 +48,7 @@ truncate_outliers = lambda x, q=1e-4: np.where(x < np.quantile(x, q), np.quantil
 ulm_align = lambda img, gamma, cmap: img_color_map(img=srgb_conv(normalize(truncate_outliers(img)**gamma)), cmap=cmap)
 
 
-def render_ulm_frame(all_pts, imgs, img_size, cfg, fps, scale=None, interpol_method=2):
+def render_ulm_frame(all_pts, imgs, img_size, cfg, fps, scale=None, interpol_method=1):
     
     scale = 10 if scale is None else scale
 
@@ -59,7 +59,7 @@ def render_ulm_frame(all_pts, imgs, img_size, cfg, fps, scale=None, interpol_met
     ref_size = img_size.copy()
 
     # consider RF-based point density
-    if cfg.model == 'sgspcn' and cfg.skip_bmode and not cfg.dither and cfg.rescale_factor <= 12:
+    if cfg.model == 'sgspcn' and cfg.skip_bmode and not cfg.dither and interpol_method > 0:
         s = 128/ref_size[1]
         t = 256/ref_size[0] if interpol_method == 2 else 1
         all_pts = [np.array([p[:, 0]*s, p[:, 1]*t]).T for p in all_pts if p.size > 0]
