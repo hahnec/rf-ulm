@@ -168,6 +168,7 @@ if __name__ == '__main__':
         sequences = None,
         rescale_factor = cfg.rescale_factor,
         upscale_factor = cfg.upscale_factor,
+        tx_sample_num = 143 if cfg.data_dir.lower().__contains__('rat') else 1,
         transducer_interp = True,
         tile_opt = False,
         scale_opt = cfg.model.lower().__contains__('unet'),
