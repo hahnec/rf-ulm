@@ -322,11 +322,11 @@ if __name__ == '__main__':
     all_pts = [p for p in all_pts if p.size > 0]
 
     # ground truth image
+    all_pts_gt = [p for p in all_pts_gt if p.size > 0]
     if cfg.data_dir.lower().__contains__('insilico'):
-        all_pts_gt = [p for p in all_pts_gt if p.size > 0]
         gtru_ulm_img, _ = tracks2img(all_pts_gt, img_size=img_size, scale=10, mode='all_in')
     else:
-        gtru_ulm_img = np.zeros(img_size)
+        gtru_ulm_img, _ = tracks2img(all_pts_gt, img_size=img_size, scale=cfg.upscale_factor, mode=cfg.track)
     
     # mean image
     sres_avg_img = np.nanmean(np.vstack(bmode_frames), axis=0) if not cfg.skip_bmode and cfg.input_type == 'rf' else np.zeros_like(gtru_ulm_img)
@@ -349,8 +349,7 @@ if __name__ == '__main__':
         wandb.summary['TotalRMSE'] = sres_rmse_mean
         wandb.summary['TotalRMSEstd'] = sres_rmse_std
         wandb.summary['TotalJaccard'] = torch.nanmean(errs[..., 3], axis=0)
+        wandb.summary['SSIM'] = ssim(gtru_ulm_img[:, 2*cfg.upscale_factor:-2*cfg.upscale_factor], sres_ulm_img[:, 2*cfg.upscale_factor:-2*cfg.upscale_factor], data_range=sres_ulm_img.max()-sres_ulm_img.min())
         wandb.summary['TotalParameters'] = int(str(summary(model)).split('\n')[-3].split(' ')[-1].replace(',',''))
-        if cfg.data_dir.lower().__contains__('insilico'):
-            wandb.summary['SSIM'] = ssim(gtru_ulm_img[:, 2*cfg.upscale_factor:-2*cfg.upscale_factor], sres_ulm_img[:, 2*cfg.upscale_factor:-2*cfg.upscale_factor], data_range=sres_ulm_img.max()-sres_ulm_img.min())
         wandb.save(str(Path('.') / 'logged_errors.csv'))
         wandb.finish()
