@@ -151,7 +151,6 @@ if __name__ == '__main__':
     all_pts = []
     all_pts_gt = []
     bmode_frames = []
-    target_channel_num = 143 if cfg.data_dir.lower().__contains__('rat') else 128
 
     # dataset init
     if cfg.input_type == 'iq':
@@ -169,7 +168,6 @@ if __name__ == '__main__':
         sequences = None,
         rescale_factor = cfg.rescale_factor,
         upscale_factor = cfg.upscale_factor,
-        upscale_channels = target_channel_num,
         transducer_interp = True,
         tile_opt = False,
         scale_opt = cfg.model.lower().__contains__('unet'),
@@ -193,7 +191,7 @@ if __name__ == '__main__':
     cfg.nms_size = cfg.upscale_factor if cfg.nms_size is None else cfg.nms_size
 
     # transformation
-    t_mats = get_inverse_mapping(dataset, target_channel_num, p=6, weights_opt=False, point_num=1e4) if cfg.input_type == 'rf' else np.stack([np.eye(3), np.eye(3), np.eye(3)])
+    t_mats = get_inverse_mapping(dataset, dataset.img_size[-1], p=6, weights_opt=False, point_num=1e4) if cfg.input_type == 'rf' else np.stack([np.eye(3), np.eye(3), np.eye(3)])
 
     # iterate through sequences
     sequences = list(range(121)) if str(cfg.data_dir).lower().__contains__('rat') else cfg.sequences
