@@ -283,8 +283,8 @@ if __name__ == '__main__':
                         'frame': int(i) + sequence * dataset.frames_per_seq,
                     })
 
-                # mean from bmode
-                if not cfg.skip_bmode and False:
+                # mean from bmode (skip for U-Net to reduce memory footprint)
+                if not cfg.skip_bmode and not cfg.model.lower().__contains__('unet'):
                     bmode = batch[3] if cfg.input_type == 'rf' else batch[0]
                     bmode_frames.append(bmode)
 
@@ -300,8 +300,8 @@ if __name__ == '__main__':
                             sres_ulm_img = tracks2img(valid_pts, img_size=img_size, scale=cfg.upscale_factor, mode=cfg.track, fps=dataset.frames_per_seq)[0]
                             sres_ulm_map = ulm_align(sres_ulm_img, gamma=cfg.gamma, cmap=cmap)
                             wandb.log({"synth_ulm_img": wandb.Image(sres_ulm_map)})
-                        if not cfg.skip_bmode and cfg.input_type == 'rf' and False:
-                            # averaging B-mode frames
+                        if not cfg.skip_bmode and cfg.input_type == 'rf' and not cfg.model.lower().__contains__('unet'):
+                            # averaging B-mode frames (skip for U-Net to reduce memory footprint)
                             sres_avg_img = np.nanmean(np.vstack(bmode_frames), axis=0)
                             sres_avg_img = sres_avg_img.sum(0) if len(sres_avg_img.shape) == 3 else sres_avg_img 
                             sres_avg_map = ulm_align(sres_avg_img, gamma=cfg.gamma, cmap=cmap)
