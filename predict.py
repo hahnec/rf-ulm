@@ -201,8 +201,8 @@ if __name__ == '__main__':
         dataset.read_sequence(sequence)
 
         # data loader
-        loader_args = dict(batch_size=1, num_workers=1, pin_memory=True)
-        test_loader = DataLoader(dataset, shuffle=False, drop_last=True, **loader_args)
+        loader_args = dict(batch_size=1, num_workers=0, pin_memory=False)
+        test_loader = DataLoader(dataset, shuffle=False, **loader_args)
 
         for i, batch in enumerate(test_loader):
             with tqdm(total=len(test_loader), desc=f'Frame {i}/{len(test_loader)}', unit='img') as pbar:
