@@ -15,6 +15,7 @@ import wandb
 import time
 from pathlib import Path
 import matplotlib.pyplot as plt
+from matplotlib.colors import LinearSegmentedColormap
 from scipy import interpolate
 import cv2
 from sklearn.metrics import roc_curve
@@ -46,6 +47,8 @@ normalize = lambda x: (x-x.min())/(x.max()-x.min()) if x.max()-x.min() > 0 else 
 img_color_map = lambda img, cmap: plt.get_cmap(cmap)(img)[..., :3]
 truncate_outliers = lambda x, q=1e-4: np.where(x < np.quantile(x, q), np.quantile(x, q), np.where(x > np.quantile(x, 1-q), np.quantile(x, 1-q), x))
 ulm_align = lambda img, gamma, cmap: img_color_map(img=srgb_conv(normalize(truncate_outliers(img)**gamma)), cmap=cmap)
+velo_cmap = LinearSegmentedColormap.from_list('custom_colormap', [(0, 0, 1), (0, 0, 0), (1, 0, 0)], N=2**16)
+velo_align = lambda img, gamma=1: img_color_map(img=normalize(normalize(truncate_outliers(img))**gamma), cmap=velo_cmap)
 
 
 def render_ulm_frame(all_pts, imgs, img_size, cfg, fps, scale=None, interpol_method=0):
@@ -293,7 +296,7 @@ if __name__ == '__main__':
                     if cfg.logging:
                         sres_ulm_img, velo_ulm_img = render_ulm_frame(all_pts, imgs, img_size, cfg, dataset.frames_per_seq, scale=cfg.upscale_factor)
                         sres_ulm_map = ulm_align(sres_ulm_img, gamma=cfg.gamma, cmap=cmap)
-                        velo_ulm_map = ulm_align(velo_ulm_img, gamma=cfg.gamma, cmap='RdBu')
+                        velo_ulm_map = velo_align(velo_ulm_img, gamma=cfg.gamma)
                         wandb.log({"magnitude_img": wandb.Image(imgs[0][0])})
                         wandb.log({"sres_ulm_img": wandb.Image(sres_ulm_map)})
                         wandb.log({"velo_ulm_img": wandb.Image(velo_ulm_map)})
