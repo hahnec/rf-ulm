@@ -74,12 +74,12 @@ def render_ulm_frame(all_pts, imgs, img_size, cfg, fps, scale=None, interpol_met
         all_pts = dithering(all_pts, cfg.upscale_factor, cfg.upscale_factor, x_factor, y_factor)
 
     if cfg.upscale_factor < scale and not cfg.dither:
-        sres_ulm_img, _ = tracks2img(all_pts, img_size=ref_size, scale=cfg.upscale_factor, mode=cfg.track, fps=fps)
+        sres_ulm_img, velo_ulm_img = tracks2img(all_pts, img_size=ref_size, scale=cfg.upscale_factor, mode=cfg.track, fps=fps)
         if cfg.upscale_factor != 1:
             sres_ulm_img = cv2.resize(sres_ulm_img, scale*ref_size[::-1], interpolation=cv2.INTER_CUBIC)
             sres_ulm_img[sres_ulm_img<0] = 0
     else:
-        sres_ulm_img, _ = tracks2img(all_pts, img_size=ref_size, scale=scale, mode=cfg.track, fps=fps)
+        sres_ulm_img, velo_ulm_img = tracks2img(all_pts, img_size=ref_size, scale=scale, mode=cfg.track, fps=fps)
 
     if ref_size[1] == 128:
         if ref_size[0] == 256:
@@ -93,7 +93,7 @@ def render_ulm_frame(all_pts, imgs, img_size, cfg, fps, scale=None, interpol_met
             new_x = np.linspace(0, sres_ulm_img.shape[1] - 1, old_size[1]*scale)
             sres_ulm_img = interp_func(new_x)
 
-    return sres_ulm_img
+    return sres_ulm_img, velo_ulm_img
 
 
 if __name__ == '__main__':
@@ -291,10 +291,11 @@ if __name__ == '__main__':
                 # create and upload ULM frame per sequence
                 if (i+1) % dataset.frames_per_seq == 0:
                     if cfg.logging:
-                        wandb.log({"magnitude_img": wandb.Image(imgs[0][0])})
-                        sres_ulm_img = render_ulm_frame(all_pts, imgs, img_size, cfg, dataset.frames_per_seq, scale=cfg.upscale_factor)
+                        sres_ulm_img, velo_ulm_img = render_ulm_frame(all_pts, imgs, img_size, cfg, dataset.frames_per_seq, scale=cfg.upscale_factor)
                         sres_ulm_map = ulm_align(sres_ulm_img, gamma=cfg.gamma, cmap=cmap)
+                        wandb.log({"magnitude_img": wandb.Image(imgs[0][0])})
                         wandb.log({"sres_ulm_img": wandb.Image(sres_ulm_map)})
+                        wandb.log({"velo_ulm_map": wandb.Image(velo_ulm_img)})
                         if cfg.synth_gt:
                             valid_pts = [p for p in all_pts_gt if p.size > 0]
                             sres_ulm_img = tracks2img(valid_pts, img_size=img_size, scale=cfg.upscale_factor, mode=cfg.track, fps=dataset.frames_per_seq)[0]
@@ -334,7 +335,7 @@ if __name__ == '__main__':
     sres_avg_img = sres_avg_img.sum(0) if len(sres_avg_img.shape) == 3 else sres_avg_img 
 
     # ULM frame
-    sres_ulm_img = render_ulm_frame(all_pts, imgs, img_size, cfg, dataset.frames_per_seq, scale=cfg.upscale_factor)
+    sres_ulm_img, velo_ulm_img = render_ulm_frame(all_pts, imgs, img_size, cfg, dataset.frames_per_seq, scale=cfg.upscale_factor)
 
     # gamma, sRGB gamma correction and color mapping
     sres_ulm_map = ulm_align(sres_ulm_img, gamma=cfg.gamma, cmap=cmap)
