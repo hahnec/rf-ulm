@@ -293,9 +293,10 @@ if __name__ == '__main__':
                     if cfg.logging:
                         sres_ulm_img, velo_ulm_img = render_ulm_frame(all_pts, imgs, img_size, cfg, dataset.frames_per_seq, scale=cfg.upscale_factor)
                         sres_ulm_map = ulm_align(sres_ulm_img, gamma=cfg.gamma, cmap=cmap)
+                        velo_ulm_map = ulm_align(velo_ulm_img, gamma=cfg.gamma, cmap='RdBu')
                         wandb.log({"magnitude_img": wandb.Image(imgs[0][0])})
                         wandb.log({"sres_ulm_img": wandb.Image(sres_ulm_map)})
-                        wandb.log({"velo_ulm_map": wandb.Image(velo_ulm_img)})
+                        wandb.log({"velo_ulm_img": wandb.Image(velo_ulm_map)})
                         if cfg.synth_gt:
                             valid_pts = [p for p in all_pts_gt if p.size > 0]
                             sres_ulm_img = tracks2img(valid_pts, img_size=img_size, scale=cfg.upscale_factor, mode=cfg.track, fps=dataset.frames_per_seq)[0]
