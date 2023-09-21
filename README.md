@@ -3,6 +3,8 @@
 ### Overview
 <img src="https://github.com/hahnec/rf-ulm/blob/master/docs/rf-ulm_concept.svg" width="500" scale="100%">
 
+NMS: Non-Maximum-Suppression
+Map: Geometric point transformation from RF to B-mode space
 <br>
 <br>
 
