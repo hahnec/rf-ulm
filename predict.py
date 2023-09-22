@@ -48,7 +48,7 @@ img_color_map = lambda img, cmap: plt.get_cmap(cmap)(img)[..., :3]
 truncate_outliers = lambda x, q=1e-4: np.where(x < np.quantile(x, q), np.quantile(x, q), np.where(x > np.quantile(x, 1-q), np.quantile(x, 1-q), x))
 ulm_scale = lambda img, gamma: srgb_conv(normalize(truncate_outliers(img)**gamma))
 ulm_align = lambda img, gamma, cmap: img_color_map(img=ulm_scale(img, gamma), cmap=cmap)
-velo_cmap = LinearSegmentedColormap.from_list('custom_colormap', [(0, 1/3, 1), (0, 0, 0), (1, 1/3, 0)], N=2**8)
+velo_cmap = LinearSegmentedColormap.from_list('custom_colormap', [(2/3, 1, 1),(0, 1/3, 1), (0, 0, 0), (1, 1/3, 0), (1, 1, 2/3)], N=2**8)
 
 
 def render_ulm_frame(all_pts, imgs, img_size, cfg, fps, scale=None, interpol_method=0):
@@ -298,8 +298,8 @@ if __name__ == '__main__':
                         sres_ulm_map = ulm_align(sres_ulm_img, gamma=cfg.gamma, cmap=cmap)
                         velo_ulm_map = np.zeros_like(velo_ulm_img)
                         velo_ulm_map[velo_ulm_img>0] = ulm_scale(velo_ulm_img[velo_ulm_img>0], gamma=cfg.gamma)
-                        velo_ulm_map[velo_ulm_img<0] = ulm_scale(velo_ulm_img[velo_ulm_img<0].abs(), gamma=cfg.gamma)*-1
-                        velo_ulm_map = img_color_map(velo_ulm_map-velo_ulm_map.mean(), cmap=velo_cmap)
+                        velo_ulm_map[velo_ulm_img<0] = ulm_scale(abs(velo_ulm_img[velo_ulm_img<0]), gamma=cfg.gamma)*-1
+                        velo_ulm_map = img_color_map((velo_ulm_map+1)/2, cmap=velo_cmap)
                         wandb.log({"magnitude_img": wandb.Image(imgs[0][0])})
                         wandb.log({"sres_ulm_img": wandb.Image(sres_ulm_map)})
                         wandb.log({"velo_ulm_img": wandb.Image(velo_ulm_map)})
