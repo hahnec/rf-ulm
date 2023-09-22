@@ -47,8 +47,8 @@ normalize = lambda x: (x-x.min())/(x.max()-x.min()) if x.max()-x.min() > 0 else 
 img_color_map = lambda img, cmap: plt.get_cmap(cmap)(img)[..., :3]
 truncate_outliers = lambda x, q=1e-4: np.where(x < np.quantile(x, q), np.quantile(x, q), np.where(x > np.quantile(x, 1-q), np.quantile(x, 1-q), x))
 ulm_align = lambda img, gamma, cmap: img_color_map(img=srgb_conv(normalize(truncate_outliers(img)**gamma)), cmap=cmap)
-velo_cmap = LinearSegmentedColormap.from_list('custom_colormap', [(0, 0, 1), (0, 0, 0), (1, 0, 0)], N=2**16)
-velo_align = lambda img, gamma=1: img_color_map(img=normalize(normalize(truncate_outliers(img))**gamma)-np.mean(normalize(normalize(truncate_outliers(img))**gamma))+.5, cmap=velo_cmap)
+velo_cmap = LinearSegmentedColormap.from_list('custom_colormap', [(0, 1/3, 1), (0, 0, 0), (1, 1/3, 0)], N=2**8)
+velo_align = lambda img, gamma=1: img_color_map(img=normalize(truncate_outliers(img-img.min())**gamma)-np.mean(normalize(normalize(truncate_outliers(img))**gamma))+.5, cmap=velo_cmap)
 
 
 def render_ulm_frame(all_pts, imgs, img_size, cfg, fps, scale=None, interpol_method=0):
