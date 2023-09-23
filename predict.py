@@ -300,7 +300,9 @@ if __name__ == '__main__':
                         velo_ulm_map[velo_ulm_img>0] = ulm_scale(velo_ulm_img[velo_ulm_img>0], gamma=cfg.gamma)
                         velo_ulm_map[velo_ulm_img<0] = ulm_scale(abs(velo_ulm_img[velo_ulm_img<0]), gamma=cfg.gamma)*-1
                         velo_ulm_map = img_color_map((velo_ulm_map+1)/2, cmap=velo_cmap)
-                        wandb.log({"magnitude_img": wandb.Image(imgs[0][0])})
+                        bidx = imgs.shape[0] // 2
+                        wandb.log({"magnitude_img": wandb.Image(imgs[bidx][0])})
+                        wandb.log({"localization_img": wandb.Image(outputs[bidx][0])})
                         wandb.log({"sres_ulm_img": wandb.Image(sres_ulm_map)})
                         wandb.log({"velo_ulm_img": wandb.Image(velo_ulm_map)})
                         if cfg.synth_gt:
