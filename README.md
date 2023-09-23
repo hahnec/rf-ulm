@@ -1,8 +1,9 @@
 ## RF-ULM: Radio-Frequency Ultrasound Localization Microscopy
 
 ### Overview
+<div style="background-color: white;">
 <img src="https://github.com/hahnec/rf-ulm/blob/master/docs/rf-ulm_concept.svg" width="500" scale="100%" style="background-color: white;">
-
+</div>
 NMS: Non-Maximum-Suppression
 <br>
 Map: Geometric point transformation from RF to B-mode space
@@ -10,8 +11,9 @@ Map: Geometric point transformation from RF to B-mode space
 <br>
 
 ### SG-SPCN architecture
-<img src="https://github.com/hahnec/rf-ulm/blob/master/docs/rf-ulm_arch.svg" width="780" scale="100%" style="background-color: white;">
-
+<div style="background-color: white;">
+<img src="https://github.com/hahnec/rf-ulm/blob/master/docs/rf-ulm_arch.svg" width="780" scale="100%">
+</div>
 <br>
 <br>
 
