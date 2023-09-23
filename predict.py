@@ -324,10 +324,14 @@ if __name__ == '__main__':
                             ret = imageio_write_gif(frames)
 
                         # create and upload localizations as an artifact to wandb
+                        artifact_name = 'localizations'
+                        artifact_table_name = f'localizations_{i}'
+                        if wb.use_artifact(artifact_name):
+                            wb.use_artifact(artifact_name).delete()
                         table = wandb.Table(data=np.vstack(all_pts_indices), columns=['x','z','amplitude','wave_index','frame_index'])
                         table.config = cfg
-                        artifact = wandb.Artifact('localizations', type='dataset')
-                        artifact.add(table, name='localizations')
+                        artifact = wandb.Artifact(artifact_name, type='dataset')
+                        artifact.add(table, name=artifact_table_name)
                         wandb.log_artifact(artifact)
 
                 pbar.update(i)
