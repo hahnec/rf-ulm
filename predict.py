@@ -326,8 +326,8 @@ if __name__ == '__main__':
                         # create and upload localizations as an artifact to wandb
                         artifact_name = 'localizations'
                         artifact_table_name = f'localizations_{i}'
-                        if wb.use_artifact(artifact_name):
-                            wb.use_artifact(artifact_name).delete()
+                        if wb.use_artifact(f"{artifact_name}:latest"):
+                            wb.use_artifact(f"{artifact_name}:latest").delete()
                         table = wandb.Table(data=np.vstack(all_pts_indices), columns=['x','z','amplitude','wave_index','frame_index'])
                         table.config = cfg
                         artifact = wandb.Artifact(artifact_name, type='dataset')
