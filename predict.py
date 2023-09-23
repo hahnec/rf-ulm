@@ -294,18 +294,18 @@ if __name__ == '__main__':
                 # create and upload ULM frame per sequence
                 if (i+1) % dataset.frames_per_seq == 0:
                     if cfg.logging:
-                        np.savetxt('localizations.csv', np.vstack(all_pts_indices), delimiter=',', header=','.join(['x','z','amplitude','wave_index','frame_index']), comments=OmegaConf.to_yaml(cfg))                
                         sres_ulm_img, velo_ulm_img = render_ulm_frame(all_pts, imgs, img_size, cfg, dataset.frames_per_seq, scale=cfg.upscale_factor)
                         sres_ulm_map = ulm_align(sres_ulm_img, gamma=cfg.gamma, cmap=cmap)
-                        velo_ulm_map = np.zeros_like(velo_ulm_img)
-                        velo_ulm_map[velo_ulm_img>0] = ulm_scale(velo_ulm_img[velo_ulm_img>0], gamma=cfg.gamma)
-                        velo_ulm_map[velo_ulm_img<0] = ulm_scale(abs(velo_ulm_img[velo_ulm_img<0]), gamma=cfg.gamma)*-1
-                        velo_ulm_map = img_color_map((velo_ulm_map+1)/2, cmap=velo_cmap)
+                        if velo_ulm_img.sum() > 0:
+                            velo_ulm_map = np.zeros_like(velo_ulm_img)
+                            velo_ulm_map[velo_ulm_img>0] = ulm_scale(velo_ulm_img[velo_ulm_img>0], gamma=cfg.gamma)
+                            velo_ulm_map[velo_ulm_img<0] = ulm_scale(abs(velo_ulm_img[velo_ulm_img<0]), gamma=cfg.gamma)*-1
+                            velo_ulm_map = img_color_map((velo_ulm_map+1)/2, cmap=velo_cmap)
+                            wandb.log({"velo_ulm_img": wandb.Image(velo_ulm_map)})
                         bidx = imgs.shape[0] // 2
                         wandb.log({"magnitude_img": wandb.Image(imgs[bidx][0])})
                         wandb.log({"localization_img": wandb.Image(outputs[bidx][0])})
                         wandb.log({"sres_ulm_img": wandb.Image(sres_ulm_map)})
-                        wandb.log({"velo_ulm_img": wandb.Image(velo_ulm_map)})
                         if cfg.synth_gt:
                             valid_pts = [p for p in all_pts_gt if p.size > 0]
                             sres_ulm_img = tracks2img(valid_pts, img_size=img_size, scale=cfg.upscale_factor, mode=cfg.track, fps=dataset.frames_per_seq)[0]
@@ -322,7 +322,14 @@ if __name__ == '__main__':
                             from utils.video_write import imageio_write_gif
                             frames = np.vstack(bmode_frames)[:, 0]
                             ret = imageio_write_gif(frames)
-                
+
+                        # create and log the artifact to WandB
+                        table = wandb.Table(data=np.vstack(all_pts_indices), columns=['x','z','amplitude','wave_index','frame_index'])
+                        table.config = cfg
+                        artifact = wandb.Artifact('localizations', type='dataset')
+                        artifact.add(table, name='localizations')
+                        wandb.log_artifact(artifact)
+
                 pbar.update(i)
 
     errs = torch.tensor(ac_rmse_err)
