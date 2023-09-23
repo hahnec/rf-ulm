@@ -2,7 +2,7 @@
 
 ### Overview
 <div style="background-color: white;">
-<img src="https://github.com/hahnec/rf-ulm/blob/master/docs/rf-ulm_concept.svg" width="500" scale="100%" style="background-color: white;">
+<img src="https://github.com/hahnec/rf-ulm/blob/master/docs/rf-ulm_concept.svg" width="500" scale="100%">
 </div>
 NMS: Non-Maximum-Suppression
 <br>
