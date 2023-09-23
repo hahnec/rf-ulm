@@ -4,15 +4,21 @@
 <img src="https://github.com/hahnec/rf-ulm/blob/master/docs/rf-ulm_concept.svg" width="500" scale="100%">
 
 NMS: Non-Maximum-Suppression
+<br>
 Map: Geometric point transformation from RF to B-mode space
 <br>
 <br>
 
 ### SG-SPCN architecture
-<img src="https://github.com/hahnec/rf-ulm/blob/master/docs/rf-ulm_arch.svg" width="750" scale="100%">
+<img src="https://github.com/hahnec/rf-ulm/blob/master/docs/rf-ulm_arch.svg" width="780" scale="100%">
 
 <br>
 <br>
+
+### Short presentation at IUS 2023
+
+[<img src="https://img.youtube.com/vi/eJJXnXay-fU/hqdefault.jpg" width="480" height="360"
+/>](https://www.youtube.com/embed/eJJXnXay-fU)
 
 <!--
 If you use this project for your work, please cite the original [paper](https://arxiv.org/pdf/xxxx.xxxxx.pdf):
