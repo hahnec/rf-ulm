@@ -323,7 +323,7 @@ if __name__ == '__main__':
                             frames = np.vstack(bmode_frames)[:, 0]
                             ret = imageio_write_gif(frames)
 
-                        # create and log the artifact to WandB
+                        # create and upload localizations as an artifact to wandb
                         table = wandb.Table(data=np.vstack(all_pts_indices), columns=['x','z','amplitude','wave_index','frame_index'])
                         table.config = cfg
                         artifact = wandb.Artifact('localizations', type='dataset')
