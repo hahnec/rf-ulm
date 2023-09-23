@@ -246,7 +246,7 @@ if __name__ == '__main__':
                 pts_time = time.process_time() - pts_start
 
                 if len(cfg.wv_idcs) > 1:
-                    wv_list = [el for el in [wv_es_points[1][0], wv_es_points[0][0], wv_es_points[2][0]] if el.size > 0]
+                    wv_list = [el[0] for el in wv_es_points if el[0].size > 0] # unravel list
                     if len(wv_list) > 0:
                         pts = np.hstack(wv_list) if len(wv_list) > 1 else wv_list[0]
                         # fuse points using DBSCAN when eps > 0 and 
