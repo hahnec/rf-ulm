@@ -150,10 +150,8 @@ if __name__ == '__main__':
     model.load_state_dict(state_dict)
     model.eval()
 
-    ac_rmse_err = []
-    all_pts = []
-    all_pts_gt = []
-    bmode_frames = []
+    # initialize lists
+    ac_rmse_err, all_pts, all_pts_gt, all_pts_indices, bmode_frames = [], [], [], [], []
 
     # dataset init
     if cfg.input_type == 'iq':
@@ -243,21 +241,23 @@ if __name__ == '__main__':
                     mask, output = (masks[wv_idx], outputs[wv_idx]) if len(cfg.wv_idcs) > 1 else (masks, outputs)
                     es_points, gt_points = align_points(mask, gt_pts, t_mat=t_mats[wv_idx], cfg=cfg, sr_img=output)                    
                     wv_es_points.append(es_points)
+
                 pts_time = time.process_time() - pts_start
+                frame_time = time.process_time() - tic
 
                 if len(cfg.wv_idcs) > 1:
-                    wv_list = [el[0] for el in wv_es_points if el[0].size > 0] # unravel list
+                    # unravel list while adding wave and frame indices
+                    wv_list = [np.vstack([el[0], k*np.ones(el[0].shape[-1]), i*np.ones(el[0].shape[-1])]) for k, el in enumerate(wv_es_points) if el[0].size > 0]
                     if len(wv_list) > 0:
                         pts = np.hstack(wv_list) if len(wv_list) > 1 else wv_list[0]
-                        # fuse points using DBSCAN when eps > 0 and 
+                        # fuse points using DBSCAN when eps > 0
                         es_points = [cluster_points(pts[:2].T, cluster_obj=cluster_obj).T] if pts.size > 0 and cfg.eps > 0 else [pts]
                 else:
                     es_points = wv_es_points[0]
 
                 all_pts.append(es_points[0].T)
                 all_pts_gt.append(gt_points[0].T)
-
-                frame_time = time.process_time() - tic
+                all_pts_indices.append(pts.T)
                 
                 if False:
                     import matplotlib.pyplot as plt
@@ -294,6 +294,7 @@ if __name__ == '__main__':
                 # create and upload ULM frame per sequence
                 if (i+1) % dataset.frames_per_seq == 0:
                     if cfg.logging:
+                        np.savetxt('localizations.csv', np.vstack(all_pts_indices), delimiter=',', header=','.join(['x','z','amplitude','wave_index','frame_index']), comments=OmegaConf.to_yaml(cfg))                
                         sres_ulm_img, velo_ulm_img = render_ulm_frame(all_pts, imgs, img_size, cfg, dataset.frames_per_seq, scale=cfg.upscale_factor)
                         sres_ulm_map = ulm_align(sres_ulm_img, gamma=cfg.gamma, cmap=cmap)
                         velo_ulm_map = np.zeros_like(velo_ulm_img)
