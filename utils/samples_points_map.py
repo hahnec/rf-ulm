@@ -81,7 +81,7 @@ def get_samples2points_mapping(samples, points, channel_num=128, p=6, weights_op
         return loss
 
     t_mats = []
-    for wv_idx in range(3):
+    for wv_idx in range(rf_pts.shape[1]):
         # homogenize points
         sample_pts = np.array([*rf_pts[::-1, wv_idx], np.ones(rf_pts.shape[-1])])
 
