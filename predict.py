@@ -323,21 +323,6 @@ if __name__ == '__main__':
                             frames = np.vstack(bmode_frames)[:, 0]
                             ret = imageio_write_gif(frames)
 
-                        # create and upload localizations as an artifact to wandb
-                        artifact_name = 'localizations'
-                        artifact_table_name = f'localizations_{i}'
-                        artifact_alias = f'{artifact_name}_{wandb.run.id}'
-                        try:
-                            # remove previous table
-                            wandb.use_artifact(f'{artifact_alias}:v0').delete()
-                        except:
-                            pass
-                        table = wandb.Table(data=np.vstack(all_pts_indices), columns=['x','z','amplitude','wave_index','frame_index'])
-                        table.config = cfg
-                        artifact = wandb.Artifact(artifact_alias, type='dataset')
-                        artifact.add(table, name=artifact_table_name)
-                        wandb.log_artifact(artifact)
-
                 pbar.update(i)
 
     errs = torch.tensor(ac_rmse_err)
@@ -347,6 +332,16 @@ if __name__ == '__main__':
 
     # remove empty arrays
     all_pts = [p for p in all_pts if p.size > 0]
+
+    # create and upload localizations as an artifact to wandb
+    artifact_name = 'localizations'
+    artifact_table_name = f'localizations_{i}'
+    artifact_alias = f'{artifact_name}_{wandb.run.id}'
+    table = wandb.Table(data=np.vstack(all_pts_indices), columns=['x','z','amplitude','wave_index','frame_index'])
+    table.config = cfg
+    artifact = wandb.Artifact(artifact_alias, type='dataset')
+    artifact.add(table, name=artifact_table_name)
+    wandb.log_artifact(artifact)
 
     # ground truth image
     all_pts_gt = [p for p in all_pts_gt if p.size > 0]
