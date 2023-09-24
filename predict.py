@@ -254,6 +254,7 @@ if __name__ == '__main__':
                         es_points = [cluster_points(pts[:2].T, cluster_obj=cluster_obj).T] if pts.size > 0 and cfg.eps > 0 else [pts]
                 else:
                     es_points = wv_es_points[0]
+                    pts = np.vstack([wv_es_points[0][0], np.zeros(wv_es_points[0][0].shape[-1]), i*np.ones(wv_es_points[0][0].shape[-1])])
 
                 all_pts.append(es_points[0].T)
                 all_pts_gt.append(gt_points[0].T)
