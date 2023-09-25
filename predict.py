@@ -216,7 +216,7 @@ if __name__ == '__main__':
                 if not cfg.skip_bmode and cfg.input_type == 'rf': imgs = batch[3]
                 
                 # move to desired device (GPU)
-                imgs = imgs.to(device=cfg.device, dtype=torch.float32)
+                imgs = imgs[cfg.wv_idcs].to(device=cfg.device, dtype=torch.float32)
 
                 with torch.no_grad():
                     infer_start = time.process_time()
