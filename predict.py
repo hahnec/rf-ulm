@@ -336,16 +336,15 @@ if __name__ == '__main__':
 
     # create and upload localizations as an artifact to wandb
     import h5py
-    with h5py.File('localizations_{wandb.run.id}.h5', 'w') as hf:
+    with h5py.File(f'localizations_{wandb.run.id}.h5', 'w') as hf:
         arr = np.vstack(all_pts_indices)
-        dataset = hf.create_dataset('localizations', data=arr, shape=arr.shape, compression='gzip', compression_opts=9, shuffle=True)
-        dataset.attrs['columns'] = ['x', 'z', 'amplitude', 'wave_index', 'frame_index']
+        h5obj = hf.create_dataset('localizations', data=arr, shape=arr.shape, compression='gzip', compression_opts=9, shuffle=True)
+        h5obj.attrs['columns'] = ['x', 'z', 'amplitude', 'wave_index', 'frame_index']
         for k in cfg.keys():
             try:
                 dataset.attrs[k] = data['config'][k]
             except:
                 pass
-    del all_pts_indices, arr
     artifact = wandb.Artifact(f'localizations_{wandb.run.id}.h5', type='dataset')
     artifact.add_file(f'localizations_{wandb.run.id}.h5')
     wandb.log_artifact(artifact)
