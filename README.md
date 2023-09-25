@@ -19,9 +19,9 @@ Map: Geometric point transformation from RF to B-mode space
 
 ### Datasets
 
-*In vivo*: https://doi.org/10.5281/zenodo.7883227
+*In vivo* (inference): https://doi.org/10.5281/zenodo.7883227
 
-*In silico* (for training): https://doi.org/10.5281/zenodo.4343435
+*In silico* (training+inference): https://doi.org/10.5281/zenodo.4343435
 <br>
 <br>
 
