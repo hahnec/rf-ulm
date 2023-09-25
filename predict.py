@@ -345,9 +345,10 @@ if __name__ == '__main__':
                 dataset.attrs[k] = data['config'][k]
             except:
                 pass
-    artifact = wandb.Artifact(f'localizations_{wandb.run.id}.h5', type='dataset')
-    artifact.add_file(f'localizations_{wandb.run.id}.h5')
-    wandb.log_artifact(artifact)
+    if cfg.logging:
+        artifact = wandb.Artifact(f'localizations_{wandb.run.id}.h5', type='dataset')
+        artifact.add_file(f'localizations_{wandb.run.id}.h5')
+        wandb.log_artifact(artifact)
 
     # ground truth image
     all_pts_gt = [p for p in all_pts_gt if p.size > 0]
