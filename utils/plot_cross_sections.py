@@ -8,9 +8,9 @@ path = Path(path)
 filenames = list(path.resolve().iterdir())
 filenames = [filenames[4], filenames[2], filenames[0], filenames[3], filenames[5], filenames[1]]
 labels = [x.name.split('_')[0] for x in filenames]
-labels = ['Ground truth', 'RS', 'GULM', 'U-Net', 'mSPCN', 'SG-SPCN']
+labels = ['Ground truth', 'Radial sym.', 'GULM', 'U-Net', 'mSPCN', 'SG-SPCN']
 colors = ['red', 'gray', 'violet', 'blue', 'orange', 'green']
-linestyles = ['-', (0, (1, 1)), (0, (3, 5, 1, 5, 1, 5)), ':', '-.', '--']
+linestyles = ['-', (0, (1, 1)), (5, (10, 3)), ':', '-.', '--']
 
 crop_borders_1 = [240, 538, 1030, 238]
 crop_borders_2 = [310, 45, 980, 750]
