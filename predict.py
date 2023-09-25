@@ -335,13 +335,14 @@ if __name__ == '__main__':
     all_pts = [p for p in all_pts if p.size > 0]
 
     # create and upload localizations as an artifact to wandb
-    artifact_name = 'localizations'
-    artifact_table_name = f'localizations_{i}'
-    artifact_alias = f'{artifact_name}_{wandb.run.id}'
-    table = wandb.Table(data=np.vstack(all_pts_indices), columns=['x','z','amplitude','wave_index','frame_index'])
-    table.config = cfg
-    artifact = wandb.Artifact(artifact_alias, type='dataset')
-    artifact.add(table, name=artifact_table_name)
+    import pickle
+    table_dict = {'data': np.vstack(all_pts_indices).tolist()}
+    table_dict['columns'] = ['x','z','amplitude','wave_index','frame_index']
+    table_dict['config'] = cfg
+    with open(f'localizations_{wandb.run.id}.pkl', 'wb') as file:
+        pickle.dump(table_dict, file)
+    artifact = wandb.Artifact(f'localizations_{wandb.run.id}.pkl', type='dataset')
+    artifact.add_file(f'localizations_{wandb.run.id}.pkl')
     wandb.log_artifact(artifact)
 
     # ground truth image
