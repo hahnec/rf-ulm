@@ -335,14 +335,19 @@ if __name__ == '__main__':
     all_pts = [p for p in all_pts if p.size > 0]
 
     # create and upload localizations as an artifact to wandb
-    import pickle
-    table_dict = {'data': np.vstack(all_pts_indices).tolist()}
-    table_dict['columns'] = ['x','z','amplitude','wave_index','frame_index']
-    table_dict['config'] = cfg
-    with open(f'localizations_{wandb.run.id}.pkl', 'wb') as file:
-        pickle.dump(table_dict, file)
-    artifact = wandb.Artifact(f'localizations_{wandb.run.id}.pkl', type='dataset')
-    artifact.add_file(f'localizations_{wandb.run.id}.pkl')
+    import h5py
+    with h5py.File('localizations_{wandb.run.id}.h5', 'w') as hf:
+        arr = np.vstack(all_pts_indices)
+        dataset = hf.create_dataset('localizations', data=arr, shape=arr.shape, compression='gzip', compression_opts=9, shuffle=True)
+        dataset.attrs['columns'] = ['x', 'z', 'amplitude', 'wave_index', 'frame_index']
+        for k in cfg.keys():
+            try:
+                dataset.attrs[k] = data['config'][k]
+            except:
+                pass
+    del all_pts_indices, arr
+    artifact = wandb.Artifact(f'localizations_{wandb.run.id}.h5', type='dataset')
+    artifact.add_file(f'localizations_{wandb.run.id}.h5')
     wandb.log_artifact(artifact)
 
     # ground truth image
