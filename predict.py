@@ -355,7 +355,7 @@ if __name__ == '__main__':
         wandb.log_artifact(artifact)
 
     # ground truth image
-    all_pts_gt = [p for p in all_pts_gt if p.size > 0]
+    all_pts_gt = [p for p in all_pts_gt if p.size > 0] if len(all_pts_gt) > 0 else []
     if cfg.data_dir.lower().__contains__('insilico'):
         gtru_ulm_img, _ = tracks2img(all_pts_gt, img_size=img_size, scale=10, mode='all_in')
     else:
