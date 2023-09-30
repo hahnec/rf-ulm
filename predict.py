@@ -111,6 +111,9 @@ if __name__ == '__main__':
     torch.manual_seed(cfg.seed)
     np.random.seed(cfg.seed)
 
+    # transducer channels
+    cfg.channel_num = dataset.img_size[-1] if not hasattr(cfg, 'channel_num') or cfg.channel_num is None else cfg.channel_num
+
     if cfg.logging:
         wb = wandb.init(project='SR-ULM-INFER', resume='allow', anonymous='must', config=cfg, group=str(cfg.logging))
         wb.config.update(cfg)
@@ -169,6 +172,7 @@ if __name__ == '__main__':
         sequences = None,
         rescale_factor = cfg.rescale_factor,
         upscale_factor = cfg.upscale_factor,
+        upscale_channels = cfg.channel_num,
         transducer_interp = True,
         tile_opt = False,
         scale_opt = cfg.model.lower().__contains__('unet'),
@@ -192,7 +196,7 @@ if __name__ == '__main__':
     cfg.nms_size = cfg.upscale_factor if cfg.nms_size is None else cfg.nms_size
 
     # transformation
-    t_mats = get_inverse_mapping(dataset, dataset.img_size[-1], p=6, weights_opt=False, point_num=1e4) if cfg.input_type == 'rf' else np.stack([np.eye(3), np.eye(3), np.eye(3)])
+    t_mats = get_inverse_mapping(dataset, channel_num=cfg.channel_num, p=6, weights_opt=False, point_num=1e4) if cfg.input_type == 'rf' else np.stack([np.eye(3), np.eye(3), np.eye(3)])
 
     # iterate through sequences
     sequences = list(range(121)) if str(cfg.data_dir).lower().__contains__('rat') else cfg.sequences
