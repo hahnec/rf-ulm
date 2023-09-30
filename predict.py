@@ -112,7 +112,7 @@ if __name__ == '__main__':
     np.random.seed(cfg.seed)
 
     # transducer channels
-    cfg.channel_num = dataset.img_size[-1] if not hasattr(cfg, 'channel_num') or cfg.channel_num is None else cfg.channel_num
+    cfg.channel_num = 128 if not hasattr(cfg, 'channel_num') or cfg.channel_num is None else cfg.channel_num
 
     if cfg.logging:
         wb = wandb.init(project='SR-ULM-INFER', resume='allow', anonymous='must', config=cfg, group=str(cfg.logging))
