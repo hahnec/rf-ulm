@@ -4,7 +4,7 @@ from datasets.pala_dataset.utils.radial_pala import radial_pala
 from datasets.pala_dataset.utils.pala_error import rmse_unique
 
 
-def align_points(masks, gt_pts, t_mat, cfg, sr_img=None):
+def align_points(masks, gt_pts, t_mat, cfg, sr_img=None, stretch_opt=False):
     
     # gt points alignment
     gt_points = []
@@ -12,6 +12,7 @@ def align_points(masks, gt_pts, t_mat, cfg, sr_img=None):
         nan_mask = torch.isnan(batch_gt_pts.squeeze()).sum(-1) > 0
         gt_rearranged = batch_gt_pts[~nan_mask].T if nan_mask.numel() > 1 else batch_gt_pts[nan_mask].T.squeeze(1)
         gt_rearranged = np.array(gt_rearranged)[:, ::-1] - np.array([[cfg.origin_x], [cfg.origin_z]]) if len(gt_rearranged) > 0 else gt_rearranged
+        if stretch_opt and len(gt_rearranged)>0: gt_rearranged[1] /= 2
         gt_points.append(gt_rearranged)
 
     # extract indices from predicted map
@@ -30,10 +31,12 @@ def align_points(masks, gt_pts, t_mat, cfg, sr_img=None):
             pts = es_indices[es_indices[:, 0]==i, :]
             es_pts = np.vstack([pts[:, 1], pts[:, 2], np.ones(len(pts[:, 2]))])
             es_pts = (t_mat @ es_pts)[:2, :]
+            if stretch_opt: es_pts[0] *= (128/143)
             es_pts -= np.array([[cfg.origin_x], [cfg.origin_z]])
         else:
             es_pts = es_indices[es_indices[:, 0]==i, 1:].T
             es_pts /= cfg.upscale_factor
+            if stretch_opt: es_pts[0] /= 2
             es_pts = np.flipud(es_pts)
         es_pts = np.vstack([es_pts, confidence[:, es_indices[:, 0]==i]]) if confidence.size > 0 else es_pts
 

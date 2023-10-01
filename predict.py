@@ -106,13 +106,14 @@ if __name__ == '__main__':
 
     # override loaded configuration with CLI arguments
     cfg = OmegaConf.merge(cfg, OmegaConf.from_cli())
+    cfg.invivo = cfg.data_dir.lower().__contains__('rat')
 
     # for reproducibility
     torch.manual_seed(cfg.seed)
     np.random.seed(cfg.seed)
 
     # transducer channels
-    cfg.channel_num = 128 if not hasattr(cfg, 'channel_num') or cfg.channel_num is None else cfg.channel_num
+    cfg.channel_num = 128 if not cfg.invivo or not hasattr(cfg, 'channel_num') or cfg.channel_num is None else cfg.channel_num
 
     if cfg.logging:
         wb = wandb.init(project='SR-ULM-INFER', resume='allow', anonymous='must', config=cfg, group=str(cfg.logging))
@@ -174,10 +175,10 @@ if __name__ == '__main__':
         upscale_factor = cfg.upscale_factor,
         upscale_channels = cfg.channel_num,
         transducer_interp = True,
-        tile_opt = False,
         scale_opt = cfg.model.lower().__contains__('unet'),
+        bmode_depth_scale = 2 if cfg.invivo else 1,
         clutter_db = cfg.clutter_db,
-        temporal_filter_opt = cfg.data_dir.lower().__contains__('rat'),
+        temporal_filter_opt = cfg.invivo,
         compound_opt = True,
         pow_law_opt = cfg.pow_law_opt,
         skip_bmode = cfg.skip_bmode,
@@ -243,7 +244,7 @@ if __name__ == '__main__':
                 wv_es_points = []
                 for wv_idx in cfg.wv_idcs:
                     mask, output = (masks[wv_idx], outputs[wv_idx]) if len(cfg.wv_idcs) > 1 else (masks, outputs)
-                    es_points, gt_points = align_points(mask, gt_pts, t_mat=t_mats[wv_idx], cfg=cfg, sr_img=output)                    
+                    es_points, gt_points = align_points(mask, gt_pts, t_mat=t_mats[wv_idx], cfg=cfg, sr_img=output, stretch_opt=cfg.invivo)                    
                     wv_es_points.append(es_points)
 
                 pts_time = time.process_time() - pts_start
