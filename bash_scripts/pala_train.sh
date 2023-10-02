@@ -1,6 +1,6 @@
 #!/bin/bash
 
-#SBATCH --job-name="sr-ulm_train"
+#SBATCH --job-name="rf-ulm_train"
 #SBATCH --time=18:00:00
 
 #SBATCH --mail-user=christopher.hahne@unibe.ch
@@ -11,16 +11,16 @@
 #SBATCH --account=ws_00000
 #SBATCH --partition=gpu-invest
 #SBATCH --gres=gpu:rtx3090:1
-#SBATCH --array=1-3%3
+#SBATCH --array=1-1%5
 
 module load Python/3.9.5-GCCcore-10.3.0
 module load CUDA/11.8.0
 
-source ~/20_sr-ulm/venv/bin/activate
+source ~/20_rf-ulm/venv/bin/activate
 
 python3 -c "import torch; print(torch.cuda.is_available())"
 
-param_store=~/20_sr-ulm/bash_scripts/array_pala_params.txt
+param_store=~/20_rf-ulm/bash_scripts/array_pala_params_8x.txt
 
 model=$(cat $param_store | awk -v var=$SLURM_ARRAY_TASK_ID 'NR==var {print $1}')
 model_file=$(cat $param_store | awk -v var=$SLURM_ARRAY_TASK_ID 'NR==var {print $2}')

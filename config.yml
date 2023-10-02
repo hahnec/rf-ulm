@@ -1,22 +1,22 @@
 # general
 device: cuda
-logging: False
+logging: True
 seed: 3008
 
 # model
-model: mspcn
-upscale_factor: 4
+model: sgspcn
+upscale_factor: 12
 rescale_factor: 1
 input_type: rf
 skip_bmode: True
 das_b4_temporal: False
-model_file: distinctive-sea
+model_file: crimson-frost
 
 # training
 batch_size: 1
-lr: 0.001
+lr: 1e-4
 epochs: 40
-clutter_db: -50
+clutter_db: Null #-50
 fine_tune: False
 angle_threshold: Null
 
@@ -26,20 +26,21 @@ lambda1: 1
 radial_sym_opt: False
 
 # paths
-data_path: PALA_data_InSilicoFlow/
+data_path: Rat18_2D_InVivoBrain #PALA_data_InSilicoFlow/
 ubx_dir: /storage/workspaces/artorg_aimi/ws_00000/chris/${data_path}
 loc_dir: /home/chris/LocalDatasets/03_PALA/${data_path}
-ubx_rat_dir: /storage/workspaces/artorg_aimi/ws_00000/chris/Rat18_2D_InVivoBrain/
-map_rat_dir: /home/chris/UbelixWorkspaces/artorg_aimi/ws_00000/chris/Rat18_2D_InVivoBrain/
-data_dir: ${loc_dir} #${ubx_dir} #${map_rat_dir} #
+map_dir: /home/chris/UbelixWorkspaces/artorg_aimi/ws_00000/chris/${data_path}
+data_dir: ${ubx_dir} #${map_dir}
 sequences: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14]
 
 # inference config
-nms_size: 3
-nms_threshold: 31
+channel_num: 143
+nms_size: 11
+nms_threshold: 20
 gamma: 0.9
-dither: True
+dither: False
 eps: .5
 pow_law_opt: False
 wv_idcs: [0,1,2]
-track: False
+track: all_in #vel_z
+synth_gt: False

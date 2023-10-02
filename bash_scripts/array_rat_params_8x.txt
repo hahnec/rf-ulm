@@ -1,0 +1,5 @@
+sgspcn twilight-jazz 15.112 rf 16 True
+unet radiant-cherry 0.2 rf 16 False
+sgspcn dazzling-armadillo 13.276 rf 16 False
+mspcn tough-fog 4.713 rf 16 False
+mspcn earthy-flower 5.083 rf 16 True
