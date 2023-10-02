@@ -1,6 +1,6 @@
 # general
 device: cuda
-logging: True
+logging: False
 seed: 3008
 
 # model
