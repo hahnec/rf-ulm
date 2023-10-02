@@ -1,6 +1,6 @@
 #!/bin/bash
 
-#SBATCH --job-name="sr-ulm_train"
+#SBATCH --job-name="rf-ulm_train"
 #SBATCH --time=23:00:00
 
 #SBATCH --mail-user=christopher.hahne@unibe.ch
@@ -15,8 +15,8 @@
 module load Python/3.9.5-GCCcore-10.3.0
 module load CUDA/11.8.0
 
-source ~/20_sr-ulm/venv/bin/activate
+source ~/20_rf-ulm/venv/bin/activate
 
 python3 -c "import torch; print(torch.cuda.is_available())"
 
-python3 ./train.py
+python3 ./train.py sequences=[16,17,18,19,20] data_dir=/storage/workspaces/artorg_aimi/ws_00000/chris/PALA_data_InSilicoFlow/

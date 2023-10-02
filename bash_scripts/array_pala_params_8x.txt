@@ -1,0 +1,5 @@
+sgspcn twilight-jazz 25.112 rf 16 True
+mspcn earthy-flower 5.083 rf 16 True
+sgspcn dazzling-armadillo 13.276 iq 16 True
+mspcn tough-fog 4.713 iq 16 True
+unet radiant-cherry 0.2 iq 16 True

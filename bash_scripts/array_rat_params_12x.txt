@@ -1,0 +1,4 @@
+sgspcn crimson-frost 20.6 rf 16 True
+mspcn misty-plant 2.05 rf 16 False
+sgspcn ethereal-yogurt .6 rf 16 False
+mspcn atomic-durian 0.3 rf 16 True
