@@ -235,7 +235,8 @@ if __name__ == '__main__':
                     if cfg.nms_threshold is None:
                         # fix number of sorted maxmimum values
                         point_num = 40
-                        th = torch.sort(torch.unique(masks[cfg.wv_idcs]), descending=True)[0][point_num-1] if point_num < len(torch.unique(masks)) else torch.inf
+                        wave_idx = cfg.wv_idcs[len(cfg.wv_idcs)//2]
+                        th = torch.sort(torch.unique(masks[wave_idx]), descending=True)[0][point_num-1] if point_num < len(torch.unique(masks)) else torch.inf
                         masks[masks<th] = 0
                     else:
                         # thresholding
