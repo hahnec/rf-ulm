@@ -30,11 +30,25 @@ Map: Geometric point transformation from RF to B-mode space
 [<img src="https://img.youtube.com/vi/eJJXnXay-fU/hqdefault.jpg" width="480" height="360"
 />](https://www.youtube.com/embed/eJJXnXay-fU)
 
+### Citation
+
+```
+@inproceedings{hahne:2023:learning,
+    author = {Christopher Hahne and Georges Chabouh and Olivier Couture and Raphael Sznitman},
+    title = {Learning Super-Resolution Ultrasound Localization Microscopy from Radio-Frequency Data},
+    booktitle= {2023 IEEE International Ultrasonics Symposium (IUS)},
+    address={},
+    month={Sep},
+    year={2023},
+    pages={1-4},
+}
+```
+
 <!--
 If you use this project for your work, please cite the original [paper](https://arxiv.org/pdf/xxxx.xxxxx.pdf):
 
 ```
-@misc{stofnet,
+@misc{rfulm:2023,
       title={RF-ULM: Deep Learning for Radio-Frequency Ultrasound Localization Microscopy}, 
       author={Christopher Hahne and Georges Chabouh and Arthur Chavignon and Olivier Couture and Raphael Sznitman},
       year={2023},
@@ -44,3 +58,7 @@ If you use this project for your work, please cite the original [paper](https://
 }
 ```
 -->
+
+## Acknowledgment
+
+This research is funded by the Hasler foundation under project number 22027.
