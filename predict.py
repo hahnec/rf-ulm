@@ -345,7 +345,7 @@ if __name__ == '__main__':
     print('Acc. Errors: %s' % str(torch.nanmean(errs, axis=0)))
 
     # remove empty arrays
-    all_pts = [p for p in all_pts if p.size > 0]
+    all_pts = [p for p in all_pts if len(p) > 0]
 
     # create and upload localizations as an artifact to wandb
     import h5py
@@ -364,7 +364,7 @@ if __name__ == '__main__':
         wandb.log_artifact(artifact)
 
     # ground truth image
-    all_pts_gt = [p for p in all_pts_gt if p.size > 0] if len(all_pts_gt) > 0 else []
+    all_pts_gt = [p for p in all_pts_gt if len(p) > 0] if len(all_pts_gt) > 0 else []
     if cfg.data_dir.lower().__contains__('insilico'):
         gtru_ulm_img, _ = tracks2img(all_pts_gt, img_size=img_size, scale=10, mode='all_in')
     else:
