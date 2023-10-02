@@ -1,4 +1,4 @@
-# https://github.com/sanghyun-son/EDSR-PyTorch
+# inspired by https://github.com/sanghyun-son/EDSR-PyTorch
 
 import torch.nn as nn
 import math
