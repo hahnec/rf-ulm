@@ -1,7 +1,7 @@
 import torch
 
 
-def non_max_supp_torch(frame, size=3, norm_opt=False):
+def non_max_supp_torch(frame, size=3):
 
     # ensure odd integer padding
     size = size//2*2 + 1
