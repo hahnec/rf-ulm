@@ -130,18 +130,6 @@ if __name__ == '__main__':
     elif cfg.model == 'sgspcn':
         # SG-SPCN
         model = MSPCN(upscale_factor=cfg.upscale_factor, in_channels=in_channels, semi_global_scale=16)
-    elif cfg.model == 'edsr':
-        # EDSR
-        class Args:
-            pass
-        args = Args()
-        args.n_feats = 64
-        args.n_resblocks = 16
-        args.n_colors = in_channels
-        args.rgb_range = 1
-        args.scale = (cfg.upscale_factor, cfg.upscale_factor)
-        args.res_scale = 1
-        model = EDSR(args)
     else:
         raise Exception('Model name not recognized')
 

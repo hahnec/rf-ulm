@@ -19,8 +19,6 @@ from datasets.pala_dataset.pala_iq import PalaDatasetIq
 from datasets.pala_dataset.pala_rf import PalaDatasetRf
 from models.unet import UNet, SlounUNet, SlounAdaptUNet
 from models.mspcn import MSPCN
-from models.edsr import EDSR
-from models.smv.lstm_unet import UNet_ConvLSTM
 from evaluate import evaluate
 from utils.nms_funs import non_max_supp_torch
 from utils.gauss import matlab_style_gauss2D
@@ -282,20 +280,6 @@ if __name__ == '__main__':
     elif cfg.model == 'sgspcn':
         # SG-SPCN
         model = MSPCN(upscale_factor=cfg.upscale_factor, in_channels=in_channels, semi_global_scale=16)
-    elif cfg.model == 'edsr':
-        # EDSR
-        class Args:
-            pass
-        args = Args()
-        args.n_feats = 64
-        args.n_resblocks = 16
-        args.n_colors = in_channels
-        args.rgb_range = 1
-        args.scale = (cfg.upscale_factor, cfg.upscale_factor)
-        args.res_scale = 1
-        model = EDSR(args)
-    elif cfg.model == 'smv':
-        model = UNet_ConvLSTM(n_channels=in_channels, n_classes=1, use_LSTM=True, parallel_encoder=False, lstm_layers=1)
     else:
         raise Exception('Model name not recognized')
 
