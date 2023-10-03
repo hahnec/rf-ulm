@@ -3,11 +3,11 @@ numpy==1.23.5
 Pillow==9.3.0
 tqdm==4.64.1
 wandb==0.13.5
+torch==1.12.1
+torchvision==0.13.1
 scipy
 omegaconf
 natsort
-torch
-torchvision
 torchinfo
 opencv-python
 scikit-learn
