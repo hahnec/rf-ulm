@@ -20,7 +20,7 @@ source ~/20_rf-ulm/venv/bin/activate
 
 python3 -c "import torch; print(torch.cuda.is_available())"
 
-param_store=~/20_rf-ulm/bash_scripts/array_pala_params_8x.txt
+param_store=~/20_rf-ulm/bash_scripts/array_pala_params.txt
 
 model=$(cat $param_store | awk -v var=$SLURM_ARRAY_TASK_ID 'NR==var {print $1}')
 model_file=$(cat $param_store | awk -v var=$SLURM_ARRAY_TASK_ID 'NR==var {print $2}')
