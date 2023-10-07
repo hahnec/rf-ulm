@@ -1,5 +1,7 @@
 ## RF-ULM: Radio-Frequency Ultrasound Localization Microscopy
 
+[![arXiv paper link](https://img.shields.io/badge/paper-arXiv:2306.08281-red)](https://arxiv.org/pdf/2310.01545.pdf)
+
 ### Overview
 <div style="background-color: white;">
 <img src="https://github.com/hahnec/rf-ulm/blob/master/docs/rf-ulm_concept.svg" width="500" scale="100%">
@@ -32,6 +34,8 @@ Map: Geometric point transformation from RF to B-mode space
 
 ### Citation
 
+If you use this project for your work, please cite:
+
 ```
 @inproceedings{hahne:2023:learning,
     author = {Christopher Hahne and Georges Chabouh and Olivier Couture and Raphael Sznitman},
@@ -45,8 +49,6 @@ Map: Geometric point transformation from RF to B-mode space
 ```
 
 <!--
-If you use this project for your work, please cite the original [paper](https://arxiv.org/pdf/xxxx.xxxxx.pdf):
-
 ```
 @misc{rfulm:2023,
       title={RF-ULM: Deep Learning for Radio-Frequency Ultrasound Localization Microscopy}, 
