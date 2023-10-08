@@ -14,7 +14,7 @@ model_file: crimson-frost
 
 # training
 batch_size: 1
-lr: 1e-4
+lr: 5e-4
 epochs: 40
 clutter_db: Null #-50
 fine_tune: False
@@ -26,12 +26,12 @@ lambda1: 1
 radial_sym_opt: False
 
 # paths
-data_path: Rat18_2D_InVivoBrain #PALA_data_InSilicoFlow/
+data_path: PALA_data_InSilicoFlow/ #Rat18_2D_InVivoBrain #
 ubx_dir: /storage/workspaces/artorg_aimi/ws_00000/chris/${data_path}
 loc_dir: /home/chris/LocalDatasets/03_PALA/${data_path}
 map_dir: /home/chris/UbelixWorkspaces/artorg_aimi/ws_00000/chris/${data_path}
-data_dir: ${ubx_dir} #${map_dir}
-sequences: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14]
+data_dir: ${map_dir} #${ubx_dir} #
+sequences: [0] #, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14]
 
 # inference config
 channel_num: 143
