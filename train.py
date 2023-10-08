@@ -34,7 +34,6 @@ def train_model(
         batch_size: int = 1,
         learning_rate: float = 1e-5,
         val_percent: float = 0.1,
-        img_scale: float = 0.5,
         amp: bool = False,
         weight_decay: float = 1e-8,
         momentum: float = 0.999,
@@ -95,9 +94,7 @@ def train_model(
     wb = None
     if cfg.logging:
         wb = wandb.init(project='SR-ULM-TRAIN', resume='allow', anonymous='must', config=cfg, group='train')
-        wb.config.update(
-            dict(epochs=epochs, batch_size=batch_size, learning_rate=learning_rate, val_percent=val_percent, img_scale=img_scale, amp=amp)
-        )
+        wb.config.update(dict(epochs=epochs, batch_size=batch_size, learning_rate=learning_rate, val_percent=val_percent, amp=amp))
         wandb.define_metric('epoch', step_metric='epoch')
         wandb.define_metric('train_loss', step_metric='train_step')
         wandb.define_metric('val_loss', step_metric='val_step')
@@ -116,7 +113,6 @@ def train_model(
             Training size:   {n_train}
             Validation size: {n_val}
             Device:          {cfg.device}
-            Images scaling:  {img_scale}
             Mixed Precision: {amp}
         ''')
 
@@ -296,7 +292,6 @@ if __name__ == '__main__':
         epochs=cfg.epochs,
         batch_size=cfg.batch_size,
         learning_rate=cfg.lr,
-        img_scale=0.5,
         val_percent=0.1,
         amp=False,
         cfg = cfg
