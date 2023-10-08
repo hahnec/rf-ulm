@@ -61,6 +61,6 @@ If you use this project for your work, please cite:
 ```
 -->
 
-## Acknowledgment
+### Acknowledgment
 
 This research is funded by the Hasler foundation under project number 22027.
