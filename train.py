@@ -128,8 +128,8 @@ def train_model(
     grad_scaler = torch.cuda.amp.GradScaler(enabled=amp)
     mse_loss = nn.MSELoss(reduction='mean')
     l1_loss = nn.L1Loss(reduction='mean')
-    lambda_value = 0.01 if cfg.model in ('unet', 'smv') and cfg.input_type == 'iq' else cfg.lambda1
-    criterion = lambda x, y: mse_loss(x, y) + l1_loss(x, torch.zeros_like(y)) * lambda_value
+    cfg.lambda1 = 0.01 if cfg.model in ('unet', 'smv') and cfg.input_type == 'iq' else cfg.lambda1
+    criterion = lambda x, y: mse_loss(x, y) + l1_loss(x, torch.zeros_like(y)) * cfg.lambda1
     train_step = 0
     val_step = 0
     
@@ -139,11 +139,9 @@ def train_model(
     gfilter = torch.reshape(psf_heatmap, [1, 1, g_len, g_len])
     gfilter = gfilter.to(cfg.device)
     if cfg.model.__contains__('mspcn') and cfg.input_type == 'iq':
-        cfg.amplitude = 50
+        cfg.lambda0 = 50
     elif cfg.model in ('unet', 'smv') and cfg.input_type == 'iq':
-        cfg.amplitude = 1
-    else: 
-        cfg.amplitude = cfg.lambda0
+        cfg.lambda0 = 1
 
     # transformation
     t_mats = get_inverse_mapping(dataset, p=6, weights_opt=False, point_num=1e4) if cfg.input_type == 'rf' else [[],[],[]]
@@ -175,7 +173,7 @@ def train_model(
                     # mask blurring
                     blur_masks = F.conv2d(true_masks.float(), gfilter, padding=gfilter.shape[-1]//2)
                     blur_masks /= blur_masks.max()
-                    blur_masks *= cfg.amplitude
+                    blur_masks *= cfg.lambda0
                     if cfg.model == 'mspcn' and cfg.input_type == 'iq':
                         pred_masks = F.conv2d(pred_masks, gfilter, padding=gfilter.shape[-1]//2)
                         
