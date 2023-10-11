@@ -131,7 +131,7 @@ def train_model(
     
     # mSPCN Gaussian
     g_len = 7+cfg.upscale_factor//2*2
-    psf_heatmap = torch.from_numpy(matlab_style_gauss2D(shape=(g_len,g_len), sigma=1))
+    psf_heatmap = torch.from_numpy(matlab_style_gauss2D(shape=(g_len,g_len), sigma=2))
     gfilter = torch.reshape(psf_heatmap, [1, 1, g_len, g_len])
     gfilter = gfilter.to(cfg.device)
     if cfg.model.__contains__('mspcn') and cfg.input_type == 'iq':

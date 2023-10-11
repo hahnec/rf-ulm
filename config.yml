@@ -14,7 +14,7 @@ model_file: crimson-frost
 
 # training
 batch_size: 1
-lr: 5e-4
+lr: 1e-4
 epochs: 40
 clutter_db: Null #-50
 fine_tune: False
