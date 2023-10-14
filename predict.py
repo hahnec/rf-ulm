@@ -217,7 +217,7 @@ if __name__ == '__main__':
                     infer_time = time.process_time() - infer_start
 
                 # non-maximum suppression
-                nms_start = time.process_time()
+                nms_start = time.process_time()sequence
                 if cfg.nms_size is not None:
                     masks = non_max_supp_torch(outputs, cfg.nms_size)
                     if cfg.nms_threshold is None:
@@ -248,14 +248,16 @@ if __name__ == '__main__':
 
                 if len(cfg.wv_idcs) > 1:
                     # unravel list while adding wave and frame indices
-                    wv_list = [np.vstack([el[0], k*np.ones(el[0].shape[-1]), i*np.ones(el[0].shape[-1])]) for k, el in enumerate(wv_es_points) if el[0].size > 0]
+                    frame_idcs = len(dataset)*sequence + i*np.ones(el[0].shape[-1])
+                    wv_list = [np.vstack([el[0], k*np.ones(el[0].shape[-1]), frame_idcs]) for k, el in enumerate(wv_es_points) if el[0].size > 0]
                     if len(wv_list) > 0:
                         pts = np.hstack(wv_list) if len(wv_list) > 1 else wv_list[0]
                         # fuse points using DBSCAN when eps > 0
                         es_points = [cluster_points(pts[:2].T, cluster_obj=cluster_obj).T] if pts.size > 0 and cfg.eps > 0 else [pts]
                 else:
                     es_points = wv_es_points[0]
-                    pts = np.vstack([wv_es_points[0][0], np.zeros(wv_es_points[0][0].shape[-1]), i*np.ones(wv_es_points[0][0].shape[-1])])
+                    frame_idcs = len(dataset)*sequence + i*np.ones(wv_es_points[0][0].shape[-1])
+                    pts = np.vstack([wv_es_points[0][0], np.zeros(wv_es_points[0][0].shape[-1]), frame_idcs])
 
                 all_pts.append(es_points[0].T)
                 all_pts_gt.append(gt_points[0].T)
