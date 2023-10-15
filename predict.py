@@ -217,7 +217,7 @@ if __name__ == '__main__':
                     infer_time = time.process_time() - infer_start
 
                 # non-maximum suppression
-                nms_start = time.process_time()sequence
+                nms_start = time.process_time()
                 if cfg.nms_size is not None:
                     masks = non_max_supp_torch(outputs, cfg.nms_size)
                     if cfg.nms_threshold is None:
