@@ -44,3 +44,4 @@ pow_law_opt: False
 wv_idcs: [0,1,2]
 track: all_in #vel_z
 synth_gt: False
+save_img_opt: True

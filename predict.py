@@ -216,6 +216,18 @@ if __name__ == '__main__':
                     outputs = model(imgs)
                     infer_time = time.process_time() - infer_start
 
+                # affine image warping
+                if cfg.save_image:
+                    img = normalize(outputs.squeeze().cpu().permute(2,1,0).numpy())
+                    new = np.zeros((840, 1430, 3), dtype=float)
+                    for ch in range(img.shape[-1]):
+                        amat = t_mats[ch][:2, :3].copy()
+                        amat[:2, -1] -= np.array([cfg.origin_x, cfg.origin_z]) 
+                        new[..., ch] = cv2.warpAffine(img[..., ch], amat[:2, :3]*10, (new.shape[1], new.shape[0]), flags=cv2.INTER_CUBIC)
+                    u8_img = np.round(255*img).astype(np.uint8)
+                    pil_img = Image.fromarray(u8_img)
+                    pil_img.save('./frames/'+str(i).zfill(6)+".png")
+
                 # non-maximum suppression
                 nms_start = time.process_time()
                 if cfg.nms_size is not None:
