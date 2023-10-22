@@ -224,7 +224,7 @@ if __name__ == '__main__':
                         amat = t_mats[ch][:2, :3].copy()
                         amat[:2, -1] -= np.array([cfg.origin_x, cfg.origin_z]) 
                         new[..., ch] = cv2.warpAffine(img[..., ch], amat[:2, :3]*cfg.upscale_factor, (new.shape[1], new.shape[0]), flags=cv2.INTER_CUBIC)
-                    u8_img = np.round(255*img).astype(np.uint8)
+                    u8_img = np.round(255*new).astype(np.uint8)
                     pil_img = Image.fromarray(u8_img)
                     pil_img.save('./frames/'+str(i).zfill(6)+".png")
 
