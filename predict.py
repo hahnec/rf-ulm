@@ -253,7 +253,7 @@ if __name__ == '__main__':
                 wv_es_points = []
                 for wv_idx in cfg.wv_idcs:
                     mask, output = (masks[wv_idx], outputs[wv_idx]) if len(cfg.wv_idcs) > 1 else (masks, outputs)
-                    es_points, gt_points = align_points(mask, gt_pts, t_mat=t_mats[wv_idx], cfg=cfg, sr_img=output, stretch_opt=cfg.channel_num==143)                    
+                    es_points, gt_points = align_points(mask, gt_pts, t_mat=t_mats[wv_idx], cfg=cfg, sr_img=output, stretch_opt=cfg.invivo)                    
                     wv_es_points.append(es_points)
 
                 pts_time = time.process_time() - pts_start
