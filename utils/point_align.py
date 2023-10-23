@@ -31,7 +31,7 @@ def align_points(masks, gt_pts, t_mat, cfg, sr_img=None, stretch_opt=False):
             pts = es_indices[es_indices[:, 0]==i, :]
             es_pts = np.vstack([pts[:, 1], pts[:, 2], np.ones(len(pts[:, 2]))])
             es_pts = (t_mat @ es_pts)[:2, :]
-            if stretch_opt: es_pts[0] *= (128/143)
+            if cfg.channel_num==143: es_pts[0] *= (128/143)
             es_pts -= np.array([[cfg.origin_x], [cfg.origin_z]])
         else:
             es_pts = es_indices[es_indices[:, 0]==i, 1:].T
