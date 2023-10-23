@@ -226,7 +226,8 @@ if __name__ == '__main__':
                         new[..., ch] = cv2.warpAffine(img[..., ch], amat[:2, :3]*cfg.upscale_factor, (new.shape[1], new.shape[0]), flags=cv2.INTER_CUBIC)
                     u8_img = np.round(255*new).astype(np.uint8)
                     pil_img = Image.fromarray(u8_img)
-                    pil_img.save('./frames/'+str(i).zfill(6)+".png")
+                    frame_num = sequence*len(test_loader) + i
+                    pil_img.save('./frames/'+str(frame_num).zfill(6)+".png")
 
                 # non-maximum suppression
                 nms_start = time.process_time()
