@@ -65,8 +65,8 @@ def train_model(
         upscale_channels = cfg.channel_num,
         transducer_interp = True,
         temporal_filter_opt = cfg.data_dir.lower().__contains__('rat'),
-        tile_opt = cfg.model in ('unet', 'smv'),
-        scale_opt = cfg.model in ('unet', 'smv'),
+        tile_opt = cfg.model in ('unet'),
+        scale_opt = cfg.model in ('unet'),
         angle_threshold = cfg.angle_threshold,
         )
 
@@ -87,7 +87,7 @@ def train_model(
     # create data loaders
     num_workers = min(4, os.cpu_count())
     loader_args = dict(batch_size=batch_size, num_workers=num_workers, pin_memory=True)
-    train_loader = DataLoader(train_set, collate_fn=collate_fn, shuffle=False if cfg.model == 'smv' else True, **loader_args)
+    train_loader = DataLoader(train_set, collate_fn=collate_fn, shuffle=True, **loader_args)
     val_loader = DataLoader(val_set, collate_fn=collate_fn, shuffle=False, drop_last=True, **loader_args)
 
     # instantiate logging
@@ -122,7 +122,7 @@ def train_model(
     grad_scaler = torch.cuda.amp.GradScaler(enabled=amp)
     mse_loss = nn.MSELoss(reduction='mean')
     l1_loss = nn.L1Loss(reduction='mean')
-    cfg.lambda1 = 0.01 if cfg.model in ('unet', 'smv') and cfg.input_type == 'iq' else cfg.lambda1
+    cfg.lambda1 = 0.01 if cfg.model in ('unet') and cfg.input_type == 'iq' else cfg.lambda1
     criterion = lambda x, y: mse_loss(x, y) + l1_loss(x, torch.zeros_like(y)) * cfg.lambda1
     train_step = 0
     val_step = 0
@@ -134,7 +134,7 @@ def train_model(
     gfilter = gfilter.to(cfg.device)
     if cfg.model.__contains__('mspcn') and cfg.input_type == 'iq':
         cfg.lambda0 = 50
-    elif cfg.model in ('unet', 'smv') and cfg.input_type == 'iq':
+    elif cfg.model in ('unet') and cfg.input_type == 'iq':
         cfg.lambda0 = 1
 
     # transformation
@@ -156,11 +156,6 @@ def train_model(
                 true_masks = true_masks.to(device=cfg.device, dtype=torch.long)
 
                 with torch.autocast(cfg.device if cfg.device != 'mps' else 'cpu', enabled=amp):
-                    
-                    # use batch size (without shuffling) for temporal stacking with new batch size 1
-                    if cfg.model == 'smv': 
-                        imgs = imgs.unsqueeze(0)
-                        true_masks = true_masks.sum(0, keepdim=True)
 
                     pred_masks = model(imgs)
 
