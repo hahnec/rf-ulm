@@ -210,8 +210,8 @@ if __name__ == '__main__':
 
                 if len(cfg.wv_idcs) > 1:
                     # unravel list while adding wave and frame indices
-                    frame_idcs = len(dataset)*sequence + i*np.ones(el[0].shape[-1])
-                    wv_list = [np.vstack([el[0], k*np.ones(el[0].shape[-1]), frame_idcs]) for k, el in enumerate(wv_es_points) if el[0].size > 0]
+                    wv_list = [np.vstack([el[0], k*np.ones(el[0].shape[-1]), len(dataset)*sequence + i*np.ones(el[0].shape[-1])]) 
+                                            for k, el in enumerate(wv_es_points) if el[0].size > 0]
                     if len(wv_list) > 0:
                         pts = np.hstack(wv_list) if len(wv_list) > 1 else wv_list[0]
                         # fuse points using DBSCAN when eps > 0
