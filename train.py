@@ -242,7 +242,6 @@ def train_model(
 
 if __name__ == '__main__':
 
-
     # load configuration
     cfg = OmegaConf.load('./config.yml')
 
@@ -260,13 +259,10 @@ if __name__ == '__main__':
     # model selection
     in_channels = 1 if cfg.input_type == 'rf' and cfg.rescale_factor != 1 else 2
     if cfg.model == 'unet':
-        # U-Net
         model = SlounAdaptUNet(n_channels=in_channels, n_classes=1)
     elif cfg.model == 'mspcn':
-        # mSPCN
         model = MSPCN(upscale_factor=cfg.upscale_factor, in_channels=in_channels)
     elif cfg.model == 'sgspcn':
-        # SG-SPCN
         model = MSPCN(upscale_factor=cfg.upscale_factor, in_channels=in_channels, semi_global_scale=16)
     else:
         raise Exception('Model name not recognized')
