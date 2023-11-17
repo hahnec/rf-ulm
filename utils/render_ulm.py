@@ -1,5 +1,6 @@
 import numpy as np
 import cv2
+from simple_tracker.tracks2img import tracks2img
 
 from utils.dithering import dithering
 
