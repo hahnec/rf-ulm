@@ -38,18 +38,13 @@ def evaluate(model, dataloader, epoch, val_step, criterion, amp, cfg, wb, t_mats
                 imgs = imgs.to(device=cfg.device, dtype=torch.float32, memory_format=torch.channels_last)
                 true_masks = true_masks.to(device=cfg.device, dtype=torch.float32)
 
-                # use batch size (without shuffling) for temporal stacking with new batch size 1
-                if cfg.model == 'smv':
-                    imgs = imgs.unsqueeze(0)
-                    true_masks = true_masks.sum(0, keepdim=True)
-
                 # predict the mask
                 pred_masks = model(imgs)
 
                 # mask blurring
                 blur_masks = F.conv2d(true_masks.float(), gfilter, padding=gfilter.shape[-1]//2)
                 blur_masks /= blur_masks.max()
-                blur_masks *= cfg.amplitude
+                blur_masks *= cfg.lambda0
                 if cfg.model == 'mspcn' and cfg.input_type == 'iq':
                     pred_masks = F.conv2d(pred_masks, gfilter, padding=gfilter.shape[-1]//2)
 
