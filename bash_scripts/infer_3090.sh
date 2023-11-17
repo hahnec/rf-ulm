@@ -19,4 +19,4 @@ source ~/20_rf-ulm/venv/bin/activate
 
 python3 -c "import torch; print(torch.cuda.is_available())"
 
-python3 ./predict.py clutter_db=Null pow_law_opt=True wv_idcs=[0,1,2] eps=.5 track=False dither=True logging=pala_rat
+python3 ./predict.py clutter_db=Null wv_idcs=[0,1,2] eps=.5 logging=pala_rat
