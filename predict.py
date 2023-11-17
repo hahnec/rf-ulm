@@ -32,7 +32,6 @@ from datasets.pala_dataset.utils.radial_pala import radial_pala
 from datasets.pala_dataset.utils.centroids import regional_mask
 from models.unet import UNet, SlounUNet, SlounAdaptUNet
 from models.mspcn import MSPCN
-from models.edsr import EDSR
 from utils.nms_funs import non_max_supp_torch
 from utils.point_align import align_points, get_pala_error
 from utils.samples_points_map import get_inverse_mapping
