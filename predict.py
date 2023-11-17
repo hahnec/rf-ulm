@@ -39,7 +39,6 @@ from utils.srgb_conv import srgb_conv
 from utils.utils import plot_img_and_mask
 from utils.transform import ArgsToTensor, NormalizeImage, NormalizeVol
 from utils.point_fusion import cluster_points
-from utils.dithering import dithering
 from utils.render_ulm import render_ulm_frame
 
 

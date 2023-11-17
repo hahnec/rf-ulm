@@ -1,6 +1,8 @@
 import numpy as np
 import cv2
 
+from utils.dithering import dithering
+
 
 def render_ulm_frame(all_pts, imgs, img_size, cfg, fps, scale=None, interpol_method=0):
     
