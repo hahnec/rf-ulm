@@ -131,6 +131,7 @@ if __name__ == '__main__':
     img_size = np.array([84, 143]) if cfg.input_type == 'rf' else dataset.img_size
     cmap = 'hot' if str(cfg.data_dir).lower().__contains__('rat') else 'inferno'
     cfg.nms_size = cfg.upscale_factor if cfg.nms_size is None else cfg.nms_size
+    h_acc = None
 
     # transformation
     t_mats = get_inverse_mapping(dataset, channel_num=cfg.channel_num, p=6, weights_opt=False, point_num=1e4) if cfg.input_type == 'rf' else np.stack([np.eye(3), np.eye(3), np.eye(3)])
@@ -165,7 +166,7 @@ if __name__ == '__main__':
                     infer_time = time.process_time() - infer_start
 
                 # affine image warping
-                if cfg.save_image:
+                if cfg.nms_size is None or cfg.save_image:
                     img = normalize(outputs.squeeze().cpu().permute(2,1,0).numpy())
                     new = np.zeros((84*cfg.upscale_factor, 143*cfg.upscale_factor, 3), dtype=float)
                     for ch in range(img.shape[-1]):
@@ -173,9 +174,15 @@ if __name__ == '__main__':
                         amat[:2, -1] -= np.array([cfg.origin_x, cfg.origin_z]) 
                         new[..., ch] = cv2.warpAffine(img[..., ch], amat[:2, :3]*cfg.upscale_factor, (new.shape[1], new.shape[0]), flags=cv2.INTER_CUBIC)
                     u8_img = np.round(255*new).astype(np.uint8)
-                    pil_img = Image.fromarray(u8_img)
-                    frame_num = sequence*len(test_loader) + i
-                    pil_img.save('./frames/'+str(frame_num).zfill(6)+".png")
+
+                    if cfg.save_image:
+                        pil_img = Image.fromarray(u8_img)
+                        frame_num = sequence*len(test_loader) + i
+                        pil_img.save('./frames/'+str(frame_num).zfill(6)+".png")
+
+                    # accumulate warped output frames
+                    h_np = normalize(np.mean(u8_img, -1))
+                    h_acc = h_acc + h_np/dataset.frames_per_seq if h_acc is not None else h_np/dataset.frames_per_seq
 
                 # non-maximum suppression
                 nms_start = time.process_time()
@@ -333,11 +340,12 @@ if __name__ == '__main__':
     sres_ulm_map = ulm_align(sres_ulm_img, gamma=cfg.gamma, cmap=cmap)
     gtru_ulm_map = ulm_align(gtru_ulm_img, gamma=cfg.gamma, cmap=cmap)
     sres_avg_map = ulm_align(sres_avg_img, gamma=cfg.gamma, cmap=cmap)
-
+    hacc_ulm_map = ulm_align(normalize(h_acc), gamma=cfg.gamma, cmap=cmap) if h_acc is not None else np.zeros_like(sres_ulm_img)
     if cfg.logging:
         wandb.log({"sres_ulm_img": wandb.Image(sres_ulm_map)})
         wandb.log({"gtru_ulm_img": wandb.Image(gtru_ulm_map)})
         wandb.log({"sres_avg_img": wandb.Image(sres_avg_map)})
+        wandb.log({"hacc_ulm_img": wandb.Image(hacc_ulm_map)})
         wandb.summary['Model'] = cfg.model
         wandb.summary['Type'] = cfg.input_type
         wandb.summary['TotalRMSE'] = sres_rmse_mean
