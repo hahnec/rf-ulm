@@ -130,7 +130,7 @@ if __name__ == '__main__':
     origin = np.array([cfg.origin_x, cfg.origin_z])
     img_size = np.array([84, 143]) if cfg.input_type == 'rf' else dataset.img_size
     cmap = 'hot' if str(cfg.data_dir).lower().__contains__('rat') else 'inferno'
-    cfg.nms_size = cfg.upscale_factor if cfg.nms_size is None else cfg.nms_size
+    nms_size = cfg.upscale_factor if cfg.nms_size is None else cfg.nms_size
     h_acc = None
 
     # transformation
@@ -186,8 +186,8 @@ if __name__ == '__main__':
 
                 # non-maximum suppression
                 nms_start = time.process_time()
-                if cfg.nms_size is not None:
-                    masks = non_max_supp_torch(outputs, cfg.nms_size)
+                if nms_size is not None:
+                    masks = non_max_supp_torch(outputs, nms_size)
                     if cfg.nms_threshold is None:
                         # fix number of descending maximum values
                         point_num = 40
