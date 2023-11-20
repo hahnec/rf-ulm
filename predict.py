@@ -181,6 +181,7 @@ if __name__ == '__main__':
                         pil_img.save('./frames/'+str(frame_num).zfill(6)+".png")
 
                     # accumulate warped output frames
+                    u8_img[u8_img<cfg.nms_threshold/outputs.cpu().numpy().max()*255] = 0
                     h_np = normalize(np.mean(u8_img, -1))
                     h_acc = h_acc + h_np/dataset.frames_per_seq if h_acc is not None else h_np/dataset.frames_per_seq
 
