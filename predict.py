@@ -235,8 +235,8 @@ if __name__ == '__main__':
                 if False:
                     import matplotlib.pyplot as plt
                     plt.figure()
-                    plt.plot(*gt_points[0]*10, 'rx')
-                    plt.plot(*es_points[0]*10, 'b+')
+                    plt.plot(*gt_points[0]/cfg.wavelength, 'rx')
+                    plt.plot(*es_points[0]/cfg.wavelength, 'b+')
                     plt.show()
 
                 # localization assessment
