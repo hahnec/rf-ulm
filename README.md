@@ -32,6 +32,14 @@ Map: Geometric point transformation from RF to B-mode space
 [<img src="https://img.youtube.com/vi/eJJXnXay-fU/hqdefault.jpg" width="480" height="360"
 />](https://www.youtube.com/embed/eJJXnXay-fU)
 
+### Installation
+
+It is recommended to use a UNIX-based system for development. For installation, run (or work along) the following bash script:
+
+```
+> bash install.sh
+```
+
 ### Citation
 
 If you use this project for your work, please cite:
