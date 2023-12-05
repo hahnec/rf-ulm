@@ -191,6 +191,7 @@ def train_model(
 
                 # evaluation
                 if train_step % division_step == 0 and division_step > 0 and not skip_lr_schedule:
+                    val_step = evaluate(model, val_loader, epoch, val_step, criterion, amp, cfg, wb, t_mats, gfilter)
                     histograms = {}
                     for tag, value in model.named_parameters():
                         tag = tag.replace('/', '.')
@@ -204,9 +205,6 @@ def train_model(
                             'lr': optimizer.param_groups[0]['lr'],
                             'epoch': epoch,
                         })
-                    
-                    # validation
-                    val_step = evaluate(model, val_loader, epoch, val_step, criterion, amp, cfg, wb, t_mats, gfilter)
     
         scheduler.step()
 
