@@ -51,8 +51,9 @@ def train_model(
         from datasets.pala_dataset.utils.collate_fn_iq import collate_fn
     elif cfg.input_type == 'rf':
         DatasetClass = PalaDatasetRf
+        Normalizer = NormalizeVol if cfg.skip_bmode else NormalizeImage
         rand_augment = RandomApply([RandomVerticalFlip(), GaussianBlur(5, (.6, .4)), RandomRotation(5)])
-        transforms = [ArgsToTensor(), rand_augment, RandomCropScale(crop_size, scale_factor), NormalizeVol()]
+        transforms = [ArgsToTensor(), rand_augment, RandomCropScale(crop_size, scale_factor), Normalizer()]
         from datasets.pala_dataset.utils.collate_fn_rf import collate_fn
     dataset = DatasetClass(
         dataset_path = cfg.data_dir,
