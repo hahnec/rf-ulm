@@ -28,7 +28,6 @@ from simple_tracker.tracks2img import tracks2img
 from datasets.pala_dataset.pala_iq import PalaDatasetIq
 from datasets.pala_dataset.pala_rf import PalaDatasetRf
 from datasets.pala_dataset.utils.pala_error import rmse_unique
-from datasets.pala_dataset.utils.radial_pala import radial_pala
 from datasets.pala_dataset.utils.centroids import regional_mask
 from models.unet import UNet, SlounUNet, SlounAdaptUNet
 from models.mspcn import MSPCN
