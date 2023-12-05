@@ -208,33 +208,40 @@ def train_model(
     
         scheduler.step()
 
-    # ideal threshold estimation from full frame examples
-    val_loader.transforms = [ArgsToTensor(), NormalizeImage()] if cfg.input_type == 'iq' else [ArgsToTensor(), NormalizeVol()]
-    threshold_list = []
-    for batch in val_loader:
-    
-        imgs, true_masks = batch[:2] if cfg.input_type == 'iq' else (batch[0][1], batch[1])
-        
-        # move images and labels to correct device and type
-        imgs = imgs.to(device=cfg.device, dtype=torch.float32)
-        true_masks = true_masks.to(device=cfg.device, dtype=torch.float32)
-
-        # predict the mask
-        pred_masks = model(imgs).detach()
-
-        if true_masks[0].sum() > 0 and torch.any(~torch.isnan(pred_masks)):
-            roc_threshold = estimate_threshold(true_masks[0], pred_masks[0])
-        else:
-            roc_threshold = float('NaN')
-        threshold_list.append(roc_threshold)
-    roc_threshold = np.nanmean(threshold_list)
-
+    # save weights
     if cfg.logging:
         dir_checkpoint = Path('./ckpts/')
         dir_checkpoint.mkdir(parents=True, exist_ok=True)
         state_dict = model.state_dict()
         torch.save(state_dict, str(dir_checkpoint / (wb.name+str('_ckpt_epoch{}.pth'.format(epoch)))))
         logging.info(f'Checkpoint {epoch} saved!')
+
+    # ideal threshold estimation from full frame examples
+    val_loader.transforms = [ArgsToTensor(), NormalizeImage()] if cfg.input_type == 'iq' else [ArgsToTensor(), NormalizeVol()]
+    threshold_list = []
+    for batch in val_loader:
+
+        # move images and labels to correct device and type
+        imgs, true_masks = batch[:2] if cfg.input_type == 'iq' else (batch[0][1], batch[1])
+        imgs = imgs.to(device=cfg.device, dtype=torch.float32)
+        true_masks = (true_masks>0).to(device=cfg.device, dtype=torch.bool)
+
+        # predict the mask
+        predictions = model(imgs.flatten(0,1)).detach()
+        predictions = predictions.reshape(*imgs.shape[:3], imgs.shape[-2]*cfg.upscale_factor, imgs.shape[-1]*cfg.upscale_factor)
+
+        for pred, true_mask in zip(predictions, true_masks):
+            for wv_idx in cfg.wv_idcs:
+                try:
+                    if true_mask[wv_idx].sum() > 0 and torch.any(~torch.isnan(pred[wv_idx])):
+                        roc_threshold = estimate_threshold(true_mask[wv_idx].squeeze(), pred[wv_idx].squeeze())
+                        threshold_list.append(roc_threshold)
+                except:
+                    pass
+    roc_threshold = np.mean([el for el in threshold_list if el != float('Inf') and el != float('NaN')])
+    print('mean_ROC_threshold: %s' % float(roc_threshold))
+
+    if cfg.logging:
         wb.log({'mean_ROC_threshold': roc_threshold})
         wandb.finish()
 
