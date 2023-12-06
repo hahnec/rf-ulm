@@ -158,16 +158,16 @@ def train_model(
 
                 with torch.autocast(cfg.device if cfg.device != 'mps' else 'cpu', enabled=amp):
 
-                    pred_masks = model(imgs)
+                    predictions = model(imgs)
 
                     # mask blurring
                     blur_masks = F.conv2d(true_masks.float(), gfilter, padding=gfilter.shape[-1]//2)
                     blur_masks /= blur_masks.max()
                     blur_masks *= cfg.lambda0
                     if cfg.model == 'mspcn' and cfg.input_type == 'iq':
-                        pred_masks = F.conv2d(pred_masks, gfilter, padding=gfilter.shape[-1]//2)
+                        predictions = F.conv2d(predictions, gfilter, padding=gfilter.shape[-1]//2)
                         
-                    loss = criterion(pred_masks.squeeze(1), blur_masks.squeeze(1).float())
+                    loss = criterion(predictions.squeeze(1), blur_masks.squeeze(1).float())
 
                 optimizer.zero_grad(set_to_none=True)
                 scale = grad_scaler.get_scale()
@@ -222,13 +222,13 @@ def train_model(
     for batch in val_loader:
 
         # move images and labels to correct device and type
-        imgs, true_masks = batch[:2] if cfg.input_type == 'iq' else (batch[0][1], batch[1])
+        imgs, true_masks = batch[:2] if cfg.input_type == 'iq' else (batch[0].flatten(0,1), batch[1].flatten(0,1))
         imgs = imgs.to(device=cfg.device, dtype=torch.float32)
         true_masks = (true_masks>0).to(device=cfg.device, dtype=torch.bool)
 
         # predict the mask
-        predictions = model(imgs.flatten(0,1)).detach()
-        predictions = predictions.reshape(*imgs.shape[:3], imgs.shape[-2]*cfg.upscale_factor, imgs.shape[-1]*cfg.upscale_factor)
+        predictions = model(imgs).detach()
+        predictions = predictions.reshape(batch[1].shape)
 
         for pred, true_mask in zip(predictions, true_masks):
             for wv_idx in cfg.wv_idcs:
