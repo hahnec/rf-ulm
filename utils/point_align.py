@@ -22,7 +22,7 @@ def align_points(masks, gt_pts, t_mat, cfg, sr_img=None, stretch_opt=False):
 
     # apply radial symmetry
     if cfg.radial_sym_opt and sr_img is not None and len(es_indices) > 0: 
-        es_indices[:, 1:] = radial_pala(sr_img.cpu().numpy(), es_indices[:, 1:].astype('int'), w=2)
+        es_indices[:, 1:] = radial_pala(sr_img.squeeze().cpu().numpy(), es_indices[:, 1:].astype('int'), w=2)
 
     # estimated points alignment
     es_points = []
