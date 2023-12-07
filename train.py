@@ -78,6 +78,7 @@ def train_model(
     cfg.wv_idcs = list(range(3)) if cfg.wv_idcs is None else cfg.wv_idcs
     cfg.wv_idcs = [0] if cfg.input_type == 'iq' else cfg.wv_idcs
     cfg.nms_size = cfg.upscale_factor if cfg.nms_size is None else cfg.nms_size
+    batch_size = 8 if batch_size > 8 and cfg.model in ('unet') else batch_size
 
     # split into train and validation partitions
     n_val = int(len(dataset) * val_percent)
