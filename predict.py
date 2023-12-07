@@ -111,7 +111,7 @@ if __name__ == '__main__':
         upscale_channels = cfg.channel_num,
         transducer_interp = True,
         scale_opt = cfg.model.lower().__contains__('unet'),
-        bmode_depth_scale = 2 if cfg.invivo else 1,
+        bmode_depth_scale = 2 if cfg.invivo and cfg.synth_gt else 1,
         clutter_db = cfg.clutter_db,
         temporal_filter_opt = cfg.invivo,
         compound_opt = True,
@@ -130,7 +130,7 @@ if __name__ == '__main__':
     img_size = np.array([84, 143]) if cfg.input_type == 'rf' else dataset.img_size
     cmap = 'hot' if str(cfg.data_dir).lower().__contains__('rat') else 'inferno'
     nms_size = cfg.upscale_factor if cfg.nms_size is None else cfg.nms_size
-    h_acc = None
+    h_acc, b_acc = None, None
 
     # transformation
     t_mats = get_inverse_mapping(dataset, channel_num=cfg.channel_num, p=6, weights_opt=False, point_num=1e4) if cfg.input_type == 'rf' else np.stack([np.eye(3), np.eye(3), np.eye(3)])
@@ -165,13 +165,17 @@ if __name__ == '__main__':
                     infer_time = time.process_time() - infer_start
 
                 # affine image warping
-                if cfg.nms_size is None or cfg.save_image:
-                    img = normalize(outputs.squeeze().cpu().permute(2,1,0).numpy())
-                    new = np.zeros((84*cfg.upscale_factor, 143*cfg.upscale_factor, 3), dtype=float)
+                if cfg.hacc_opt:
+                    img = normalize(outputs.squeeze(1).cpu().permute(2,1,0).numpy())
+                    new = np.zeros((84*cfg.upscale_factor, 143*cfg.upscale_factor, img.shape[-1]), dtype=float)
                     for ch in range(img.shape[-1]):
-                        amat = t_mats[ch][:2, :3].copy()
-                        amat[:2, -1] -= np.array([cfg.origin_x, cfg.origin_z]) 
-                        new[..., ch] = cv2.warpAffine(img[..., ch], amat[:2, :3]*cfg.upscale_factor, (new.shape[1], new.shape[0]), flags=cv2.INTER_CUBIC)
+                        if cfg.input_type == 'rf' and cfg.skip_bmode:
+                            amat = t_mats[ch][:2, :3].copy()
+                            amat[:2, -1] -= np.array([cfg.origin_x, cfg.origin_z])
+                            img_ch = cv2.warpAffine(img[..., ch], amat[:2, :3]*cfg.upscale_factor, (new.shape[1], new.shape[0]), flags=cv2.INTER_CUBIC)
+                        else:
+                            img_ch = img[..., ch].T
+                        new[..., ch] = img_ch
                     u8_img = np.round(255*new).astype(np.uint8)
 
                     if cfg.save_image:
@@ -208,7 +212,7 @@ if __name__ == '__main__':
                 wv_es_points = []
                 for wv_idx in cfg.wv_idcs:
                     mask, output = (masks[wv_idx], outputs[wv_idx]) if len(cfg.wv_idcs) > 1 else (masks, outputs)
-                    es_points, gt_points = align_points(mask, gt_pts, t_mat=t_mats[wv_idx], cfg=cfg, sr_img=output, stretch_opt=cfg.invivo)                    
+                    es_points, gt_points = align_points(mask, gt_pts, t_mat=t_mats[wv_idx], cfg=cfg, sr_img=output, stretch_opt=cfg.invivo and cfg.synth_gt)                    
                     wv_es_points.append(es_points)
 
                 pts_time = time.process_time() - pts_start
@@ -258,16 +262,17 @@ if __name__ == '__main__':
                         'frame': int(i) + sequence * dataset.frames_per_seq,
                     })
 
-                # mean from bmode (skip for U-Net to reduce memory footprint)
-                if not cfg.skip_bmode and not cfg.model.lower().__contains__('unet'):
+                # mean from bmode
+                if not cfg.skip_bmode or cfg.input_type == 'iq':
                     bmode = batch[3] if cfg.input_type == 'rf' else batch[0]
-                    bmode_frames.append(bmode)
+                    b_acc = b_acc + bmode/dataset.frames_per_seq if b_acc is not None else bmode/dataset.frames_per_seq
 
                 # create and upload ULM frame per sequence
                 if (i+1) % dataset.frames_per_seq == 0:
                     if cfg.logging:
                         sres_ulm_img, velo_ulm_img = render_ulm_frame(all_pts, imgs, img_size, cfg, dataset.frames_per_seq, scale=cfg.upscale_factor)
                         sres_ulm_map = ulm_align(sres_ulm_img, gamma=cfg.gamma, cmap=cmap)
+                        hacc_ulm_map = ulm_align(normalize(h_acc), gamma=cfg.gamma, cmap=cmap) if h_acc is not None else np.zeros_like(sres_ulm_img)
                         if velo_ulm_img.sum() > 0:
                             velo_ulm_map = np.zeros_like(velo_ulm_img)
                             velo_ulm_map[velo_ulm_img>0] = ulm_scale(velo_ulm_img[velo_ulm_img>0], gamma=cfg.gamma)
@@ -278,6 +283,7 @@ if __name__ == '__main__':
                         wandb.log({"magnitude_img": wandb.Image(imgs[bidx][0])})
                         wandb.log({"localization_img": wandb.Image(outputs[bidx][0])})
                         wandb.log({"sres_ulm_img": wandb.Image(sres_ulm_map)})
+                        wandb.log({"hacc_ulm_img": wandb.Image(hacc_ulm_map)})
                         if cfg.synth_gt:
                             valid_pts = [p for p in all_pts_gt if p.size > 0]
                             sres_ulm_img = tracks2img(valid_pts, img_size=img_size, scale=cfg.upscale_factor, mode=cfg.track, fps=dataset.frames_per_seq)[0]
@@ -285,9 +291,7 @@ if __name__ == '__main__':
                             wandb.log({"synth_ulm_img": wandb.Image(sres_ulm_map)})
                         if len(bmode_frames) > 0:
                             # averaging B-mode frames (skip for U-Net to reduce memory footprint)
-                            sres_avg_img = np.nanmean(np.vstack(bmode_frames), axis=0)
-                            sres_avg_img = sres_avg_img.sum(0) if len(sres_avg_img.shape) == 3 else sres_avg_img 
-                            sres_avg_map = ulm_align(sres_avg_img, gamma=cfg.gamma, cmap=cmap)
+                            sres_avg_map = ulm_align(normalize(b_acc), gamma=cfg.gamma, cmap=cmap)
                             wandb.log({"sres_avg_img": wandb.Image(sres_avg_map)})
                         if False:
                             # save b-mode frames as gif (for analysis purposes)
