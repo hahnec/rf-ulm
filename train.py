@@ -143,7 +143,7 @@ def train_model(
     t_mats = get_inverse_mapping(dataset, p=6, weights_opt=False, point_num=1e4) if cfg.input_type == 'rf' else [[],[],[]]
 
     # training
-    for epoch in range(0):  #range(1, epochs+1):
+    for epoch in range(1, epochs+1):
         # Gaussian with gradually decreasing sigma
         psf_heatmap = torch.from_numpy(matlab_style_gauss2D(shape=(g_len,g_len), sigma=float(sigmas[epochs-epoch])))
         gfilter = torch.reshape(psf_heatmap, [1, 1, g_len, g_len]).to(cfg.device)
