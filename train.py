@@ -233,23 +233,12 @@ def train_model(
 
         # predict the mask
         predictions = model(imgs).detach()
-        predictions = predictions.reshape(batch[1].shape)
+        predictions = non_max_supp_torch(predictions, cfg.nms_size)
 
-        # mask blurring
-        blur_masks = F.conv2d(true_masks.float(), gfilter, padding=gfilter.shape[-1]//2)
-        blur_masks /= blur_masks.max()
-        blur_masks *= cfg.lambda0
-        if cfg.model == 'mspcn' and cfg.input_type == 'iq':
-            predictions = F.conv2d(predictions, gfilter, padding=gfilter.shape[-1]//2)
+        if true_masks.sum() > 0 and torch.any(~torch.isnan(predictions)):
+            roc_threshold = estimate_threshold(true_masks.squeeze(), predictions.squeeze())
+            threshold_list.append(roc_threshold)
 
-        for pred, blur_mask in zip(predictions, blur_masks):
-            for wv_idx in cfg.wv_idcs:
-                try:
-                    if blur_mask[wv_idx].sum() > 0 and torch.any(~torch.isnan(pred[wv_idx])):
-                        roc_threshold = estimate_threshold(blur_mask[wv_idx].squeeze(), pred[wv_idx].squeeze())
-                        threshold_list.append(roc_threshold)
-                except:
-                    pass
     roc_threshold = np.mean([el for el in threshold_list if el != float('Inf') and el != float('NaN')])
     print('mean_ROC_threshold: %s' % float(roc_threshold))
 
