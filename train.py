@@ -132,6 +132,8 @@ def train_model(
     # Gaussian with gradually decreasing sigma
     g_len = 7+cfg.upscale_factor//2*2
     sigmas = torch.linspace(1, 3.5, epochs)
+    psf_heatmap = torch.from_numpy(matlab_style_gauss2D(shape=(g_len,g_len), sigma=float(sigmas[-1])))
+    gfilter = torch.reshape(psf_heatmap, [1, 1, g_len, g_len]).to(cfg.device)
     if cfg.model.__contains__('mspcn') and cfg.input_type == 'iq':
         cfg.lambda0 = 50
     elif cfg.model in ('unet') and cfg.input_type == 'iq':
@@ -141,7 +143,7 @@ def train_model(
     t_mats = get_inverse_mapping(dataset, p=6, weights_opt=False, point_num=1e4) if cfg.input_type == 'rf' else [[],[],[]]
 
     # training
-    for epoch in range(1, epochs+1):
+    for epoch in range(0):  #range(1, epochs+1):
         # Gaussian with gradually decreasing sigma
         psf_heatmap = torch.from_numpy(matlab_style_gauss2D(shape=(g_len,g_len), sigma=float(sigmas[epochs-epoch])))
         gfilter = torch.reshape(psf_heatmap, [1, 1, g_len, g_len]).to(cfg.device)
@@ -232,11 +234,18 @@ def train_model(
         predictions = model(imgs).detach()
         predictions = predictions.reshape(batch[1].shape)
 
-        for pred, true_mask in zip(predictions, true_masks):
+        # mask blurring
+        blur_masks = F.conv2d(true_masks.float(), gfilter, padding=gfilter.shape[-1]//2)
+        blur_masks /= blur_masks.max()
+        blur_masks *= cfg.lambda0
+        if cfg.model == 'mspcn' and cfg.input_type == 'iq':
+            predictions = F.conv2d(predictions, gfilter, padding=gfilter.shape[-1]//2)
+
+        for pred, blur_mask in zip(predictions, blur_masks):
             for wv_idx in cfg.wv_idcs:
                 try:
-                    if true_mask[wv_idx].sum() > 0 and torch.any(~torch.isnan(pred[wv_idx])):
-                        roc_threshold = estimate_threshold(true_mask[wv_idx].squeeze(), pred[wv_idx].squeeze())
+                    if blur_mask[wv_idx].sum() > 0 and torch.any(~torch.isnan(pred[wv_idx])):
+                        roc_threshold = estimate_threshold(blur_mask[wv_idx].squeeze(), pred[wv_idx].squeeze())
                         threshold_list.append(roc_threshold)
                 except:
                     pass
