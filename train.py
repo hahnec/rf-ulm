@@ -146,7 +146,7 @@ def train_model(
     # training
     for epoch in range(1, epochs+1):
         # Gaussian with gradually decreasing sigma
-        psf_heatmap = torch.from_numpy(matlab_style_gauss2D(shape=(g_len,g_len), sigma=float(sigmas[epoch])))
+        psf_heatmap = torch.from_numpy(matlab_style_gauss2D(shape=(g_len,g_len), sigma=float(sigmas[epoch-1])))
         gfilter = torch.reshape(psf_heatmap, [1, 1, g_len, g_len]).to(cfg.device)
         model.train()
         epoch_loss = 0
