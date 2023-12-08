@@ -130,8 +130,9 @@ def train_model(
     val_step = 0
 
     # Gaussian with gradually decreasing sigma
+    exp = 2
+    sigmas = torch.linspace(3.5**(-exp), 1, epochs)**(-1/exp)
     g_len = 7+cfg.upscale_factor//2*2
-    sigmas = torch.linspace(1, 3.5, epochs)
     psf_heatmap = torch.from_numpy(matlab_style_gauss2D(shape=(g_len,g_len), sigma=float(sigmas[-1])))
     gfilter = torch.reshape(psf_heatmap, [1, 1, g_len, g_len]).to(cfg.device)
     if cfg.model.__contains__('mspcn') and cfg.input_type == 'iq':
@@ -145,7 +146,7 @@ def train_model(
     # training
     for epoch in range(1, epochs+1):
         # Gaussian with gradually decreasing sigma
-        psf_heatmap = torch.from_numpy(matlab_style_gauss2D(shape=(g_len,g_len), sigma=float(sigmas[epochs-epoch])))
+        psf_heatmap = torch.from_numpy(matlab_style_gauss2D(shape=(g_len,g_len), sigma=float(sigmas[epoch])))
         gfilter = torch.reshape(psf_heatmap, [1, 1, g_len, g_len]).to(cfg.device)
         model.train()
         epoch_loss = 0
