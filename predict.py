@@ -173,6 +173,9 @@ if __name__ == '__main__':
                             amat = t_mats[ch][:2, :3].copy()
                             amat[:2, -1] -= np.array([cfg.origin_x, cfg.origin_z])
                             img_ch = cv2.warpAffine(img[..., ch], amat[:2, :3]*cfg.upscale_factor, (new.shape[1], new.shape[0]), flags=cv2.INTER_CUBIC)
+                            # remove boundary artifacts from affine image transform
+                            img_ch[:, -cfg.upscale_factor*8:] = 0
+                            img_ch[:, :cfg.upscale_factor*8] = 0
                         else:
                             img_ch = img[..., ch].T
                         new[..., ch] = img_ch
