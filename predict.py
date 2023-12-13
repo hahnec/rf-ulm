@@ -167,7 +167,10 @@ if __name__ == '__main__':
                 # affine image warping
                 if cfg.hacc_opt:
                     img = normalize(outputs.squeeze(1).cpu().permute(2,1,0).numpy())
-                    new = np.zeros((84*cfg.upscale_factor, 143*cfg.upscale_factor, img.shape[-1]), dtype=float)
+                    dims = [84*cfg.upscale_factor, 143*cfg.upscale_factor, img.shape[-1]]
+                    if cfg.invivo and cfg.synth_gt and not cfg.skip_bmode:
+                        dims[0] = dims[0]*2-cfg.upscale_factor
+                    new = np.zeros(dims, dtype=float)
                     for ch in range(img.shape[-1]):
                         if cfg.input_type == 'rf' and cfg.skip_bmode:
                             amat = t_mats[ch][:2, :3].copy()
@@ -176,6 +179,7 @@ if __name__ == '__main__':
                             # remove boundary artifacts from affine image transform
                             img_ch[:, -cfg.upscale_factor*8:] = 0
                             img_ch[:, :cfg.upscale_factor*8] = 0
+                            img_ch[-cfg.upscale_factor*8:, :] = 0
                         else:
                             img_ch = img[..., ch].T
                         new[..., ch] = img_ch
