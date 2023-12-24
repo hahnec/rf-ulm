@@ -17,7 +17,11 @@ Map: Geometric point transformation from RF to B-mode space
 <img src="https://github.com/hahnec/rf-ulm/blob/master/docs/rf-ulm_arch.svg" width="780" scale="100%">
 </div>
 <br>
-<br>
+
+### Demo
+https://github.com/hahnec/rf-ulm/assets/33809838/4f4002bb-01e1-405f-aa56-e3c6b7a3b654
+
+<b>Note</b>: colors represent localizations from each plane wave emission angle
 
 ### Datasets
 
