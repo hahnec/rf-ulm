@@ -20,7 +20,7 @@ Map: Geometric point transformation from RF to B-mode space
 
 ### Demo
 <video width="640" src="https://github.com/hahnec/rf-ulm/assets/33809838/4f4002bb-01e1-405f-aa56-e3c6b7a3b654">
-    Video tag not supported on your device.
+    Video link: https://github.com/hahnec/rf-ulm/assets/33809838/4f4002bb-01e1-405f-aa56-e3c6b7a3b654
 </video>
 
 <b>Note</b>: colors represent localizations from each plane wave emission angle
