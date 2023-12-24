@@ -1,6 +1,7 @@
 from pathlib import Path
 import imageio
 import matplotlib.pyplot as plt
+import numpy as np
 
 path = '../../Documents/insilico_paper/'
 path = Path(path)
@@ -8,7 +9,7 @@ path = Path(path)
 filenames = list(path.resolve().iterdir())
 filenames = [filenames[4], filenames[2], filenames[0], filenames[3], filenames[5], filenames[1]]
 labels = [x.name.split('_')[0] for x in filenames]
-labels = ['Ground truth', 'RS', 'G-ULM', 'U-Net', 'mSPCN', 'SG-SPCN']
+labels = ['Ground truth', 'RS', 'G-ULM', 'U-Net', 'mSPCN', 'SG-SPCN (Ours)']
 colors = ['red', 'gray', 'violet', 'blue', 'orange', 'green']
 linestyles = ['-', (0, (1, 1)), (5, (10, 3)), ':', '-.', '--']
 
@@ -48,14 +49,43 @@ for i, borders in enumerate(all_borders):
             imageio.imsave(f'gt_crop_{i+1}.png', crop)
         if fig1_opt:axs1[i, j].tick_params(top=False, bottom=False, left=False, right=False, labelleft=False, labelbottom=False)
         axs3[i].tick_params(top=False, bottom=False, left=False, right=False, labelleft=False, labelbottom=False)
-        axs2[i].tick_params(top=False, bottom=False, left=False, right=False, labelleft=False, labelbottom=False)
-    axs2[i].set_ylim(0, line.max()*1.05)
-    axs2[i].set_xlim(0, len(line))
-    axs2[i].axis('off')
-    axs2[i].annotate('', xy=(0.0, 1.0), xycoords='axes fraction', xytext=(0.0, 0.0), textcoords='axes fraction', arrowprops=dict(headwidth=8*4, headlength=8*4, color='k', width=2.5*4, shrink=1.1))
-    axs2[i].annotate('', xy=(1.0, 0.0), xycoords='axes fraction', xytext=(0.0, 0.0), textcoords='axes fraction', arrowprops=dict(headwidth=8*4, headlength=8*4, color='k', width=2.5*4, shrink=1.1))
-    #axs2[i].text(-.07, 0.45, 'Counts [a.u.]', fontsize=12, transform=axs2[i, 1].transAxes, rotation='vertical', va='center', ha='left')
-    #axs2[i].text(0.4, -.125, 'Spatial axis [px]', fontsize=12, transform=axs2[i, 1].transAxes, rotation='horizontal', va='center', ha='left')
+        #axs2[i].tick_params(top=False, bottom=True, left=True, right=False, labelleft=False, labelbottom=False)
+
+        axs2[i].set_ylim(0, line.max()*1.05)
+        axs2[i].set_xlim(0, len(line))
+        #axs2[i].axis('off')
+        arrow_settings = dict(headwidth=8 * 4, headlength=8 * 4, color='k', width=2.5 * 4, shrink=1.1, linewidth=2.0)
+        axs2[i].annotate('', xy=(0.0, 1.0), xycoords='axes fraction', xytext=(0.0, 0.0), textcoords='axes fraction', arrowprops=arrow_settings)
+        axs2[i].annotate('', xy=(1.0, 0.0), xycoords='axes fraction', xytext=(0.0, 0.0), textcoords='axes fraction', arrowprops=arrow_settings)
+
+        # Set fewer ticks with larger font size
+        if len(line) > 32:
+            desired_xticks = np.linspace(0, len(line)//4*4, len(line)//8+1).astype('int') 
+        elif len(line) > 8:
+            desired_xticks = np.linspace(0, len(line)//4*4, len(line)//4+1).astype('int') 
+        else:
+            desired_xticks = np.linspace(0, len(line)-1, len(line)-1)
+        desired_yticks = np.arange(0, 81, 40).astype('int')
+        axs2[i].set_xticks(desired_xticks)
+        axs2[i].set_yticks(desired_yticks)
+
+        # Customize ticks along the arrowed axes
+        axs2[i].tick_params(axis='both', which='both', direction='out', length=18, width=2.5 * 4)
+        axs2[i].tick_params(top=False, bottom=True, left=True, right=False, labelleft=True, labelbottom=True)
+        #axs2[i].set_xticks(axs2[i].get_xticks()[:-1])  # Leave out the last tick on the x-axis
+        #axs2[i].set_yticks(axs2[i].get_yticks()[:-1])  # Leave out the last tick on the y-axis
+        axs2[i].set_xticklabels([int(el) for el in axs2[i].get_xticks()], fontsize=24*2)
+        axs2[i].set_yticklabels([int(el) for el in axs2[i].get_yticks()], fontsize=24*2)
+
+        if False:
+            major_ticks = range(0, len(line), 1) # Set major ticks every 5th tick
+            axs2[i].set_xticks(major_ticks)
+            minor_ticks = [tick for tick in line if tick not in major_ticks]
+            axs2[i].minorticks_on()
+            axs2[i].set_xticks(minor_ticks, minor=True)
+
+        axs2[i].spines['top'].set_visible(False)
+        axs2[i].spines['right'].set_visible(False)
 
 legend = axs2[0].legend(loc='upper right', fontsize=36, bbox_transform=axs2[1].transAxes)
 legend.get_frame().set_alpha(1)  # Set the alpha value as needed
@@ -66,10 +96,16 @@ fig2.set_facecolor('none')
 for i in range(4):
     filename_cross = f'cross-section_{i+1}.pdf'
     extent = axs2[i].get_window_extent().transformed(fig2.dpi_scale_trans.inverted())
-    # Pad the saved area by 10% in the x-direction and 20% in the y-direction
-    fig2.savefig(filename_cross, bbox_inches=extent.expanded(1.1, 1.2), transparent=True)
+    # Pad the saved area by 20% in the x-direction and 30% in the y-direction
+    #extent = extent.expanded(1.2, 1.3)
+    #extent = (extent[0] - 0.2, extent[1], extent[2] - 0.3, extent[3])
+    y0scale = [0.0425, 0.06, 0.0975, 0.2725][i]
+    y1scale = [-0.019, -0.001, -0.001, -0.001][i]
+    extended_extent = extent.from_extents(extent.x0-0.6*extent.x0, extent.y0-extent.y0*y0scale, extent.x1+0.026*extent.x1, extent.y1-extent.y1*y1scale)
+
+    fig2.savefig(filename_cross, bbox_inches=extended_extent, transparent=True)
 
 plt.tight_layout()
 fig2.savefig('cross-section.pdf')
 
-plt.show()
+#plt.show()
