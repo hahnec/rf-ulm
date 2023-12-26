@@ -12,18 +12,26 @@ Map: Geometric point transformation from RF to B-mode space
 <br>
 <br>
 
-### SG-SPCN architecture
+### SG-SPCN Architecture
 <div style="background-color: white;">
 <img src="https://github.com/hahnec/rf-ulm/blob/master/docs/rf-ulm_arch.svg" width="780" scale="100%">
 </div>
 <br>
 
-### Demo
-<video src="https://github.com/hahnec/rf-ulm/assets/33809838/4f4002bb-01e1-405f-aa56-e3c6b7a3b654">
-    Video link: https://github.com/hahnec/rf-ulm/assets/33809838/4f4002bb-01e1-405f-aa56-e3c6b7a3b654
+### Demos
+#### 1. ULM Animation Demo
+<video src="https://github.com/hahnec/rf-ulm/assets/33809838/e37aee11-c07f-4d9b-8672-5a9b466edd26" controls autoplay loop muted>
+    Link: https://github.com/hahnec/rf-ulm/assets/33809838/e37aee11-c07f-4d9b-8672-5a9b466edd26
+</video>
+<b>Note</b>: The video starts with frames in slow motion and then exponentially increases the frame rate for better visualization.
+<br>
+
+#### 2. Prediction Frames Demo
+<video src="https://github.com/hahnec/rf-ulm/assets/33809838/4f4002bb-01e1-405f-aa56-e3c6b7a3b654" controls autoplay loop muted>
+    Link: https://github.com/hahnec/rf-ulm/assets/33809838/4f4002bb-01e1-405f-aa56-e3c6b7a3b654
 </video>
 
-<b>Note</b>: colors represent localizations from each plane wave emission angle
+<b>Note</b>: Colors represent localizations from each plane wave emission angle.
 
 ### Datasets
 
