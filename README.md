@@ -23,7 +23,7 @@ Map: Geometric point transformation from RF to B-mode space
 <video src="https://github.com/hahnec/rf-ulm/assets/33809838/e37aee11-c07f-4d9b-8672-5a9b466edd26" controls autoplay loop muted>
     Link: https://github.com/hahnec/rf-ulm/assets/33809838/e37aee11-c07f-4d9b-8672-5a9b466edd26
 </video>
-<b>Note</b>: The video starts with frames in slow motion and then exponentially increases the frame rate for better visualization.
+<b>Note</b>: The video starts in slow motion and then exponentially increases the frame rate for better visualization.
 <br>
 
 #### 2. Prediction Frames Demo
