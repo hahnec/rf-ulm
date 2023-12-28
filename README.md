@@ -8,7 +8,7 @@
 </div>
 NMS: Non-Maximum-Suppression
 <br>
-Map: Geometric point transformation from RF to B-mode space
+Map: Geometric point transformation from RF to B-mode coordinate space
 <br>
 <br>
 
@@ -85,4 +85,4 @@ If you use this project for your work, please cite:
 
 ### Acknowledgment
 
-This research is funded by the Hasler foundation under project number 22027.
+This research is funded by the Hasler Foundation under project number 22027.
