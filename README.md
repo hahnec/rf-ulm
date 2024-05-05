@@ -54,6 +54,8 @@ It is recommended to use a UNIX-based system for development. For installation, 
 > bash install.sh
 ```
 
+Note that the dataloader module is missing in this repository. My implementation is a hacky version of the work found at https://github.com/AChavignon/PALA, which was used as a reference in this project. When using data other than mentioned here, one would need to start writing this part from scratch. The simpletracker repository has not been used in the TMI publication and can be ignored.
+
 ### Citation
 
 If you use this project for your work, please cite:
