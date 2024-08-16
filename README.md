@@ -61,6 +61,21 @@ Note that the dataloader module is missing in this repository. My implementation
 If you use this project for your work, please cite:
 
 ```
+@article{hahne:2024:rfulm,
+  author={Hahne, Christopher and Chabouh, Georges and Chavignon, Arthur and Couture, Olivier and Sznitman, Raphael},
+  journal={IEEE Transactions on Medical Imaging}, 
+  title={RF-ULM: Ultrasound Localization Microscopy Learned from Radio-Frequency Wavefronts}, 
+  year={2024},
+  volume={},
+  number={},
+  pages={1-1},
+  keywords={Location awareness;Radio frequency;Array signal processing;Superresolution;Convolution;Ultrasonic imaging;Kernel;Super-resolution;Ultrasound;Localization;Microscopy;Deep Learning;Neural Network;Beamforming},
+  doi={10.1109/TMI.2024.3391297}
+  }
+```
+
+<!--
+```
 @inproceedings{hahne:2023:learning,
     author = {Christopher Hahne and Georges Chabouh and Olivier Couture and Raphael Sznitman},
     title = {Learning Super-Resolution Ultrasound Localization Microscopy from Radio-Frequency Data},
@@ -72,7 +87,7 @@ If you use this project for your work, please cite:
 }
 ```
 
-<!--
+
 ```
 @misc{rfulm:2023,
       title={RF-ULM: Deep Learning for Radio-Frequency Ultrasound Localization Microscopy}, 
