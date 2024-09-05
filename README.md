@@ -64,14 +64,15 @@ If you use this project for your work, please cite:
 @article{hahne:2024:rfulm,
   author={Hahne, Christopher and Chabouh, Georges and Chavignon, Arthur and Couture, Olivier and Sznitman, Raphael},
   journal={IEEE Transactions on Medical Imaging}, 
-  title={RF-ULM: Ultrasound Localization Microscopy Learned from Radio-Frequency Wavefronts}, 
+  title={RF-ULM: Ultrasound Localization Microscopy Learned From Radio-Frequency Wavefronts}, 
   year={2024},
-  volume={},
-  number={},
-  pages={1-1},
-  keywords={Location awareness;Radio frequency;Array signal processing;Superresolution;Convolution;Ultrasonic imaging;Kernel;Super-resolution;Ultrasound;Localization;Microscopy;Deep Learning;Neural Network;Beamforming},
+  volume={43},
+  number={9},
+  pages={3253-3262},
+  keywords={Location awareness;Radio frequency;Array signal processing;Superresolution;Convolution;Ultrasonic imaging;Kernel;Super-resolution;ultrasound;localization;microscopy;deep learning;neural network;beamforming},
   doi={10.1109/TMI.2024.3391297}
-  }
+}
+
 ```
 
 <!--
